@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<title>ビリヤード塾 — 取り切りシミュレーター</title>
+<style>
+:root{
+  --bg:#0e1116; --bg2:#151a21; --line:#252c36; --fg:#e6edf3; --sub:#8b98a8;
+  --accent:#4dd0e1; --accent2:#ffd166; --ok:#4ade80; --warn:#fb923c; --ng:#f87171;
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%; overscroll-behavior:none;}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:"Segoe UI","Yu Gothic UI","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+  font-size:13px; overflow:hidden;
+  -webkit-text-size-adjust:100%; text-size-adjust:100%;
+  -webkit-user-select:none; user-select:none;         /* ドラッグ中の文字選択を防ぐ */
+  touch-action:manipulation;                           /* ダブルタップズームを抑制 */
+}
+#app{display:flex; flex-direction:column; height:100vh; height:100dvh;}
+
+header{
+  display:flex; align-items:center; gap:14px;
+  padding:0 14px; height:50px; flex:0 0 50px;
+  background:linear-gradient(180deg,#1a2028,#12161c);
+  border-bottom:1px solid var(--line);
+}
+header h1{font-size:16px; font-weight:700; letter-spacing:.05em; white-space:nowrap;}
+header h1 span{color:var(--accent); font-weight:800;}
+header .tagline{color:var(--sub); font-size:11.5px; white-space:nowrap;}
+header .spacer{flex:1;}
+header .kbd{color:var(--sub); font-size:11px; white-space:nowrap;}
+header .kbd b{
+  display:inline-block; background:#222a34; border:1px solid #333d4a; border-bottom-width:2px;
+  border-radius:4px; padding:1px 5px; color:#c9d4e0; font-size:10.5px; margin:0 1px;
+}
+#bPanel{
+  display:none; background:#1e242d; border:1px solid #2c3543; color:#b9c5d3;
+  border-radius:7px; padding:7px 12px; font-size:12px; font-family:inherit; cursor:pointer;
+}
+#bHelp{
+  background:#1d3d44; border:1px solid #2c6672; color:#9ee8f2; border-radius:7px;
+  padding:7px 12px; font-size:12px; font-family:inherit; cursor:pointer; white-space:nowrap;
+}
+#bHelp:hover{background:#245b66; color:#fff;}
+header .ver{
+  font-size:10px; color:#6f7d8d; background:#1a2028; border:1px solid #2a323d;
+  padding:1px 6px; border-radius:999px; letter-spacing:.03em;
+}
+
+/* ---------- 取扱説明書 ---------- */
+#help{
+  position:fixed; inset:0; z-index:50; background:rgba(6,9,13,.78);
+  display:flex; align-items:center; justify-content:center; padding:22px;
+  backdrop-filter:blur(3px);
+}
+#help[hidden]{display:none;}
+.hbox{
+  background:var(--bg2); border:1px solid #2c3543; border-radius:12px;
+  width:min(760px,100%); max-height:100%; display:flex; flex-direction:column; overflow:hidden;
+  box-shadow:0 18px 60px rgba(0,0,0,.6);
+}
+.hhead{
+  display:flex; align-items:center; gap:10px; padding:13px 16px;
+  border-bottom:1px solid var(--line); background:linear-gradient(180deg,#1a2028,#12161c); flex:0 0 auto;
+}
+.hhead b{font-size:14.5px;}
+.hver{font-size:10.5px; color:var(--sub); background:#1a2028; border:1px solid #2a323d;
+      padding:1px 7px; border-radius:999px;}
+#hClose{
+  margin-left:auto; background:#1e242d; border:1px solid #2c3543; color:#b9c5d3;
+  border-radius:7px; padding:7px 13px; font-size:12px; font-family:inherit; cursor:pointer;
+}
+#hClose:hover{background:#273040; color:#fff;}
+.hbody{
+  padding:16px 20px 26px; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  font-size:13px; line-height:1.85; color:#b9c5d3; overscroll-behavior:contain;
+}
+.hbody h3{
+  font-size:13px; color:var(--accent); margin:20px 0 7px; padding-bottom:5px;
+  border-bottom:1px solid #23303a; font-weight:700;
+}
+.hbody h3:first-child{margin-top:0;}
+.hbody p{margin:6px 0;}
+.hbody b{color:#e2eaf2;}
+.hbody ul,.hbody ol{margin:6px 0 6px 20px;}
+.hbody li{margin:3px 0;}
+.hbody .note{
+  background:#182028; border-left:3px solid var(--accent2); border-radius:0 6px 6px 0;
+  padding:8px 12px; margin:9px 0; font-size:12.5px;
+}
+.hbody ul.leg{list-style:none; margin-left:0;}
+.hbody ul.leg i{display:inline-block; width:22px; height:0; border-top:2.5px solid; vertical-align:4px; margin-right:8px;}
+.hbody table.ht{border-collapse:collapse; width:100%; margin:8px 0; font-size:12.5px;}
+.hbody table.ht th{
+  text-align:left; vertical-align:top; white-space:nowrap; color:var(--accent2);
+  padding:6px 12px 6px 0; border-bottom:1px solid #23303a; font-weight:700; width:1%;
+}
+.hbody table.ht td{padding:6px 0; border-bottom:1px solid #23303a;}
+
+main{display:flex; flex:1; min-height:0;}
+#stage{
+  flex:1 1 auto; min-width:0; min-height:0; position:relative;
+  display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(ellipse at 50% 40%, #1b222c 0%, #0c0f14 75%);
+}
+#cv{display:block; cursor:crosshair; touch-action:none;}
+#hint{
+  position:absolute; left:50%; transform:translateX(-50%); bottom:10px;
+  background:rgba(10,14,19,.85); border:1px solid var(--line); border-radius:999px;
+  padding:6px 15px; color:var(--sub); font-size:11.5px; pointer-events:none;
+  backdrop-filter:blur(4px); white-space:nowrap; max-width:96%; overflow:hidden; text-overflow:ellipsis;
+}
+#hint b{color:var(--accent2);}
+#busy{
+  position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+  background:rgba(8,11,15,.55); font-size:14px; color:var(--accent); letter-spacing:.1em;
+}
+#busy.on{display:flex;}
+
+aside{
+  flex:0 0 380px; width:380px; background:var(--bg2); border-left:1px solid var(--line);
+  display:flex; flex-direction:column; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+}
+aside::-webkit-scrollbar{width:9px;}
+aside::-webkit-scrollbar-thumb{background:#2b333f; border-radius:5px;}
+.sec{padding:11px 13px; border-bottom:1px solid var(--line); flex:0 0 auto;}
+.sec h2{
+  font-size:10.5px; letter-spacing:.16em; color:var(--sub); font-weight:700;
+  margin-bottom:8px;
+}
+.row{display:flex; gap:6px; flex-wrap:wrap;}
+button.seg,button.act{
+  flex:1; min-width:0; padding:9px 6px; border-radius:7px; cursor:pointer;
+  background:#1e242d; border:1px solid #2c3543; color:#b9c5d3;
+  font-size:12px; font-family:inherit; transition:.12s; white-space:nowrap;
+}
+button.seg:hover,button.act:hover{background:#273040; color:#fff;}
+button.seg.on{background:var(--accent); border-color:var(--accent); color:#06232a; font-weight:700;}
+button.act.pri{background:#1d3d44; border-color:#2c6672; color:#9ee8f2;}
+button.act.pri:hover{background:#245b66; color:#fff;}
+.chk{display:flex; align-items:center; gap:6px; font-size:12px; color:#aab6c4; cursor:pointer;
+     width:calc(50% - 3px); padding:3px 0;}
+.chk input{accent-color:var(--accent); cursor:pointer; width:15px; height:15px;}
+
+#summary{padding:11px 13px; border-bottom:1px solid var(--line); background:#12171e; flex:0 0 auto;}
+.big{display:flex; align-items:baseline; gap:8px;}
+.big .v{font-size:34px; font-weight:800; letter-spacing:-.02em; line-height:1;}
+.big .u{font-size:15px; color:var(--sub); font-weight:700;}
+.big .lbl{font-size:11px; color:var(--sub); margin-left:auto; text-align:right; line-height:1.4;}
+#sumbar{height:5px; border-radius:3px; background:#222a34; margin-top:9px; overflow:hidden;}
+#sumbar i{display:block; height:100%; border-radius:3px; transition:.25s;}
+#summeta{display:flex; gap:14px; margin-top:9px; font-size:11.5px; color:var(--sub); flex-wrap:wrap;}
+#summeta b{color:#d5dee8; font-weight:600;}
+#warns{margin-top:8px; font-size:11.5px; color:var(--warn); line-height:1.6; display:none;}
+
+.tiprow{display:flex; gap:12px; align-items:flex-start;}
+#tipCtl{flex:0 0 118px; width:118px; height:118px; touch-action:none; cursor:crosshair; border-radius:50%;}
+.tipinfo{flex:1; min-width:0; font-size:11.5px; color:var(--sub); line-height:1.85;}
+.tipinfo b{color:#cfdae6; font-variant-numeric:tabular-nums;}
+.tipmode{
+  display:inline-block; font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:999px;
+  border:1px solid; margin-bottom:3px;
+}
+.tipmode.auto{background:#1b2a33; color:#8fd8ea; border-color:#28495a;}
+.tipmode.man{background:#2b1f33; color:#d8b4fe; border-color:#5b3b6e;}
+.tipnote{font-size:10.5px; color:#7d8b9b; line-height:1.55; margin-top:3px;}
+.tipnote.warn{color:#ffab91;}
+#steps{flex:1 0 auto; padding:10px 12px 24px;}
+.step{
+  background:#181e26; border:1px solid #242c37; border-left:3px solid #333d4a;
+  border-radius:8px; padding:9px 10px; margin-bottom:8px; cursor:pointer; transition:.12s;
+}
+.step:hover{background:#1d242e;}
+.step.sel{border-color:#3d5a66; border-left-color:var(--accent); background:#1a242a;}
+.sh{display:flex; align-items:center; gap:7px;}
+.ord{color:var(--sub); font-size:11px; font-weight:700; width:16px; flex:0 0 16px;}
+.badge{
+  width:21px; height:21px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:10.5px; font-weight:800; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6);
+  border:1px solid rgba(255,255,255,.28); flex:0 0 21px;
+}
+.pk{font-size:12.5px; font-weight:600; color:#dbe4ee;}
+.pr{margin-left:auto; font-size:12.5px; font-weight:800; font-variant-numeric:tabular-nums;}
+.sb{display:flex; gap:10px; margin-top:8px; align-items:flex-start;}
+canvas.tip{flex:0 0 46px; width:46px; height:46px; margin-top:2px;}
+.meta{flex:1; min-width:0; font-size:11.5px; color:var(--sub); line-height:1.7;}
+.meta b{color:#cfdae6; font-weight:600;}
+.tags{display:flex; gap:5px; flex-wrap:wrap; margin-top:4px;}
+.tag{
+  font-size:10.5px; padding:1.5px 7px; border-radius:999px;
+  background:#232c37; color:#9fb0c2; border:1px solid #2e3947;
+}
+.tag.f{background:#2a2417; color:#ffce7a; border-color:#4a3c1d;}
+.tag.d{background:#1b2a33; color:#8fd8ea; border-color:#28495a;}
+.tag.s{background:#242a24; color:#a5d6a7; border-color:#33452f;}
+.tag.e{background:#2b1f33; color:#d8b4fe; border-color:#432d52;}
+.tag.w{background:#31201c; color:#ffab91; border-color:#54302a;}
+.pw{display:inline-flex; gap:2px; vertical-align:-1px; margin-left:2px;}
+.pw i{width:7px; height:9px; border-radius:1.5px; background:#2d3641; display:block;}
+.pw i.on{background:var(--accent2);}
+.empty{color:var(--sub); text-align:center; padding:24px 10px; font-size:12px; line-height:1.9;}
+.legend{font-size:11px; color:var(--sub); line-height:1.85;}
+.legend i{display:inline-block; width:18px; height:0; border-top:2px solid; vertical-align:3px; margin-right:5px;}
+
+/* =======================================================================
+   レスポンシブ
+   ・広い横長（PC / iPad 横）        … サイドパネル
+   ・縦持ち（スマホ / iPad 縦）      … 上下 2 段（下のパネルは高さ可変）
+   ・スマホ横持ち（高さが足りない）  … サイドパネルに戻す
+   ======================================================================= */
+@media (max-width: 1180px){ aside{flex-basis:330px; width:330px;} }
+
+@media (max-width: 899px), (orientation: portrait) and (max-width: 1100px){
+  main{flex-direction:column;}
+  #stage{flex:1 1 auto; min-height:0;}
+  aside{
+    flex:0 0 42vh; width:100%; height:42vh;
+    border-left:none; border-top:1px solid var(--line);
+    transition:flex-basis .22s, height .22s;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  body.pbig aside{flex-basis:72vh; height:72vh;}
+  header .kbd{display:none;}
+  #bPanel{display:block;}
+  #hint{bottom:6px; font-size:11px; padding:5px 11px;}
+}
+
+/* スマホ横持ち：縦が足りないので左右分割に戻す */
+@media (orientation: landscape) and (max-height: 540px){
+  main{flex-direction:row;}
+  aside{flex:0 0 292px; width:292px; height:auto;
+        border-left:1px solid var(--line); border-top:none;}
+  body.pbig aside{flex-basis:292px; height:auto;}
+  #stage{flex:1 1 auto;}
+  #bPanel{display:none;}
+  header{height:42px; flex:0 0 42px;}
+  header .tagline,header .ver{display:none;}
+}
+
+@media (max-width: 640px){
+  header{height:48px; flex:0 0 48px; gap:8px; padding:0 10px;
+         padding-left:max(10px,env(safe-area-inset-left));
+         padding-right:max(10px,env(safe-area-inset-right));}
+  header h1{font-size:15px;}
+  header .tagline{display:none;}
+  #bHelp,#bPanel{padding:9px 11px;}
+  .sec{padding:10px 11px;}
+  button.seg,button.act{font-size:12px; padding:11px 3px;}   /* タップしやすい高さ */
+  .chk{font-size:12px; padding:5px 0;}
+  .big .v{font-size:30px;}
+  #steps{padding:9px 10px 22px;}
+  #tipCtl{flex-basis:132px; width:132px; height:132px;}
+  .step{padding:11px 11px;}
+  .meta{font-size:12px;}
+  #help{padding:0;}
+  .hbox{border-radius:0; width:100%; height:100%; max-height:100%;}
+  .hhead{padding:12px 14px; padding-top:max(12px,env(safe-area-inset-top));}
+  .hbody{padding:14px 16px calc(30px + env(safe-area-inset-bottom));}
+}
+@media (max-width: 400px){
+  .row{gap:5px;}
+  button.seg,button.act{font-size:11px;}
+  #conds button.seg{flex:1 1 calc(50% - 3px); min-width:calc(50% - 3px);}
+  .chk{width:100%;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>ビリヤード<span>塾</span></h1>
+    <div class="ver">v<span id="verNum"></span></div>
+    <div class="tagline">9ft 取り切りシミュレーター</div>
+    <div class="spacer"></div>
+    <div class="kbd"><b>R</b>新配置 <b>A</b>自動配置 <b>V</b>縦横 <b>←</b><b>→</b>ステップ</div>
+    <button id="bHelp" title="使い方">? 使い方</button>
+    <button id="bPanel">プラン ▲</button>
+  </header>
+  <main>
+    <div id="stage">
+      <canvas id="cv"></canvas>
+      <div id="hint"></div>
+      <div id="busy">ルート計算中…</div>
+    </div>
+    <aside>
+      <div class="sec">
+        <h2>ゲーム</h2>
+        <div class="row" id="modes">
+          <button class="seg on" data-m="3">3球 (7-9)</button>
+          <button class="seg" data-m="4">4球 (6-9)</button>
+          <button class="seg" data-m="6">6球 (4-9)</button>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <button class="seg on" id="oh">横向き</button>
+          <button class="seg" id="ov">縦向き</button>
+        </div>
+        <div class="row" style="margin-top:6px" id="gmodes">
+          <button class="seg on" data-g="run">取り切り</button>
+          <button class="seg" data-g="safe">セーフティー</button>
+        </div>
+      </div>
+      <div class="sec">
+        <h2>テーブルコンディション</h2>
+        <div class="row" id="conds">
+          <button class="seg on" data-c="std">標準</button>
+          <button class="seg" data-c="neo">新ラシャ</button>
+          <button class="seg" data-c="slow">重い</button>
+          <button class="seg" data-c="fast">滑る</button>
+        </div>
+        <div class="tipnote" id="condNote" style="margin-top:7px"></div>
+      </div>
+      <div class="sec">
+        <h2>操作</h2>
+        <div class="row">
+          <button class="act" id="bNew">新しい配置</button>
+          <button class="act pri" id="bAuto">最適位置に置く</button>
+          <button class="act" id="bClear">手玉を外す</button>
+        </div>
+      </div>
+      <div class="sec">
+        <h2>表示</h2>
+        <div class="row">
+          <label class="chk"><input type="checkbox" id="cAll" checked>全ステップ</label>
+          <label class="chk"><input type="checkbox" id="cGhost" checked>ゴーストボール</label>
+          <label class="chk"><input type="checkbox" id="cCue" checked>手玉の走り</label>
+          <label class="chk"><input type="checkbox" id="cTan" checked>タンジェント(分離)線</label>
+          <label class="chk"><input type="checkbox" id="cThrow" checked>スロー／捻り効果</label>
+          <label class="chk"><input type="checkbox" id="cHeat">好位置ヒートマップ</label>
+        </div>
+      </div>
+      <div id="summary">
+        <div class="big">
+          <div class="v" id="sVal">--</div><div class="u">%</div>
+          <div class="lbl" id="sumLbl">取り切り成功率<br>(推定)</div>
+        </div>
+        <div id="sumbar"><i id="sBar" style="width:0"></i></div>
+        <div id="summeta">
+          <div>手玉移動 <b id="sDist">--</b></div>
+          <div>クッション <b id="sRail">--</b></div>
+          <div>最難関 <b id="sHard">--</b></div>
+        </div>
+        <div id="warns"></div>
+      </div>
+      <div class="sec" id="tipsec">
+        <h2>撞点（どうてん） — <span id="tipStepLbl">—</span></h2>
+        <div class="tiprow">
+          <canvas id="tipCtl"></canvas>
+          <div class="tipinfo">
+            <div><span id="tipMode" class="tipmode auto">自動</span></div>
+            <div>上下 <b id="tipB">—</b></div>
+            <div>左右 <b id="tipA">—</b></div>
+            <div id="tipNote" class="tipnote"></div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="act" id="tipAuto">この手を自動に</button>
+          <button class="act" id="tipAutoAll">全て自動に</button>
+        </div>
+        <label class="chk" style="width:100%;margin-top:8px">
+          <input type="checkbox" id="cNoEng">捻りを一切使わない（ノーイングリッシュ）</label>
+      </div>
+      <div id="steps"><div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。</div></div>
+      <div class="sec" style="border-bottom:none;">
+        <div class="legend">
+          <div><i style="border-color:#ffffff99"></i>狙いライン（手玉→ゴースト）</div>
+          <div><i style="border-color:#ffd166; border-top-style:dashed"></i>的玉ライン（的玉→ポケット）</div>
+          <div><i style="border-color:#4dd0e1"></i>手玉の走り（分離角・捻り反映）</div>
+          <div><i style="border-color:#9aa7b5; border-top-style:dotted"></i>タンジェント線（ストップ時の分離方向）</div>
+          <div><i style="border-color:#c084fc; border-top-style:dotted"></i>スロー（無補正なら的玉が逸れる方向）</div>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div id="help" hidden>
+  <div class="hbox">
+    <div class="hhead">
+      <b>ビリヤード塾 — 使い方</b>
+      <span class="hver">Ver <span id="verNum2"></span></span>
+      <button id="hClose">閉じる ✕</button>
+    </div>
+    <div class="hbody">
+      <h3>1. これは何をするアプリ？</h3>
+      <p>9フィート台に的玉をランダムに並べ、フリーボール（手玉を好きな所に置ける状態）から
+      <b>いちばん確実な取り切りルート</b>、または<b>いちばん有効なセーフティー</b>を計算して表示します。
+      手玉と的玉の動きは実際の物理（分離角・引き/押し・捻り・クッション）で計算しています。</p>
+
+      <h3>2. 基本の流れ</h3>
+      <ol>
+        <li><b>球数を選ぶ</b> — 3球(7-9) / 4球(6-9) / 6球(4-9)</li>
+        <li><b>配置を決める</b> — 「新しい配置」でランダム。手玉を置く前なら<b>的玉をドラッグで自由に動かせます</b>
+            （黄色い点滅リングが出ている間が編集可能）</li>
+        <li><b>モードを選ぶ</b> — 「取り切り」か「セーフティー」</li>
+        <li><b>手玉を置く</b> — テーブルの空いた所をタップ／クリック。点滅マーカーが推奨位置で、
+            「最適位置に置く」ボタンでそこへ置けます</li>
+        <li>右のパネルに手順が出ます。カードをタップすると、その一手だけを詳しく表示します</li>
+      </ol>
+      <p class="note">手玉を外す（ボタン）で、また的玉を動かせる状態に戻ります。</p>
+
+      <h3>3. テーブル上の線の意味</h3>
+      <ul class="leg">
+        <li><i style="border-color:#ffffff99"></i><b>狙いライン</b>（白・実線）手玉からゴーストボールへ</li>
+        <li><i style="border-color:#ffd166;border-top-style:dashed"></i><b>的玉ライン</b>（黄・破線）的玉からポケットへ</li>
+        <li><i style="border-color:#4dd0e1"></i><b>手玉の走り</b>（水色）当たった後に手玉が通る道。丸印はクッション接点</li>
+        <li><i style="border-color:#9aa7b5;border-top-style:dotted"></i><b>タンジェント線</b>（灰・点線）ストップで撞いたときに手玉が出ていく方向。
+            実際の手玉ラインとの開きが「分離角」です</li>
+        <li><i style="border-color:#c084fc;border-top-style:dotted"></i><b>スロー</b>（紫・点線）補正しなかった場合に的玉がずれる方向</li>
+        <li><i style="border-color:#f87171;border-top-style:dashed"></i><b>相手のシュートライン</b>（赤・セーフティー時）相手に残してしまう入れ筋</li>
+      </ul>
+      <p>破線の丸に書かれた数字は<b>次の手玉の位置</b>です（②なら2球目を撞く位置）。
+      セーフティーでは「手」「的」のマークが、それぞれの球の落ち着き先です。</p>
+
+      <h3>4. 撞点（どうてん）</h3>
+      <p>白いボールの図が撞点コントロールです。<b>ドラッグすると自分で撞点を指定</b>できます
+      （上＝押し／下＝引き／左右＝捻り）。指定した手は「手動」になり、そこから先のルートが計算し直されます。</p>
+      <ul>
+        <li>赤い破線は<b>ミスキュー限界</b>。それより外は撞けません（自動で内側に丸めます）</li>
+        <li>手玉が土手（クッション際）にあるときは<b>撞ける範囲が狭くなり</b>、暗い部分は指定できません。
+            引きと捻りが特に制限されます</li>
+        <li>「この手を自動に」「全て自動に」で元に戻せます</li>
+      </ul>
+      <p class="note"><b>捻りは基本、使わない方がシュート率が上がります。</b>
+      このアプリも、クッションを使う出しで<b>どうしても有利なときだけ</b>捻りを選びます。
+      「捻りを一切使わない」にチェックを入れれば完全に禁止できます。</p>
+
+      <h3>5. セーフティーモード</h3>
+      <p>最小番号の球（3球なら7番／4球なら6番／6球なら4番）に当てたうえで、
+      相手に<b>「球の陰に隠す（スヌーク）」</b>か<b>「シュート率10%以下しか残さない」</b>のどちらかを狙います。</p>
+      <ul>
+        <li>スクラッチ、ノークッション（＝ファウル）になる手は最初から除外しています</li>
+        <li><b>成立率</b>＝狙いと力加減が多少ずれても条件を保てる割合。この値が高い手を選びます</li>
+        <li>相手に入れ筋が残る場合は、そのラインと確率を赤で表示します</li>
+      </ul>
+
+      <h3>6. テーブルコンディション</h3>
+      <table class="ht">
+        <tr><th>標準</th><td>基準。</td></tr>
+        <tr><th>新ラシャ</th><td>よく走り、クッションも生きる。転がりは素直だが<b>スローが大きい</b>。出しは長めに出ます。</td></tr>
+        <tr><th>重い</th><td>球が走らずクッションも死ぬ。<b>引きがすぐ抜ける</b>ので押し中心・強めの力加減に。</td></tr>
+        <tr><th>滑る</th><td>走りすぎる台。<b>回転が長く残り</b>止めたい所で止まらない。小さい力加減が基本。</td></tr>
+      </table>
+      <p>選ぶとルート・撞点・力加減・セーフティーの全てが計算し直されます。同じ配置でも
+      コンディションを変えると答えが変わるので、行きつけの台に合わせて使ってください。</p>
+
+      <h3>7. 数字の読み方</h3>
+      <ul>
+        <li><b>取り切り成功率</b> — 各球のシュート率と、出しのブレを掛け合わせた推定値。上級アマチュア水準で較正しています</li>
+        <li><b>シュート率（各カード）</b> — その一発が入る確率。距離・カット角・土手・捻りを反映</li>
+        <li><b>カット角</b> — 手玉の進行方向と的玉の進む方向の角度差</li>
+        <li><b>分離角</b> — 当たった後、的玉の進行方向に対して手玉が出ていく角度。
+            ストップなら必ず90°、ころがし（順回転）なら「30度ルール」通りになります</li>
+        <li><b>スロー</b> — 摩擦で的玉が押し出される角度。表示されている分だけ狙いを逆へ補正します</li>
+        <li><b>力加減</b> — 5段階。実際に必要なストロークの強さ</li>
+      </ul>
+
+      <h3>8. ショートカット（PC）</h3>
+      <p><b>R</b> 新しい配置 ／ <b>A</b> 最適位置に置く ／ <b>V</b> 縦横切替 ／
+      <b>←</b> <b>→</b> ステップ送り ／ <b>?</b> この説明 ／ <b>Esc</b> 閉じる</p>
+
+      <h3>9. ご注意</h3>
+      <p>計算は物理モデルによる<b>目安</b>です。実際の台・球・キューの状態や、
+      プレイヤーの技量によって結果は変わります。練習の方針を考える材料としてお使いください。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   1. 定数（単位: インチ。9ft = プレー面 100 x 50）
+   -------------------------------------------------------------------------
+   速度は「そのまま転がった場合に進む距離 P（ポテンシャル）」で表す。
+   物理的に P = v^2 / (2a) なので、P は距離と同じ単位で線形に減る。
+   ========================================================================= */
+const R = 1.125, BD = 2.25;
+const W = 100, HT = 50, RAIL = 6;
+
+const SQ = Math.SQRT1_2;
+const POCKETS = [
+  {x:0,   y:0,  ax:-SQ, ay:-SQ, half:1.28, acc:0.80, corner:true },
+  {x:50,  y:0,  ax:0,   ay:-1,  half:1.48, acc:0.62, corner:false},
+  {x:100, y:0,  ax:SQ,  ay:-SQ, half:1.28, acc:0.80, corner:true },
+  {x:0,   y:50, ax:-SQ, ay:SQ,  half:1.28, acc:0.80, corner:true },
+  {x:50,  y:50, ax:0,   ay:1,   half:1.48, acc:0.62, corner:false},
+  {x:100, y:50, ax:SQ,  ay:SQ,  half:1.28, acc:0.80, corner:true }
+];
+POCKETS.forEach(p=>p.cosAcc = Math.cos(p.acc));
+
+const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
+                 6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
+const STRIPED = {9:true};
+
+const VERSION = '1.0.0';
+
+/* --- テーブルコンディション ---------------------------------------------
+   ラシャの状態で「どこまで走るか」「回転がいつまで残るか」「スローの量」
+   「クッションの走り」「転がりの素直さ」が変わる。すべて物理パラメータに反映。 */
+const CONDITIONS = {
+  std : {label:'標準',     pmax:1.00, slide:1.00, throwK:1.00, railN:0.75, railT:0.92, errK:1.00,
+         note:'基準のコンディション。'},
+  neo : {label:'新ラシャ', pmax:1.16, slide:0.92, throwK:1.20, railN:0.79, railT:0.94, errK:0.97,
+         note:'よく走りクッションも生きる。転がりは素直だがスローが大きく、出しは長めに出る。'},
+  slow: {label:'重い',     pmax:0.74, slide:0.78, throwK:1.12, railN:0.68, railT:0.88, errK:1.02,
+         note:'球が走らずクッションも死ぬ。引きがすぐ抜けるので、押し中心・強めの力加減になる。'},
+  fast: {label:'滑る',     pmax:1.30, slide:1.45, throwK:0.82, railN:0.80, railT:0.94, errK:1.07,
+         note:'走りすぎる台。回転が長く残り、止めたい所で止まらない。小さい力加減が基本。'}
+};
+let condKey = 'std';
+
+let PMAX   = 460;      // 最大ポテンシャル（力強いストローク ≒ 38ft 転がる相当）
+let SLIDE_K= 0.111;    // 滑走距離係数（回転が「ころがり」に落ち着くまで）
+let THROW_K= 1.00;     // スロー量
+let ERR_K  = 1.00;     // 転がりの素直さ（シュート誤差への倍率）
+let CUEMAX = 280;      // 手玉の走行上限（現実的な出しの範囲）
+function applyCondition(k){
+  condKey = k;
+  const c = CONDITIONS[k];
+  PMAX    = Math.round(460*c.pmax);
+  SLIDE_K = 0.111*c.slide;
+  THROW_K = c.throwK;
+  ERR_K   = c.errK;
+  RAIL_N  = c.railN;
+  RAIL_T  = c.railT;
+  CUEMAX  = Math.round(280*c.pmax);
+}
+
+const SPIN_K = 2.6;    // 撞点比 → 回転比 （撞点0.385R で自然順回転 f=1）
+const TIPMAX = 0.52;   // ミスキュー限界（半径比）
+const CUTMAX = 0.20;   // cos(cut) 下限 ≒ 78°
+
+/* --- シュート率モデル（実測水準に較正済み: RMS 1.3%, 最大誤差 3.2pt） -----
+   ポケット到達時の横方向誤差 err[inch] を積み上げ、
+   q = erf(ポケット有効半幅 / (err·√2)) で成功率にする。            */
+const ERR0   = 0.503;    // 距離に依らない固定誤差（ストローク精度・球/台の個体差）
+const SIG    = 0.000340; // 狙い角誤差 × 幾何（d1·d2 に比例）
+const PCUT   = -2.2886;  // カット角による難化 cos^PCUT
+const CITV   = 0.0056;   // スロー変動
+const SQERR  = 0.0035;   // 捻り: スカート/スワーブ（距離依存）
+const SQFLAT = 0.022;    // 捻り: スロー（的玉距離依存）
+const QMAX   = 0.995;
+
+/* 土手（クッション際）の難化 */
+const OBRAIL_A = 0.30;   // 的玉が土手: 直球でも difficult
+const OBRAIL_B = 1.50;   // 的玉が土手: カットするとさらに困難
+const CBRAIL_K = 0.40;   // 手玉が土手: 構えづらさ
+
+/* クッション特性（法線反発・接線保持はコンディションで変わる） */
+let   RAIL_N = 0.75;   // 法線方向の反発
+let   RAIL_T = 0.92;   // 接線方向の保持
+const RAIL_E = 0.30;   // 横回転 → 接線速度への変換率
+const RAIL_ED= 0.50;   // クッション通過後に残る横回転
+
+/* サンプリング */
+const B_DP  = [-0.5,-0.32,-0.16,0,0.16,0.32,0.5];
+const B_FS  = [-0.52,-0.42,-0.32,-0.22,-0.11,0,0.11,0.22,0.32,0.42,0.52];
+const PABS_DP = [0,30,70,130,220,350];
+const PABS_FS = [0,22,45,80,125,185,265,370,480];
+const A_RAIL_DP = [-0.42,0.42];
+const A_RAIL_FS = [-0.46,-0.26,0.26,0.46];
+
+/* 価値マップ格子（モバイルは粗く） */
+const SMALL = Math.min(innerWidth,innerHeight) < 820 ||
+              (matchMedia('(pointer:coarse)').matches && innerWidth < 1100);
+const GS = SMALL ? 3.2 : 2.5;
+const gx0 = R, gy0 = R;
+const GW = Math.floor((W  - 2*R)/GS) + 1;
+const GH = Math.floor((HT - 2*R)/GS) + 1;
+const GN = GW*GH;
+
+/* =========================================================================
+   2. ユーティリティ
+   ========================================================================= */
+function erf(x){
+  const s = x<0?-1:1; x = Math.abs(x);
+  const t = 1/(1+0.3275911*x);
+  return s*(1-((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x));
+}
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function hitCircle(x,y,dx,dy,tmax,cx,cy,rad){
+  const ox=x-cx, oy=y-cy;
+  const c = ox*ox+oy*oy-rad*rad;
+  if(c<=0) return Infinity;
+  const b = ox*dx+oy*dy;
+  if(b>0) return Infinity;
+  const disc = b*b-c;
+  if(disc<0) return Infinity;
+  const t = -b-Math.sqrt(disc);
+  return (t<0||t>tmax)?Infinity:t;
+}
+function segClearM(ax,ay,bx,by,balls,rad){
+  const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy, r2=rad*rad;
+  if(L2<1e-9) return true;
+  for(let i=0;i<balls.length;i++){
+    const b=balls[i];
+    let t=((b.x-ax)*dx+(b.y-ay)*dy)/L2;
+    t = t<0?0:(t>1?1:t);
+    const px=ax+dx*t-b.x, py=ay+dy*t-b.y;
+    if(px*px+py*py < r2) return false;
+  }
+  return true;
+}
+function segClear(ax,ay,bx,by,balls){ return segClearM(ax,ay,bx,by,balls,BD); }
+/* スヌークを主張するときは保守的に：かすり当てでも「当たる」とみなす */
+const GRAZE = BD*0.90;
+function cellIdx(x,y){
+  let i = Math.round((x-gx0)/GS), j = Math.round((y-gy0)/GS);
+  i = i<0?0:(i>=GW?GW-1:i); j = j<0?0:(j>=GH?GH-1:j);
+  return j*GW+i;
+}
+function blurGrid(src,r){
+  if(r<=0) return src;
+  const tmp=new Float32Array(GN), out=new Float32Array(GN);
+  for(let j=0;j<GH;j++){
+    const o=j*GW;
+    for(let i=0;i<GW;i++){
+      let s=0,c=0;
+      for(let d=-r;d<=r;d++){ const ii=i+d; if(ii<0||ii>=GW) continue; s+=src[o+ii]; c++; }
+      tmp[o+i]=s/c;
+    }
+  }
+  for(let i=0;i<GW;i++) for(let j=0;j<GH;j++){
+    let s=0,c=0;
+    for(let d=-r;d<=r;d++){ const jj=j+d; if(jj<0||jj>=GH) continue; s+=tmp[jj*GW+i]; c++; }
+    out[j*GW+i]=s/c;
+  }
+  return out;
+}
+
+/* =========================================================================
+   3. 物理モデル
+   -------------------------------------------------------------------------
+   (a) 撞点 b（上下、半径比）→ 初期縦回転比 f0 = 2.6b
+       f = 1 が自然順回転（ころがり）、f = 0 がストップ、f < 0 が引き。
+       手玉が的玉まで転がる間に f は 1 に近づく（滑走距離 ≒ 0.111|1-f0|P0）。
+   (b) 衝突：的玉は中心線方向に cosθ、手玉は接線方向に sinθ。
+       その後クロスの摩擦で「ころがり」に落ち着くまでに向きが変わる：
+         v_after = (5/7)·sinθ·t̂ + (2/7)·f·d̂        ← これが正確な分離角
+       f=0（ストップ）なら純粋なタンジェント方向＝分離角 90°、
+       f=1（ころがし）なら「30度ルール」を自動的に再現する。
+   (c) 撞点 a（左右）→ 縦軸回転（捻り）。ラシャ上では曲がらないが、
+       クッションでの跳ね返り角と、的玉へのスローに効く。
+   ========================================================================= */
+
+/* 的玉到達時の縦回転比 */
+function spinAtImpact(b, P0, d1){
+  const f0 = SPIN_K*b;
+  const slide = SLIDE_K*Math.abs(1-f0)*P0;
+  if(d1 >= slide || slide < 1e-6) return 1;
+  return f0 + (1-f0)*(d1/slide);
+}
+
+/* 手玉の走行シミュレーション（クッション反射・捻り・スクラッチ判定） */
+const SIM = {x:0,y:0,rails:0,scratch:false,hit:false,pts:null};
+function simulate(sx,sy,ux,uy,pot,E,balls,rec){
+  let x=sx,y=sy,rails=0,scratch=false,hit=false;
+  const pts = rec?[[x,y]]:null;
+  let guard=0;
+  while(pot>0.4 && guard++<6){   /* 最大5クッションまで（現実的な範囲） */
+    let t=pot, axis=0, nx=0, ny=0;
+    if(ux>1e-9){ const tt=(W-R-x)/ux;  if(tt<t){t=tt;axis=1;nx=-1;ny=0;} }
+    else if(ux<-1e-9){ const tt=(R-x)/ux; if(tt<t){t=tt;axis=1;nx=1;ny=0;} }
+    if(uy>1e-9){ const tt=(HT-R-y)/uy; if(tt<t){t=tt;axis=2;nx=0;ny=-1;} }
+    else if(uy<-1e-9){ const tt=(R-y)/uy; if(tt<t){t=tt;axis=2;nx=0;ny=1;} }
+    if(t<0) t=0;
+
+    let bt=Infinity;
+    for(let i=0;i<balls.length;i++){
+      const b=balls[i], tt=hitCircle(x,y,ux,uy,t,b.x,b.y,BD);
+      if(tt<bt) bt=tt;
+    }
+    let st=Infinity;
+    for(let i=0;i<6;i++){
+      const p=POCKETS[i], tt=hitCircle(x,y,ux,uy,t,p.x,p.y,p.corner?2.25:2.45);
+      if(tt<st) st=tt;
+    }
+    if(st<=bt && st<Infinity){ scratch=true; x+=ux*st; y+=uy*st; if(rec)pts.push([x,y]); break; }
+    if(bt<Infinity){ hit=true; x+=ux*bt; y+=uy*bt; if(rec)pts.push([x,y]); break; }
+
+    x+=ux*t; y+=uy*t; pot-=t;
+    if(rec) pts.push([x,y]);
+    if(pot<=0.4 || !axis) break;
+
+    /* クッション：法線 n̂ / 接線 t̂ = (-ny, nx) に分解 */
+    const s = Math.sqrt(pot);
+    const tx=-ny, ty=nx;
+    const vn = s*(ux*nx+uy*ny), vt = s*(ux*tx+uy*ty);
+    const vn2 = -RAIL_N*vn;
+    const vt2 = RAIL_T*vt + RAIL_E*E;
+    E = RAIL_ED*E - 0.12*vt;
+    const s2 = Math.hypot(vn2,vt2);
+    if(s2 < 0.6) break;
+    ux = (nx*vn2 + tx*vt2)/s2;
+    uy = (ny*vn2 + ty*vt2)/s2;
+    pot = s2*s2;
+    rails++;
+  }
+  SIM.x=clamp(x,R,W-R); SIM.y=clamp(y,R,HT-R);
+  SIM.rails=rails; SIM.scratch=scratch; SIM.hit=hit; SIM.pts=pts;
+  return SIM;
+}
+
+/* =========================================================================
+   4. 盤面状態
+   ========================================================================= */
+let mode = 3;
+let orient = (innerHeight > innerWidth*1.1) ? 'v' : 'h';
+let balls = [], cue = null;
+let othersArr=[], remArr=[], pocketData=[], Vb=[];
+let plan = null, selStep = 0, bestSpot = null, bestSpotVal = 0;
+let tipOverride = {};      // { ステップ番号: {a,b} } — 手動で指定した撞点
+let noEnglish = false;     // 捻りを一切使わない
+let gameMode = 'run';      // 'run' = 取り切り / 'safe' = セーフティー
+let safety = null, safeSpot = null;
+const show = {all:true, ghost:true, cuePath:true, tangent:true, throwLine:true, heat:false};
+
+function numsFor(m){ return m===3?[7,8,9] : m===4?[6,7,8,9] : [4,5,6,7,8,9]; }
+
+function makeRack(){
+  const nums = numsFor(mode);
+  for(let attempt=0; attempt<80; attempt++){
+    const out=[]; let ok=true;
+    for(const n of nums){
+      let placed=false;
+      for(let t=0;t<600;t++){
+        const x = 7 + Math.random()*(W-14);
+        const y = 5.5 + Math.random()*(HT-11);
+        let good=true;
+        for(const b of out){ const dx=b.x-x, dy=b.y-y; if(dx*dx+dy*dy < 81){ good=false; break; } }
+        if(good) for(const p of POCKETS){ const dx=p.x-x, dy=p.y-y; if(dx*dx+dy*dy < 90){ good=false; break; } }
+        if(good){ out.push({n,x,y}); placed=true; break; }
+      }
+      if(!placed){ ok=false; break; }
+    }
+    if(ok) return out;
+  }
+  return nums.map((n,i)=>({n, x:15+i*14, y:25}));
+}
+
+function prepare(){
+  const N=balls.length;
+  othersArr=[]; remArr=[]; pocketData=[];
+  for(let k=0;k<N;k++){
+    remArr[k]   = balls.slice(k);
+    othersArr[k]= balls.slice(k+1);
+    const B = balls[k], others = othersArr[k], list=[];
+    /* 的玉がクッションからどれだけ離れているか（0=フローズン, 1=通常） */
+    const mOb = Math.min(B.x-R, W-R-B.x, B.y-R, HT-R-B.y);
+    const railOb = clamp((3.4-mOb)/2.3, 0, 1);
+    B.railOb = railOb;
+    for(let pi=0; pi<6; pi++){
+      const pk=POCKETS[pi];
+      let lx=pk.x-B.x, ly=pk.y-B.y;
+      const d2=Math.hypot(lx,ly);
+      if(d2<1.0) continue;
+      lx/=d2; ly/=d2;
+      const cosPhi = lx*pk.ax + ly*pk.ay;
+      if(cosPhi < pk.cosAcc) continue;
+      if(!segClear(B.x,B.y,pk.x,pk.y,others)) continue;
+      const gx=B.x-lx*BD, gy=B.y-ly*BD;
+      if(gx<R-0.6||gx>W-R+0.6||gy<R-0.6||gy>HT-R+0.6) continue;
+      let bad=false;
+      for(const o of others){ const dx=o.x-gx, dy=o.y-gy; if(dx*dx+dy*dy < BD*BD-0.05){ bad=true; break; } }
+      if(bad) continue;
+      list.push({pi,pk,B,lx,ly,d2,gx,gy,railOb, margin: pk.half*Math.max(cosPhi,0.06)});
+    }
+    pocketData[k]=list;
+  }
+}
+
+/* =========================================================================
+   5. ショット列挙（分離角・捻り込み）
+   ========================================================================= */
+const SI = {};
+const POTBUF = new Float64Array(12);
+
+/* 手玉がクッション際だとブリッジが組めず、撞点が制限される。
+   1.0 = 自由に撞ける / 0.2 前後 = 土手にほぼフローズン */
+function bridgeLim(cx,cy){
+  const m = Math.min(cx-R, W-R-cx, cy-R, HT-R-cy);
+  if(m >= 5.0) return 1;
+  return clamp(0.20 + 0.80*(m-R)/(5.0-R), 0.18, 1);
+}
+
+function forEachShot(k, cx, cy, bset, pset, aset, cb){
+  const list = pocketData[k], others = othersArr[k], nextV = Vb[k+1];
+
+  /* 土手際の手玉：下撞き(引き)と捻りが特に制限され、押しは比較的残る */
+  const lim    = bridgeLim(cx,cy);
+  const cbRail = 1 + CBRAIL_K*(1-lim);
+  const bMaxUp = TIPMAX*Math.min(1, lim+0.40);
+  const bMaxDn = TIPMAX*lim;
+  const aMax   = TIPMAX*lim;
+
+  for(let pi=0; pi<list.length; pi++){
+    const pd = list[pi];
+    let ax = pd.gx-cx, ay = pd.gy-cy;
+    const d1 = Math.hypot(ax,ay);
+    if(d1 < 0.6) continue;
+    ax/=d1; ay/=d1;
+    const cosT = ax*pd.lx + ay*pd.ly;
+    if(cosT < CUTMAX) continue;
+    if(!segClear(cx,cy,pd.gx,pd.gy,others)) continue;
+    const sinT = Math.sqrt(Math.max(0,1-cosT*cosT));
+
+    /* タンジェント（接線）方向 */
+    let tx = ax - pd.lx*cosT, ty = ay - pd.ly*cosT;
+    const tm = Math.hypot(tx,ty);
+    if(tm>1e-6){ tx/=tm; ty/=tm; } else { tx = -pd.ly; ty = pd.lx; }
+
+    /* 必要最小ポテンシャル：手玉が d1 進み、的玉が d2 + 余裕 進む */
+    const c2 = cosT*cosT;
+    const p0min = d1 + 1.18*pd.d2/c2 + 2;
+    if(p0min > PMAX) continue;
+
+    /* ポテンシャル候補 */
+    let np=0;
+    for(let i=0;i<pset.length;i++){
+      let P = pset[i] < p0min ? p0min*1.02 : pset[i];
+      if(P > PMAX) P = PMAX;
+      if(np && P - POTBUF[np-1] < 4) continue;
+      POTBUF[np++] = P;
+      if(P >= PMAX) break;
+    }
+    if(!np) continue;
+
+    /* --- 較正済みのシュート誤差（捻り分を除く） --- */
+    const cc      = Math.max(cosT, 0.20);
+    const errCore = (ERR0 + SIG*d1*(pd.d2/BD)*Math.pow(cc,PCUT) + CITV*THROW_K*pd.d2*sinT*cc) * ERR_K
+                    * cbRail                                   // 手玉が土手
+                    * (1 + pd.railOb*(OBRAIL_A + OBRAIL_B*sinT)); // 的玉が土手
+
+    for(let ip=0; ip<np; ip++){
+      const P0 = POTBUF[ip];
+      const P1 = P0 - d1;                       // 的玉到達時のポテンシャル
+      const sp = Math.sqrt(P0/PMAX);            // 速度の目安 (0-1)
+      const s1 = Math.sqrt(Math.max(P1,0.01));  // 衝突時の速さ
+
+      /* 通常の球速までは無罰。強打するほど精度が落ちる */
+      const sOver    = Math.max(0, sp-0.35)/0.65;
+      const speedFac = 1 + 0.55*sOver*sOver;
+      const baseErr  = errCore*speedFac;
+
+      /* 的玉が速すぎるとポケットで暴れる */
+      const obPot = P1*c2;
+      const over  = obPot/Math.max(pd.d2,3);
+      const overPen = over>6 ? Math.max(0.80, 1-0.030*(over-6)) : 1;
+      const powPen  = 1 - 0.16*sp*sp;
+
+      for(let ib=0; ib<bset.length; ib++){
+        const b = bset[ib];
+        if(b > bMaxUp+1e-9 || b < -bMaxDn-1e-9) continue;  // 土手際はこの撞点を撞けない
+        const f = spinAtImpact(b, P0, d1);
+        /* 衝突後の手玉ベクトル（正確な分離角） */
+        const fx = (5/7)*sinT*tx + (2/7)*f*ax;
+        const fy = (5/7)*sinT*ty + (2/7)*f*ay;
+        const m  = Math.hypot(fx,fy);
+        const bPen = 1 - 0.30*b*b*(b<0?1.5:1);
+
+        for(let ia=0; ia<aset.length; ia++){
+          const a = aset[ia];
+          const aAbs = Math.abs(a);
+          if(aAbs > aMax+1e-9 || Math.hypot(a,b) > TIPMAX+1e-9) continue;
+          const aErr = aAbs*(SQERR*d1*(pd.d2/BD) + SQFLAT*pd.d2);
+          const q0 = clamp(erf(pd.margin/((baseErr+aErr)*1.41421356)), 0, QMAX);
+          if(q0 < 0.05) continue;
+          /* 捻りは実行難度も上がる（わずかな利得では使わせない） */
+          const aPen = 1 - 0.30*a*a - (aAbs>0.05?0.05:0) - (Math.hypot(a,b)>0.44?0.06:0);
+
+          let ex, ey, rails=0, scr=false, hitb=false, cuePot=P1*m*m;
+          if(cuePot > CUEMAX) continue;   // 現実の出しでこれ以上は転がさない
+          if(cuePot < 0.5 || m < 0.02){ ex=pd.gx; ey=pd.gy; cuePot=0; }
+          else{
+            const E0 = -SPIN_K*a*s1*0.88;       // 衝突後に残る横回転（速度単位）
+            simulate(pd.gx,pd.gy,fx/m,fy/m,cuePot,E0,others,false);
+            ex=SIM.x; ey=SIM.y; rails=SIM.rails; scr=SIM.scratch; hitb=SIM.hit;
+          }
+
+          /* 手玉を長く走らせるほど到達点がブレる → ぼかしの強い価値マップで評価 */
+          const sIdx = rails===0 ? (cuePot<14?0 : (cuePot<40?1:2))
+                                 : (rails===1 ? (cuePot<45?1:2) : 3);
+          const nv = nextV[sIdx][cellIdx(ex,ey)];
+          if(nv<=0) continue;
+
+          const imm = q0*powPen*overPen*bPen*aPen*(hitb?0.35:1)*(scr?0.03:1);
+          /* 同じ確率なら短く・クッションの少ないルートを選ぶ */
+          const distPen = 1 - 0.14*Math.min(cuePot/150,1)
+                            - 0.12*Math.max(0,(cuePot-150)/130)   // 大回りはさらに敬遠
+                            - 0.040*rails;
+          const val = imm*distPen*nv;
+          if(val<=0) continue;
+
+          SI.pd=pd; SI.b=b; SI.a=a; SI.P0=P0; SI.f=f; SI.m=m;
+          SI.dist=cuePot; SI.ex=ex; SI.ey=ey; SI.rails=rails;
+          SI.scr=scr; SI.hit=hitb; SI.q0=q0; SI.imm=imm; SI.sp=sp;
+          SI.cosT=cosT; SI.sinT=sinT; SI.d1=d1;
+          SI.ux=m>0.02?fx/m:0; SI.uy=m>0.02?fy/m:0;
+          SI.tx=tx; SI.ty=ty; SI.ax=ax; SI.ay=ay;
+          SI.E0=-SPIN_K*a*s1*0.88;
+          SI.needRail = (rails>0);
+          SI.pref = imm*distPen;
+          cb(val);
+        }
+      }
+    }
+  }
+}
+
+/* 捻りの扱い:
+   ・まず「捻り無し」で全通り試す（基本これが最善）
+   ・クッションを使う手が存在する場合に限り、捻りも候補に加える
+     （捻りは成功率を確実に下げるので、出しで得るものが大きい時だけ勝ち残る）
+   ・その手に撞点指定があれば、その撞点のみで探索する */
+function enumShots(k, cx, cy, fine, cb, useOv){
+  const ov = useOv===false ? null : tipOverride[k];
+  const pset = fine ? PABS_FS : PABS_DP;
+  if(ov){ forEachShot(k, cx, cy, [ov.b], pset, [ov.a], cb); return; }
+  const bset = fine ? B_FS : B_DP;
+  let anyRail = false;
+  forEachShot(k, cx, cy, bset, pset, [0], v=>{ if(SI.needRail) anyRail=true; cb(v); });
+  if(anyRail && !noEnglish) forEachShot(k, cx, cy, bset, pset, fine?A_RAIL_FS:A_RAIL_DP, cb);
+}
+
+/* =========================================================================
+   6. DP — 「ここに手玉があれば残りを取り切れる確率」マップ
+   ========================================================================= */
+function railFactor(x,y){
+  const m = Math.min(x-R, W-R-x, y-R, HT-R-y);
+  if(m >= 2.6) return 1;
+  if(m <= 0.6) return 0.66;
+  return 0.66 + 0.34*(m-0.6)/2.0;
+}
+function computeDP(){
+  const N = balls.length;
+  const ones = new Float32Array(GN).fill(1);
+  Vb = new Array(N+1);
+  Vb[N] = [ones,ones,ones,ones];
+  for(let k=N-1;k>=0;k--){
+    const g = new Float32Array(GN);
+    const rem = remArr[k];
+    for(let j=0;j<GH;j++){
+      const cy = gy0 + j*GS;
+      for(let i=0;i<GW;i++){
+        const cx = gx0 + i*GS;
+        let bad=false;
+        for(let m=0;m<rem.length;m++){
+          const dx=rem[m].x-cx, dy=rem[m].y-cy;
+          if(dx*dx+dy*dy < BD*BD+0.3){ bad=true; break; }
+        }
+        if(bad) continue;
+        let best=0;
+        enumShots(k,cx,cy,false,v=>{ if(v>best) best=v; },false);
+        g[j*GW+i] = best*railFactor(cx,cy);
+      }
+    }
+    Vb[k]=[blurGrid(g,1),blurGrid(g,2),blurGrid(g,4),blurGrid(g,6)];
+    Vb[k].raw = g;
+  }
+}
+
+/* =========================================================================
+   7. ビームサーチ — ルート抽出
+   ========================================================================= */
+function snapStep(k,cx,cy){
+  return {
+    pi:SI.pd.pi, k, cx, cy, gx:SI.pd.gx, gy:SI.pd.gy,
+    bx:SI.pd.B.x, by:SI.pd.B.y, n:SI.pd.B.n, d1:SI.d1, d2:SI.pd.d2,
+    b:SI.b, a:SI.a, P0:SI.P0, f:SI.f, sp:SI.sp,
+    dist:SI.dist, ex:SI.ex, ey:SI.ey, rails:SI.rails,
+    scr:SI.scr, hitb:SI.hit, q:SI.imm, q0:SI.q0,
+    cosT:SI.cosT, sinT:SI.sinT, ux:SI.ux, uy:SI.uy,
+    tx:SI.tx, ty:SI.ty, ax:SI.ax, ay:SI.ay, lx:SI.pd.lx, ly:SI.pd.ly, E0:SI.E0
+  };
+}
+function findPlan(sx,sy){
+  const N = balls.length, BEAM = SMALL?18:26;
+  let beam = [{x:sx,y:sy,prob:1,pref:1,score:1,steps:[]}];
+  for(let k=0;k<N;k++){
+    const cand=[];
+    for(const st of beam){
+      enumShots(k, st.x, st.y, true, val=>{
+        cand.push({ x:SI.ex, y:SI.ey, prob:st.prob*SI.imm, pref:st.pref*SI.pref,
+                    score:st.pref*val, steps: st.steps.concat([snapStep(k, st.x, st.y)]) });
+      });
+    }
+    if(!cand.length)
+      return beam[0].steps.length ? {steps:beam[0].steps, prob:beam[0].prob, complete:false} : null;
+    cand.sort((a,b)=>b.score-a.score);
+    const seen=new Map(), nb=[];
+    for(const c of cand){
+      const key=cellIdx(c.x,c.y), cnt=seen.get(key)||0;
+      if(cnt>=2) continue;
+      seen.set(key,cnt+1); nb.push(c);
+      if(nb.length>=BEAM) break;
+    }
+    beam = nb;
+  }
+  beam.sort((a,b)=>b.pref-a.pref);
+  return {steps:beam[0].steps, prob:beam[0].prob, complete:true};
+}
+
+function findBestSpot(){
+  const raw = Vb[0].raw, cands=[];
+  for(let i=0;i<GN;i++) if(raw[i]>0) cands.push([raw[i],i]);
+  cands.sort((a,b)=>b[0]-a[0]);
+  let best=null, bv=-1;
+  const rem = remArr[0];
+  for(const [,idx] of cands.slice(0,12)){
+    const bx = gx0 + (idx%GW)*GS, by = gy0 + Math.floor(idx/GW)*GS;
+    for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++){
+      const cx = clamp(bx+ox*1.1, R+0.2, W-R-0.2), cy = clamp(by+oy*1.1, R+0.2, HT-R-0.2);
+      let bad=false;
+      for(const b of rem){ const dx=b.x-cx, dy=b.y-cy; if(dx*dx+dy*dy < BD*BD+0.3){ bad=true; break; } }
+      if(bad) continue;
+      let v=0;
+      enumShots(0,cx,cy,false,val=>{ if(val>v) v=val; });
+      v *= railFactor(cx,cy);
+      if(v>bv){ bv=v; best={x:cx,y:cy}; }
+    }
+  }
+  bestSpot = best; bestSpotVal = Math.max(bv,0);
+}
+
+/* =========================================================================
+   7b. セーフティー
+   -------------------------------------------------------------------------
+   最小番号の球に正しく当てたうえで、相手に
+     ・球の陰に隠す（スヌーク）        … 当てる方向が一つも無い
+     ・シュート率 10% 以下しか残さない
+   のどちらかを成立させる打ち方を探す。手玉と的玉の両方を転がして評価する。
+   さらに狙い/力加減を振って「その通りに打てなくても成立するか」を測り、
+   成立率の高い（＝確率の高い）セーフティーを選ぶ。
+   ========================================================================= */
+const SAFE_OK_Q = 0.10;                    // 相手に残してよいシュート率の上限
+const TH_F=[], TH_C=[];
+for(let i=-17;i<=17;i++) TH_F.push(i*5*Math.PI/180);
+for(let i=-8;i<=8;i++)   TH_C.push(i*10*Math.PI/180);
+const SB_F=[-0.45,-0.22,0,0.22,0.45], SB_C=[-0.40,0,0.40];
+const SA_F=[-0.35,0,0.35],            SA_C=[0];
+const SP_F=[0,18,45,90,160,260],      SP_C=[0,40,110,220];
+
+/* 相手の状況を評価する */
+function opponentBest(cx,cy,ob,others){
+  const lim=bridgeLim(cx,cy), cbRail=1+CBRAIL_K*(1-lim);
+  const mOb=Math.min(ob.x-R,W-R-ob.x,ob.y-R,HT-R-ob.y);
+  const railOb=clamp((3.4-mOb)/2.3,0,1);
+  let maxQ=0, bestPi=-1, bgx=0, bgy=0;
+  for(let pi=0;pi<6;pi++){
+    const pk=POCKETS[pi];
+    let lx=pk.x-ob.x, ly=pk.y-ob.y; const d2=Math.hypot(lx,ly);
+    if(d2<1) continue; lx/=d2; ly/=d2;
+    const cosPhi=lx*pk.ax+ly*pk.ay;
+    if(cosPhi<pk.cosAcc) continue;
+    if(!segClear(ob.x,ob.y,pk.x,pk.y,others)) continue;
+    const gx=ob.x-lx*BD, gy=ob.y-ly*BD;
+    if(gx<R-0.25||gx>W-R+0.25||gy<R-0.25||gy>HT-R+0.25) continue;
+    let bad=false;
+    for(const o of others){ const dx=o.x-gx,dy=o.y-gy; if(dx*dx+dy*dy<BD*BD-0.05){bad=true;break;} }
+    if(bad) continue;
+    let ax=gx-cx, ay=gy-cy; const d1=Math.hypot(ax,ay);
+    if(d1<0.6) continue;
+    ax/=d1; ay/=d1;
+    const cosT=ax*lx+ay*ly;
+    if(cosT<CUTMAX) continue;
+    if(!segClear(cx,cy,gx,gy,others)) continue;
+    const sinT=Math.sqrt(Math.max(0,1-cosT*cosT)), cc=Math.max(cosT,0.20);
+    const err=(ERR0 + SIG*d1*(d2/BD)*Math.pow(cc,PCUT) + CITV*THROW_K*d2*sinT*cc) * ERR_K
+              * cbRail * (1+railOb*(OBRAIL_A+OBRAIL_B*sinT));
+    const q=clamp(erf(pk.half*Math.max(cosPhi,0.06)/(err*1.41421356)),0,QMAX);
+    if(q>maxQ){ maxQ=q; bestPi=pi; bgx=gx; bgy=gy; }
+  }
+  /* スヌーク判定: 的玉に当てられる接触点が一つでもあるか */
+  let canHit=false;
+  for(let i=0;i<72 && !canHit;i++){
+    const ang=i/72*Math.PI*2;
+    const gx=ob.x+Math.cos(ang)*BD, gy=ob.y+Math.sin(ang)*BD;
+    if(gx<R||gx>W-R||gy<R||gy>HT-R) continue;
+    const dx=gx-cx, dy=gy-cy;
+    if(dx*(ob.x-gx)+dy*(ob.y-gy)<=0) continue;      // 手玉の進行方向に的玉があること
+    if(segClearM(cx,cy,gx,gy,others,GRAZE)) canHit=true;
+  }
+  return {maxQ,bestPi,bgx,bgy,snookered:!canHit};
+}
+
+/* 1 本のセーフティーを打ってみる */
+const SF={};
+function trySafety(cx,cy,target,others,th,b,a,P0,rec){
+  let d0x=target.x-cx, d0y=target.y-cy;
+  const D0=Math.hypot(d0x,d0y);
+  if(D0 < BD+0.35) return false;
+  d0x/=D0; d0y/=D0;
+  const sT=Math.sin(th), cT=Math.cos(th);
+  if(cT<0.06) return false;
+  const sA=BD*sT/D0;
+  if(Math.abs(sA)>=0.999) return false;
+  const cA=Math.sqrt(1-sA*sA);
+  const px=-d0y, py=d0x;
+  const dx=d0x*cA+px*sA, dy=d0y*cA+py*sA;          // 手玉の進行方向
+  const t=(target.x-cx)*dx+(target.y-cy)*dy - BD*cT;   // ゴーストまでの距離
+  if(t<0.4) return false;
+  const gx=cx+dx*t, gy=cy+dy*t;
+  if(gx<R-0.3||gx>W-R+0.3||gy<R-0.3||gy>HT-R+0.3) return false;
+  if(!segClear(cx,cy,gx,gy,others)) return false;   // 先に他の球に当たってはいけない
+  const lx=(target.x-gx)/BD, ly=(target.y-gy)/BD;   // 中心線＝的玉の進行方向
+
+  const P1=P0-t;
+  if(P1<3) return false;
+  const lim=bridgeLim(cx,cy);
+  if(b> TIPMAX*Math.min(1,lim+0.40)+1e-9 || b< -TIPMAX*lim-1e-9) return false;
+  if(Math.abs(a)>TIPMAX*lim+1e-9 || Math.hypot(a,b)>TIPMAX+1e-9) return false;
+
+  /* 的玉 */
+  const objPot=P1*cT*cT;
+  const os=simulate(target.x,target.y,lx,ly,objPot,0,others,rec);
+  const oEnd={x:os.x,y:os.y}, oPts=rec?os.pts:null,
+        oPot=os.scratch, oRails=os.rails, oHit=os.hit;
+  /* 手玉 */
+  const f=spinAtImpact(b,P0,t);
+  let tx=dx-lx*cT, ty=dy-ly*cT;
+  const tm=Math.hypot(tx,ty);
+  if(tm>1e-6){tx/=tm;ty/=tm;} else {tx=0;ty=0;}
+  const fx=(5/7)*Math.abs(sT)*(sT<0?-tx:tx)+(2/7)*f*dx;
+  const fy=(5/7)*Math.abs(sT)*(sT<0?-ty:ty)+(2/7)*f*dy;
+  const m=Math.hypot(fx,fy);
+  const cuePot=P1*m*m;
+  if(cuePot>CUEMAX*1.08) return false;
+  let cEnd={x:gx,y:gy}, cPts=rec?[[gx,gy]]:null, cScr=false, cRails=0, cHit=false;
+  if(cuePot>0.5 && m>0.02){
+    const cs=simulate(gx,gy,fx/m,fy/m,cuePot,-SPIN_K*a*Math.sqrt(P1)*0.88,others,rec);
+    cEnd={x:cs.x,y:cs.y}; cPts=rec?cs.pts:null; cScr=cs.scratch; cRails=cs.rails; cHit=cs.hit;
+  }
+  if(cScr) return false;                                  // スクラッチは論外
+  if(oPot) return false;                                  // 的玉が入ってしまうのはセーフティーでない
+  if(cRails===0 && oRails===0) return false;              // ノークッション＝ファウル
+  if(Math.hypot(cEnd.x-oEnd.x, cEnd.y-oEnd.y) < BD-0.1) return false;  // キス
+
+  const ob={x:oEnd.x,y:oEnd.y,n:target.n};
+  const op=opponentBest(cEnd.x,cEnd.y,ob,others);
+  const oppDist=Math.hypot(cEnd.x-oEnd.x, cEnd.y-oEnd.y);
+  const good = op.snookered || op.maxQ<=SAFE_OK_Q;
+  let sc = (op.snookered?1.15:(1-op.maxQ)) * (1+0.06*Math.min(oppDist/60,1));
+  if(oHit) sc*=0.80;
+  if(cHit) sc*=0.88;
+
+  SF.th=th; SF.b=b; SF.a=a; SF.P0=P0; SF.t=t; SF.gx=gx; SF.gy=gy;
+  SF.lx=lx; SF.ly=ly; SF.dx=dx; SF.dy=dy; SF.cT=cT; SF.sT=sT;
+  SF.cEnd=cEnd; SF.oEnd=oEnd; SF.cPts=cPts; SF.oPts=oPts;
+  SF.cRails=cRails; SF.oRails=oRails; SF.oHit=oHit; SF.cHit=cHit;
+  SF.maxQ=op.maxQ; SF.snookered=op.snookered; SF.bestPi=op.bestPi;
+  SF.bgx=op.bgx; SF.bgy=op.bgy; SF.oppDist=oppDist;
+  SF.score=sc; SF.good=good; SF.cuePot=cuePot; SF.objPot=objPot;
+  SF.sp=Math.sqrt(P0/PMAX);
+  return true;
+}
+function snapSafety(cx,cy,target){
+  return {cx,cy, n:target.n, ox:target.x, oy:target.y,
+    th:SF.th, b:SF.b, a:SF.a, P0:SF.P0, t:SF.t, gx:SF.gx, gy:SF.gy,
+    lx:SF.lx, ly:SF.ly, dx:SF.dx, dy:SF.dy, cT:SF.cT, sT:SF.sT,
+    cEnd:SF.cEnd, oEnd:SF.oEnd, cRails:SF.cRails, oRails:SF.oRails,
+    oHit:SF.oHit, cHit:SF.cHit, maxQ:SF.maxQ, snookered:SF.snookered,
+    bestPi:SF.bestPi, bgx:SF.bgx, bgy:SF.bgy, oppDist:SF.oppDist,
+    cuePot:SF.cuePot, sp:SF.sp, score:SF.score};
+}
+
+/* 狙い・力加減を振って「成立率」を測る */
+function robustness(cx,cy,target,others,st){
+  const sErr = 0.0035;                                  // 狙いのばらつき [rad]
+  const dTh  = clamp(sErr*st.t/(BD*Math.max(st.cT,0.15)), 0.008, 0.35);
+  let ok=0, n=0, sumQ=0;
+  for(const dt of [-dTh,0,dTh]) for(const kp of [0.86,1,1.14]){
+    n++;
+    if(trySafety(cx,cy,target,others,st.th+dt,st.b,st.a,Math.max(st.P0*kp,st.t+4),false)){
+      if(SF.good) ok++;
+      sumQ+=SF.maxQ;
+    } else sumQ+=1;                                     // 打ち損じ（ファウル等）は最悪扱い
+  }
+  return {rate:ok/n, meanQ:sumQ/n};
+}
+
+function findSafety(cx,cy){
+  if(!balls.length) return null;
+  const target=balls[0], others=balls.slice(1);
+  const cands=[];
+  for(const th of TH_F) for(const b of SB_F) for(const a of SA_F){
+    if(noEnglish && a!==0) continue;
+    for(const pa of SP_F){
+      const P0=Math.max(pa, 6);
+      if(!trySafety(cx,cy,target,others,th,b,a,P0,false)) continue;
+      cands.push(snapSafety(cx,cy,target));
+    }
+  }
+  if(!cands.length) return null;
+  cands.sort((x,y)=>y.score-x.score);
+  let best=null;
+  for(const c of cands.slice(0,26)){
+    const r=robustness(cx,cy,target,others,c);
+    c.rate=r.rate; c.meanQ=r.meanQ;
+    c.rank=r.rate + 0.30*(1-r.meanQ) + 0.05*c.score;
+    if(!best||c.rank>best.rank) best=c;
+  }
+  return best;
+}
+
+/* フリーボールでのセーフティー最適位置 */
+function findSafeSpot(){
+  if(!balls.length){ safeSpot=null; return; }
+  const target=balls[0], others=balls.slice(1);
+  const step=5, list=[];
+  for(let y=R+2; y<=HT-R-2; y+=step) for(let x=R+2; x<=W-R-2; x+=step){
+    let bad=false;
+    for(const b of balls){ const dx=b.x-x,dy=b.y-y; if(dx*dx+dy*dy<BD*BD+0.4){bad=true;break;} }
+    if(bad) continue;
+    let bs=0;
+    for(const th of TH_C) for(const b of SB_C) for(const a of SA_C) for(const pa of SP_C){
+      if(!trySafety(x,y,target,others,th,b,a,Math.max(pa,6),false)) continue;
+      if(SF.score>bs) bs=SF.score;
+    }
+    if(bs>0) list.push({x,y,s:bs});
+  }
+  list.sort((p,q)=>q.s-p.s);
+  let best=null;
+  for(const p of list.slice(0,8)){
+    const r=findSafety(p.x,p.y);
+    if(r && (!best || r.rank>best.rank)) best={...p, rank:r.rank, plan:r};
+  }
+  safeSpot = best ? {x:best.x,y:best.y,rank:best.rank,plan:best.plan} : (list[0]||null);
+}
+
+/* =========================================================================
+   8. 再計算
+   ========================================================================= */
+function busy(on){ document.getElementById('busy').classList.toggle('on', on); }
+function rebuildRack(){
+  balls = makeRack();
+  cue = null; plan = null; safety = null; selStep = 0;
+  bestSpot = null; safeSpot = null; tipOverride = {};
+  busy(true); draw();
+  setTimeout(()=>{
+    prepare(); computeDP(); findBestSpot();
+    if(gameMode==='safe') findSafeSpot();
+    busy(false); renderPanel(); draw();
+  }, 20);
+}
+/* 手玉の位置が決まったときの再計算（モードに応じて） */
+function recalc(){
+  if(!cue){ plan=null; safety=null; renderPanel(); draw(); return; }
+  if(gameMode==='safe'){ plan=null; safety=findSafety(cue.x,cue.y); }
+  else { safety=null; plan=findPlan(cue.x,cue.y); selStep=0; }
+  renderPanel(); draw();
+}
+function replan(){ recalc(); }
+
+/* =========================================================================
+   9. 描画
+   ========================================================================= */
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let S=10, OX=0, OY=0, CVW=0, CVH=0;
+function bw(){ return orient==='h'? W  : HT; }
+function bh(){ return orient==='h'? HT : W;  }
+function tf(x,y){ return orient==='h' ? [x,y] : [HT-y, x]; }
+function untf(u,v){ return orient==='h' ? [u,v] : [v, HT-u]; }
+function P(x,y){ const t=tf(x,y); return [OX+t[0]*S, OY+t[1]*S]; }
+
+function resize(){
+  const st = document.getElementById('stage');
+  const pad = SMALL? 12 : 26;
+  const availW = Math.max(120, st.clientWidth - pad), availH = Math.max(120, st.clientHeight - pad);
+  S = Math.min(availW/(bw()+2*RAIL), availH/(bh()+2*RAIL));
+  const cwid=(bw()+2*RAIL)*S, chei=(bh()+2*RAIL)*S, dpr=Math.min(window.devicePixelRatio||1, 2.5);
+  cv.width=Math.round(cwid*dpr); cv.height=Math.round(chei*dpr);
+  cv.style.width=cwid+'px'; cv.style.height=chei+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  OX=RAIL*S; OY=RAIL*S; CVW=cwid; CVH=chei;
+  draw();
+}
+function rrect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+function drawTable(){
+  const BW=bw(), BH=bh();
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const g=ctx.createLinearGradient(0,0,0,(BH+2*RAIL)*S);
+  g.addColorStop(0,'#5a3720'); g.addColorStop(.5,'#42281580'); g.addColorStop(1,'#2e1c0f');
+  ctx.fillStyle='#3d2513'; rrect(0,0,(BW+2*RAIL)*S,(BH+2*RAIL)*S,10); ctx.fill();
+  ctx.fillStyle=g; ctx.fill();
+  ctx.strokeStyle='#1a0f07'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='#146b48';
+  rrect(OX-(RAIL-1.4)*S, OY-(RAIL-1.4)*S, (BW+2*(RAIL-1.4))*S, (BH+2*(RAIL-1.4))*S, 5); ctx.fill();
+  const pg=ctx.createRadialGradient(OX+BW*S/2,OY+BH*S/2,BH*S*0.1,OX+BW*S/2,OY+BH*S/2,BW*S*0.75);
+  pg.addColorStop(0,'#1a8b5c'); pg.addColorStop(1,'#0f6440');
+  ctx.fillStyle=pg; ctx.fillRect(OX,OY,BW*S,BH*S);
+  ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=1.5; ctx.strokeRect(OX,OY,BW*S,BH*S);
+  ctx.fillStyle='rgba(240,235,215,.85)';
+  const dia=(u,v)=>{ const s=2.0*S/6; ctx.beginPath();
+    ctx.moveTo(u,v-s); ctx.lineTo(u+s,v); ctx.lineTo(u,v+s); ctx.lineTo(u-s,v); ctx.closePath(); ctx.fill(); };
+  for(let i=1;i<=Math.round(BW/12.5)-1;i++){ const u=OX+i*12.5*S; dia(u,OY-3*S); dia(u,OY+BH*S+3*S); }
+  for(let i=1;i<=Math.round(BH/12.5)-1;i++){ const v=OY+i*12.5*S; dia(OX-3*S,v); dia(OX+BW*S+3*S,v); }
+  const fs=P(75,25);
+  ctx.fillStyle='rgba(0,0,0,.28)'; ctx.beginPath(); ctx.arc(fs[0],fs[1],0.35*S,0,7); ctx.fill();
+  for(const p of POCKETS){
+    const [px,py]=P(p.x,p.y), rr=(p.corner?2.55:2.75)*S;
+    ctx.fillStyle='#0a0d0b'; ctx.beginPath(); ctx.arc(px,py,rr,0,7); ctx.fill();
+    ctx.strokeStyle='rgba(215,205,175,.5)'; ctx.lineWidth=Math.max(1.2,0.22*S);
+    ctx.beginPath(); ctx.arc(px,py,rr,0,7); ctx.stroke();
+  }
+}
+function drawHeat(){
+  if(!Vb.length||!Vb[0]||!Vb[0].raw) return;
+  const raw=Vb[0].raw; let mx=0;
+  for(let i=0;i<GN;i++) if(raw[i]>mx) mx=raw[i];
+  if(mx<=0) return;
+  for(let j=0;j<GH;j++) for(let i=0;i<GW;i++){
+    const v=raw[j*GW+i]/mx; if(v<0.12) continue;
+    const [px,py]=P(gx0+i*GS, gy0+j*GS);
+    ctx.fillStyle=`rgba(${Math.round(60+195*v)},${Math.round(235-90*v)},${Math.round(120-60*v)},${0.06+0.30*v*v})`;
+    ctx.beginPath(); ctx.arc(px,py,GS*S*0.62,0,7); ctx.fill();
+  }
+}
+function drawBall(x,y,n,alpha){
+  const [px,py]=P(x,y), rr=R*S;
+  ctx.save(); ctx.globalAlpha=alpha===undefined?1:alpha;
+  ctx.beginPath(); ctx.arc(px,py+rr*0.18,rr*1.02,0,7);
+  ctx.fillStyle='rgba(0,0,0,.38)'; ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.arc(px,py,rr,0,7); ctx.clip();
+  if(n===0){ ctx.fillStyle='#f4f1e6'; ctx.fillRect(px-rr,py-rr,rr*2,rr*2); }
+  else if(STRIPED[n]){
+    ctx.fillStyle='#f4f1e6'; ctx.fillRect(px-rr,py-rr,rr*2,rr*2);
+    ctx.fillStyle=BALLCOL[n]; ctx.fillRect(px-rr,py-rr*0.56,rr*2,rr*1.12);
+  } else { ctx.fillStyle=BALLCOL[n]; ctx.fillRect(px-rr,py-rr,rr*2,rr*2); }
+  const sh=ctx.createRadialGradient(px-rr*0.36,py-rr*0.4,rr*0.05,px,py,rr*1.15);
+  sh.addColorStop(0,'rgba(255,255,255,.55)'); sh.addColorStop(.42,'rgba(255,255,255,0)');
+  sh.addColorStop(1,'rgba(0,0,0,.42)');
+  ctx.fillStyle=sh; ctx.fillRect(px-rr,py-rr,rr*2,rr*2);
+  ctx.restore();
+  ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=Math.max(.6,rr*0.06);
+  ctx.beginPath(); ctx.arc(px,py,rr,0,7); ctx.stroke();
+  if(n>0){
+    ctx.fillStyle='#fbfaf5'; ctx.beginPath(); ctx.arc(px,py,rr*0.60,0,7); ctx.fill();
+    ctx.fillStyle='#161616'; ctx.font=`700 ${Math.round(rr*0.92)}px "Segoe UI",sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(n),px,py+rr*0.04);
+  }
+  ctx.restore();
+}
+function line(a,b,col,wd,dash,alpha){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.strokeStyle=col; ctx.lineWidth=wd; ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke(); ctx.restore();
+}
+function arrowHead(x,y,ang,size,col,alpha){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x,y); ctx.rotate(ang);
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(size,0); ctx.lineTo(-size*0.75,size*0.62); ctx.lineTo(-size*0.4,0); ctx.lineTo(-size*0.75,-size*0.62);
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+/* ---- ラベル配置 -------------------------------------------------------
+   吹き出しは即座に描かず一旦ためておき、球・目標位置マーカー・他の吹き出しを
+   よけた場所に置き直してから最後にまとめて描く。離れた場合は引き出し線を引く。 */
+let LBLQ=[], OBST=[];
+function addObst(px,py,r){ OBST.push({x:px,y:py,r}); }
+function label(x,y,txt,col,alpha,prio){ LBLQ.push({x,y,txt,col,alpha,prio:prio||0}); }
+function rcHit(r,c){
+  const nx=clamp(c.x,r.x-r.w/2,r.x+r.w/2), ny=clamp(c.y,r.y-r.h/2,r.y+r.h/2);
+  const dx=c.x-nx, dy=c.y-ny;
+  return dx*dx+dy*dy < c.r*c.r;
+}
+function rrHit(a,b){
+  return Math.abs(a.x-b.x) < (a.w+b.w)/2+2 && Math.abs(a.y-b.y) < (a.h+b.h)/2+2;
+}
+function flushLabels(){
+  if(!LBLQ.length){ OBST=[]; return; }
+  ctx.save();
+  ctx.font=`600 ${Math.max(9,Math.round(1.05*S))}px "Segoe UI",sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const h=1.7*Math.max(9,1.05*S);
+  const RINGS=[0,1.5,2.5,3.6,4.9,6.5,8.4,10.6,13.2];
+  const placed=[];
+  LBLQ.sort((a,b)=>b.prio-a.prio);
+  for(const L of LBLQ){
+    const w=ctx.measureText(L.txt).width+7*Math.max(.7,S/10);
+    let best=null, bestPen=Infinity;
+    for(const ring of RINGS){
+      const n = ring===0 ? 1 : (ring<4 ? 16 : 24);
+      let found=null;
+      for(let i=0;i<n;i++){
+        const ang = ring===0 ? 0 : (i/n)*Math.PI*2 - Math.PI/2;
+        const r={ x:L.x+Math.cos(ang)*ring*S, y:L.y+Math.sin(ang)*ring*S, w, h };
+        if(r.x-w/2<2||r.x+w/2>CVW-2||r.y-h/2<2||r.y+h/2>CVH-2) continue;
+        let pen=0;
+        for(const o of OBST) if(rcHit(r,o)) pen+=3;
+        for(const p of placed) if(rrHit(r,p)) pen+=5;
+        if(pen===0){ found=r; break; }
+        if(pen<bestPen){ bestPen=pen; best=r; }
+      }
+      if(found){ best=found; bestPen=0; break; }
+    }
+    if(!best) best={x:clamp(L.x,w/2+2,CVW-w/2-2), y:clamp(L.y,h/2+2,CVH-h/2-2), w, h};
+    placed.push(best);
+    const dx=best.x-L.x, dy=best.y-L.y;
+    if(Math.hypot(dx,dy) > 1.1*S){                 // 離れたら引き出し線
+      ctx.save(); ctx.globalAlpha=L.alpha*0.5; ctx.strokeStyle=L.col;
+      ctx.lineWidth=Math.max(1,0.09*S); ctx.setLineDash([2,2]);
+      ctx.beginPath(); ctx.moveTo(L.x,L.y); ctx.lineTo(best.x,best.y); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.globalAlpha=L.alpha*0.75; ctx.fillStyle=L.col;
+      ctx.beginPath(); ctx.arc(L.x,L.y,Math.max(1.6,0.16*S),0,7); ctx.fill(); ctx.restore();
+    }
+    ctx.save(); ctx.globalAlpha=L.alpha;
+    ctx.fillStyle='rgba(8,14,18,.84)'; rrect(best.x-w/2,best.y-h/2,w,h,h/2); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle=L.col; ctx.fillText(L.txt,best.x,best.y+0.5); ctx.restore();
+  }
+  ctx.restore();
+  LBLQ=[]; OBST=[];
+}
+
+/* スロー角（度）。正 = タンジェント側へ逸れる */
+function throwDeg(st){
+  const th = Math.acos(clamp(st.cosT,-1,1));
+  const cit = 5.5*THROW_K*Math.sin(th)*st.cosT*st.cosT*(1-0.35*st.sp);   // カットスロー
+  const sgn = (st.lx*st.ty - st.ly*st.tx) >= 0 ? 1 : -1;
+  const sit = -5.0*THROW_K*st.a*(1-0.40*st.sp);                  // 捻りスロー(右→左へ)
+  return cit*sgn + sit;
+}
+
+function drawStep(st, active){
+  const a = active?1:0.24;
+  const C=P(st.cx,st.cy), G=P(st.gx,st.gy), B=P(st.bx,st.by), PK=P(POCKETS[st.pi].x,POCKETS[st.pi].y);
+
+  /* 的玉 → ポケット */
+  line(B,PK,'#ffd166',Math.max(1.4,0.16*S),[6,5],a*0.95);
+  arrowHead((B[0]+PK[0])/2,(B[1]+PK[1])/2,Math.atan2(PK[1]-B[1],PK[0]-B[0]),Math.max(4,0.55*S),'#ffd166',a*0.95);
+
+  /* スロー（無補正なら的玉がどちらへ逸れるか） */
+  if(show.throwLine && active){
+    const g = throwDeg(st);
+    if(Math.abs(g) > 0.35){
+      const rad = g*Math.PI/180, cs=Math.cos(rad), sn=Math.sin(rad);
+      const dx = st.lx*cs - st.ly*sn, dy = st.lx*sn + st.ly*cs;
+      const len = Math.min(st.d2*0.92, 26);
+      const T2 = P(st.bx+dx*len, st.by+dy*len);
+      line(B,T2,'#c084fc',Math.max(1,0.12*S),[2,4],0.85);
+      label(T2[0],T2[1],`スロー ${Math.abs(g).toFixed(1)}°`,'#e2c8ff',0.9,1);
+    }
+  }
+
+  /* 手玉 → ゴースト */
+  line(C,G,'#ffffff',Math.max(1.1,0.13*S),[],a*0.55);
+
+  /* タンジェント線（ストップ時の分離方向 = 中心線と 90°） */
+  if(show.tangent && active){
+    const T1 = P(st.gx+st.tx*15, st.gy+st.ty*15);
+    const T0 = P(st.gx-st.tx*3.5, st.gy-st.ty*3.5);
+    line(T0,T1,'#9aa7b5',Math.max(1,0.11*S),[2,3],0.75);
+  }
+
+  /* ゴーストボール */
+  if(show.ghost){
+    ctx.save(); ctx.globalAlpha=a*0.8;
+    ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=Math.max(1,0.12*S); ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.arc(G[0],G[1],R*S,0,7); ctx.stroke(); ctx.restore();
+    addObst(G[0],G[1],R*S*1.05);
+  }
+
+  /* 手玉の走り */
+  if(show.cuePath && st.dist>0.5){
+    const sim = simulate(st.gx,st.gy,st.ux,st.uy,st.dist,st.E0,othersArr[st.k],true);
+    const pts = sim.pts.map(p=>P(p[0],p[1]));
+    const col = st.scr?'#f87171':(st.hitb?'#fb923c':'#4dd0e1');
+    ctx.save(); ctx.globalAlpha=a; ctx.strokeStyle=col;
+    ctx.lineWidth=Math.max(1.6,0.19*S); ctx.lineJoin='round'; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+    ctx.stroke();
+    /* クッション接点 */
+    for(let i=1;i<pts.length-1;i++){
+      ctx.fillStyle=col; ctx.beginPath(); ctx.arc(pts[i][0],pts[i][1],Math.max(2,0.28*S),0,7); ctx.fill();
+    }
+    ctx.restore();
+    for(let i=1;i<pts.length;i++){
+      const ang=Math.atan2(pts[i][1]-pts[i-1][1],pts[i][0]-pts[i-1][0]);
+      arrowHead((pts[i-1][0]+pts[i][0])/2,(pts[i-1][1]+pts[i][1])/2,ang,Math.max(4,0.55*S),col,a);
+    }
+    /* 分離角の表示（手玉ラインの途中を指す） */
+    if(active && show.tangent){
+      const sep = Math.acos(clamp(st.ux*st.lx+st.uy*st.ly,-1,1))*180/Math.PI;
+      const along = Math.min(7.5, Math.max(2.6, st.dist*0.42));
+      const L1 = P(st.gx+st.ux*along, st.gy+st.uy*along);
+      label(L1[0],L1[1],`分離 ${Math.round(sep)}°`,'#9ff0fb',a*0.95,2);
+    }
+  }
+
+  /* 到達点（次の手玉位置） */
+  const E=P(st.ex,st.ey);
+  addObst(E[0],E[1],R*S*1.25);
+  ctx.save(); ctx.globalAlpha=a*0.95;
+  ctx.setLineDash([4,3]); ctx.strokeStyle='#eafcff'; ctx.lineWidth=Math.max(1.1,0.13*S);
+  ctx.beginPath(); ctx.arc(E[0],E[1],R*S,0,7); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='rgba(10,20,26,.75)'; ctx.beginPath(); ctx.arc(E[0],E[1],R*S*0.62,0,7); ctx.fill();
+  ctx.fillStyle='#9fe9f5'; ctx.font=`700 ${Math.round(R*S*0.78)}px "Segoe UI",sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(String(st.k+2),E[0],E[1]+R*S*0.05);
+  ctx.restore();
+}
+
+function drawSafety(sf){
+  const C=P(sf.cx,sf.cy), G=P(sf.gx,sf.gy), O=P(sf.ox,sf.oy);
+  const col=BALLCOL[sf.n]||'#fff';
+
+  /* 狙いライン + ゴースト */
+  line(C,G,'#ffffff',Math.max(1.1,0.13*S),[],0.6);
+  if(show.ghost){
+    ctx.save(); ctx.globalAlpha=0.8; ctx.setLineDash([3,3]);
+    ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=Math.max(1,0.12*S);
+    ctx.beginPath(); ctx.arc(G[0],G[1],R*S,0,7); ctx.stroke(); ctx.restore();
+  }
+  /* 的玉の走り */
+  const os=simulate(sf.ox,sf.oy,sf.lx,sf.ly,Math.max((sf.P0-sf.t)*sf.cT*sf.cT,0),0,balls.slice(1),true);
+  const op=os.pts.map(p=>P(p[0],p[1]));
+  ctx.save(); ctx.globalAlpha=0.95; ctx.strokeStyle=col;
+  ctx.lineWidth=Math.max(1.6,0.19*S); ctx.lineJoin='round'; ctx.setLineDash([7,4]);
+  ctx.beginPath(); ctx.moveTo(op[0][0],op[0][1]);
+  for(let i=1;i<op.length;i++) ctx.lineTo(op[i][0],op[i][1]);
+  ctx.stroke(); ctx.restore();
+  for(let i=1;i<op.length;i++)
+    arrowHead((op[i-1][0]+op[i][0])/2,(op[i-1][1]+op[i][1])/2,
+      Math.atan2(op[i][1]-op[i-1][1],op[i][0]-op[i-1][0]),Math.max(4,0.55*S),col,0.95);
+
+  /* 手玉の走り */
+  if(sf.cuePot>0.5){
+    const dxv=sf.cEnd.x, dyv=sf.cEnd.y;
+    const f=spinAtImpact(sf.b,sf.P0,sf.t);
+    let tx=sf.dx-sf.lx*sf.cT, ty=sf.dy-sf.ly*sf.cT;
+    const tm=Math.hypot(tx,ty); if(tm>1e-6){tx/=tm;ty/=tm;}else{tx=0;ty=0;}
+    const s=Math.abs(sf.sT), sg=sf.sT<0?-1:1;
+    const fx=(5/7)*s*sg*tx+(2/7)*f*sf.dx, fy=(5/7)*s*sg*ty+(2/7)*f*sf.dy;
+    const m=Math.hypot(fx,fy);
+    if(m>0.02){
+      const cs=simulate(sf.gx,sf.gy,fx/m,fy/m,sf.cuePot,-SPIN_K*sf.a*Math.sqrt(Math.max(sf.P0-sf.t,0.01))*0.88,balls.slice(1),true);
+      const cp=cs.pts.map(p=>P(p[0],p[1]));
+      ctx.save(); ctx.globalAlpha=1; ctx.strokeStyle='#4dd0e1';
+      ctx.lineWidth=Math.max(1.6,0.19*S); ctx.lineJoin='round'; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(cp[0][0],cp[0][1]);
+      for(let i=1;i<cp.length;i++) ctx.lineTo(cp[i][0],cp[i][1]);
+      ctx.stroke();
+      for(let i=1;i<cp.length-1;i++){ ctx.fillStyle='#4dd0e1';
+        ctx.beginPath(); ctx.arc(cp[i][0],cp[i][1],Math.max(2,0.28*S),0,7); ctx.fill(); }
+      ctx.restore();
+      for(let i=1;i<cp.length;i++)
+        arrowHead((cp[i-1][0]+cp[i][0])/2,(cp[i-1][1]+cp[i][1])/2,
+          Math.atan2(cp[i][1]-cp[i-1][1],cp[i][0]-cp[i-1][0]),Math.max(4,0.55*S),'#4dd0e1',1);
+      void dxv; void dyv;
+    }
+  }
+  /* 落ち着き先 */
+  const mark=(pt,txt,c)=>{
+    const p=P(pt.x,pt.y);
+    addObst(p[0],p[1],R*S*1.25);
+    ctx.save(); ctx.setLineDash([4,3]); ctx.strokeStyle=c; ctx.lineWidth=Math.max(1.1,0.13*S);
+    ctx.beginPath(); ctx.arc(p[0],p[1],R*S,0,7); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(10,20,26,.78)'; ctx.beginPath(); ctx.arc(p[0],p[1],R*S*0.66,0,7); ctx.fill();
+    ctx.fillStyle=c; ctx.font=`700 ${Math.round(R*S*0.8)}px "Segoe UI",sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(txt,p[0],p[1]+R*S*0.05);
+    ctx.restore();
+  };
+  mark(sf.oEnd, '的', col);
+  mark(sf.cEnd, '手', '#eafcff');
+
+  /* 相手に残るシュートライン */
+  if(!sf.snookered && sf.bestPi>=0){
+    const A=P(sf.oEnd.x,sf.oEnd.y), B2=P(POCKETS[sf.bestPi].x,POCKETS[sf.bestPi].y);
+    line(A,B2,'#f87171',Math.max(1.2,0.14*S),[3,4],0.85);
+    const CB=P(sf.cEnd.x,sf.cEnd.y), GB=P(sf.bgx,sf.bgy);
+    line(CB,GB,'#f87171',Math.max(1,0.11*S),[2,4],0.5);
+    label((A[0]+B2[0])/2,(A[1]+B2[1])/2,`相手 ${Math.round(sf.maxQ*100)}%`,'#ffc9c9',0.95,3);
+  } else {
+    const p=P(sf.cEnd.x,sf.cEnd.y);
+    label(p[0],p[1]-2.6*S,'スヌーク成立','#a5f3c0',0.95,3);
+  }
+}
+
+function draw(){
+  LBLQ=[]; OBST=[];
+  drawTable();
+  if(show.heat) drawHeat();
+  /* 球そのものを吹き出しの障害物として登録 */
+  for(const b of balls){ const p=P(b.x,b.y); addObst(p[0],p[1],R*S*1.15); }
+  if(cue){ const p=P(cue.x,cue.y); addObst(p[0],p[1],R*S*1.15); }
+  if(gameMode==='safe'){
+    if(safety) drawSafety(safety);
+    for(const b of balls) drawBall(b.x,b.y,b.n,1);
+    if(cue) drawBall(cue.x,cue.y,0,1);
+    else if(safeSpot){
+      const [px,py]=P(safeSpot.x,safeSpot.y), t=(Date.now()%1600)/1600, rr=R*S*(1+t*1.5);
+      ctx.save();
+      ctx.strokeStyle=`rgba(165,243,192,${0.7*(1-t)})`; ctx.lineWidth=Math.max(1.2,0.15*S);
+      ctx.beginPath(); ctx.arc(px,py,rr,0,7); ctx.stroke();
+      ctx.setLineDash([3,3]); ctx.strokeStyle='rgba(165,243,192,.6)'; ctx.lineWidth=Math.max(1,0.12*S);
+      ctx.beginPath(); ctx.arc(px,py,R*S,0,7); ctx.stroke();
+      ctx.restore();
+    }
+    if(editable()) drawEditHint();
+    flushLabels();
+    return;
+  }
+  if(plan && plan.steps.length){
+    const cur = plan.steps[Math.min(selStep,plan.steps.length-1)];
+    if(show.all) for(const st of plan.steps) if(st!==cur) drawStep(st,false);
+    drawStep(cur,true);
+  }
+  for(const b of balls) drawBall(b.x,b.y,b.n,1);
+  if(cue) drawBall(cue.x,cue.y,0,1);
+  else if(bestSpot){
+    const [px,py]=P(bestSpot.x,bestSpot.y), t=(Date.now()%1600)/1600, rr=R*S*(1+t*1.5);
+    ctx.save();
+    ctx.strokeStyle=`rgba(255,255,255,${0.65*(1-t)})`; ctx.lineWidth=Math.max(1.2,0.15*S);
+    ctx.beginPath(); ctx.arc(px,py,rr,0,7); ctx.stroke();
+    ctx.setLineDash([3,3]); ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=Math.max(1,0.12*S);
+    ctx.beginPath(); ctx.arc(px,py,R*S,0,7); ctx.stroke();
+    ctx.restore();
+  }
+  if(editable()) drawEditHint();
+  flushLabels();
+}
+/* 配置編集できることを示す（手玉を置く前だけ） */
+function drawEditHint(){
+  const t=(Date.now()%2200)/2200;
+  ctx.save(); ctx.globalAlpha=0.30+0.22*Math.sin(t*Math.PI*2);
+  ctx.setLineDash([2.5,3.5]); ctx.strokeStyle='#ffd166'; ctx.lineWidth=Math.max(1,0.11*S);
+  for(const b of balls){
+    const [px,py]=P(b.x,b.y);
+    ctx.beginPath(); ctx.arc(px,py,R*S*1.42,0,7); ctx.stroke();
+  }
+  ctx.restore();
+}
+setInterval(()=>{ if(!cue && (bestSpot||safeSpot||balls.length) && !document.hidden) draw(); }, 110);
+
+/* =========================================================================
+   10. パネル
+   ========================================================================= */
+function pocketName(pi){
+  const p=POCKETS[pi], t=tf(p.x,p.y), BW=bw(), BH=bh();
+  const h = t[0]<BW*0.25?'左':(t[0]>BW*0.75?'右':'中央');
+  const v = t[1]<BH*0.25?'上':(t[1]>BH*0.75?'下':'中');
+  return p.corner ? v+h+'コーナー' : (v==='中'? h : v)+'サイド';
+}
+function vertLabel(b){
+  const a=Math.abs(b);
+  if(a<0.07) return ['ストップ（芯）','s'];
+  if(b>0) return [a>0.42?'強い押し':(a>0.24?'押し':'軽い押し'),'f'];
+  return [a>0.42?'強い引き':(a>0.24?'引き':'軽い引き'),'d'];
+}
+function sideLabel(a){
+  const v=Math.abs(a);
+  if(v<0.07) return null;
+  return (a>0?'右':'左')+'ひねり'+(v>0.4?'(強)':(v>0.22?'(中)':'(弱)'));
+}
+function drawTip(cvs,a,b){
+  const dpr=Math.min(window.devicePixelRatio||1,2.5);
+  const c=cvs.getContext('2d'); cvs.width=cvs.height=46*dpr;
+  c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,46,46);
+  const cx=23,cy=23,rr=17.5;
+  const g=c.createRadialGradient(cx-5,cy-6,2,cx,cy,rr*1.2);
+  g.addColorStop(0,'#ffffff'); g.addColorStop(1,'#c8cdd4');
+  c.fillStyle=g; c.beginPath(); c.arc(cx,cy,rr,0,7); c.fill();
+  c.strokeStyle='#5a6473'; c.lineWidth=1; c.beginPath(); c.arc(cx,cy,rr,0,7); c.stroke();
+  c.strokeStyle='rgba(90,100,115,.3)'; c.setLineDash([2,2]); c.beginPath();
+  c.arc(cx,cy,rr*0.52,0,7); c.stroke(); c.setLineDash([]);
+  c.strokeStyle='rgba(90,100,115,.35)'; c.beginPath();
+  c.moveTo(cx-rr,cy); c.lineTo(cx+rr,cy); c.moveTo(cx,cy-rr); c.lineTo(cx,cy+rr); c.stroke();
+  const ox = clamp(a,-1,1)*rr*0.78, oy = -clamp(b,-1,1)*rr*0.78;
+  c.fillStyle = b>0.07?'#e0801a' : (b<-0.07?'#2a7fd4' : '#333a44');
+  if(Math.abs(a)>0.07) c.fillStyle = '#8b5cf6';
+  c.beginPath(); c.arc(cx+ox,cy+oy,4.3,0,7); c.fill();
+  c.strokeStyle='rgba(255,255,255,.85)'; c.lineWidth=1.2; c.stroke();
+}
+
+/* ---- 撞点コントロール ------------------------------------------------- */
+const TIPSZ = 118, TIPR = 46;
+function curStep(){
+  if(!plan || !plan.steps.length) return null;
+  return plan.steps[Math.min(selStep, plan.steps.length-1)];
+}
+/* 指定した撞点でルートが崩れてもコントロールは操作可能にしておく。
+   その場合は手玉の実位置を基準にする。 */
+function tipAnchor(){
+  const st = curStep();
+  if(st) return {k:st.k, x:st.cx, y:st.cy, a:st.a, b:st.b, live:true, n:st.n};
+  if(!cue) return null;
+  const ov = tipOverride[0] || {a:0,b:0};
+  return {k:0, x:cue.x, y:cue.y, a:ov.a, b:ov.b, live:false, n:balls.length?balls[0].n:0};
+}
+/* いま選んでいる手で撞ける撞点の範囲（土手際だと狭くなる） */
+function tipLimits(){
+  const an = tipAnchor();
+  const lim = an ? bridgeLim(an.x, an.y) : 1;
+  return { lim, up:TIPMAX*Math.min(1,lim+0.40), dn:TIPMAX*lim, side:TIPMAX*lim };
+}
+function clampTip(a,b){
+  const L = tipLimits();
+  a = clamp(a, -L.side, L.side);
+  b = clamp(b, -L.dn, L.up);
+  const r = Math.hypot(a,b), lim = TIPMAX*0.995;
+  if(r > lim){ a *= lim/r; b *= lim/r; }
+  return {a,b};
+}
+function drawTipCtl(){
+  const cvs=document.getElementById('tipCtl');
+  const dpr=Math.min(window.devicePixelRatio||1,2.5);
+  cvs.width=cvs.height=TIPSZ*dpr;
+  const g=cvs.getContext('2d');
+  g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,TIPSZ,TIPSZ);
+  const cx=TIPSZ/2, cy=TIPSZ/2;
+  const st=tipAnchor(), L=tipLimits();
+
+  const bg=g.createRadialGradient(cx-14,cy-16,4,cx,cy,TIPR*1.25);
+  bg.addColorStop(0,'#ffffff'); bg.addColorStop(1,'#bcc3cb');
+  g.fillStyle=bg; g.beginPath(); g.arc(cx,cy,TIPR,0,7); g.fill();
+
+  /* 土手際で撞けない範囲を暗く */
+  if(L.lim < 0.999){
+    g.save(); g.beginPath(); g.arc(cx,cy,TIPR,0,7); g.clip();
+    g.fillStyle='rgba(20,26,34,.42)';
+    g.fillRect(0,0,TIPSZ,TIPSZ);
+    g.globalCompositeOperation='destination-out';
+    g.beginPath(); g.ellipse(cx, cy-(L.up-L.dn)/2*TIPR, L.side*TIPR, (L.up+L.dn)/2*TIPR, 0,0,7); g.fill();
+    g.restore();
+  }
+  /* ミスキュー限界 */
+  g.setLineDash([3,3]); g.strokeStyle='rgba(200,70,70,.6)'; g.lineWidth=1.2;
+  g.beginPath(); g.arc(cx,cy,TIPMAX*TIPR,0,7); g.stroke(); g.setLineDash([]);
+  /* 目盛 */
+  g.strokeStyle='rgba(90,100,115,.35)'; g.lineWidth=1;
+  g.beginPath(); g.moveTo(cx-TIPR,cy); g.lineTo(cx+TIPR,cy);
+  g.moveTo(cx,cy-TIPR); g.lineTo(cx,cy+TIPR); g.stroke();
+  g.strokeStyle='#4a5462'; g.lineWidth=1.4;
+  g.beginPath(); g.arc(cx,cy,TIPR,0,7); g.stroke();
+
+  if(st){
+    const dx=cx+st.a*TIPR, dy=cy-st.b*TIPR;
+    const man=!!tipOverride[st.k];
+    g.strokeStyle='rgba(40,50,62,.5)'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(cx,cy); g.lineTo(dx,dy); g.stroke();
+    g.fillStyle = man ? '#8b5cf6' : (st.b>0.07?'#e0801a':(st.b<-0.07?'#2a7fd4':'#39414d'));
+    g.beginPath(); g.arc(dx,dy,7,0,7); g.fill();
+    g.strokeStyle='#fff'; g.lineWidth=2; g.stroke();
+  }
+  g.fillStyle='rgba(70,80,94,.75)';
+  g.font='600 9px "Segoe UI",sans-serif'; g.textAlign='center';
+  g.fillText('押',cx,cy-TIPR+11); g.fillText('引',cx,cy+TIPR-5);
+  g.fillText('左',cx-TIPR+8,cy+3.5); g.fillText('右',cx+TIPR-8,cy+3.5);
+}
+function renderTipPanel(){
+  const an=tipAnchor(), L=tipLimits();
+  const lbl=document.getElementById('tipStepLbl'), md=document.getElementById('tipMode');
+  const note=document.getElementById('tipNote');
+  if(!an){
+    lbl.textContent='—'; md.textContent='—'; md.className='tipmode auto';
+    document.getElementById('tipB').textContent='—';
+    document.getElementById('tipA').textContent='—';
+    note.textContent='手玉を置くと設定できます。'; note.className='tipnote';
+    drawTipCtl(); return;
+  }
+  const man=!!tipOverride[an.k];
+  lbl.textContent=`${an.k+1}球目（${an.n}番）`;
+  md.textContent = man?'手動':'自動';
+  md.className = 'tipmode '+(man?'man':'auto');
+  const [vl]=vertLabel(an.b), sl=sideLabel(an.a);
+  document.getElementById('tipB').textContent=`${an.b>=0?'+':''}${an.b.toFixed(2)}　${vl}`;
+  document.getElementById('tipA').textContent=`${an.a>=0?'+':''}${an.a.toFixed(2)}　${sl||'捻り無し'}`;
+  let t='', warn=false;
+  if(!an.live){ t='この撞点ではこの球を入れられません。撞点を動かすか「自動に」を押してください。'; warn=true; }
+  else if(L.lim<0.999){ t='手玉が土手際です。引き・捻りは撞ける範囲が狭くなります（暗い部分は不可）。'; warn=true; }
+  else if(sl) t=`捻るとスカートで手玉が${an.a>0?'左':'右'}へ飛びます。狙いの補正が必要です。`;
+  else t='ドラッグで撞点を指定できます。基本は捻らない方がシュート率が上がります。';
+  note.textContent=t; note.className='tipnote'+(warn?' warn':'');
+  drawTipCtl();
+}
+let tipDrag=false, tipTimer=null;
+function applyTip(e){
+  const an=tipAnchor(); if(!an) return;
+  const r=document.getElementById('tipCtl').getBoundingClientRect();
+  const {a,b}=clampTip((e.clientX-r.left-TIPSZ/2)/TIPR, -(e.clientY-r.top-TIPSZ/2)/TIPR);
+  tipOverride[an.k] = { a: noEnglish ? 0 : a, b };
+  renderTipPanel();
+  clearTimeout(tipTimer); tipTimer=setTimeout(replan,130);
+}
+
+/* ---- セーフティーのパネル -------------------------------------------- */
+function hitDesc(sf){
+  const deg=Math.round(Math.abs(sf.th)*180/Math.PI);
+  const side=sf.th>0?'右':'左';
+  const thick = deg<12?'ほぼ真っ芯' : (deg<30?'厚め' : (deg<52?'半分ぐらい' : (deg<70?'薄め':'かなり薄く')));
+  return deg<12 ? `${sf.n}番に ${thick}（カット${deg}°）`
+                : `${sf.n}番の${side}側に ${thick}（カット${deg}°）`;
+}
+function renderSafetyPanel(){
+  const el=document.getElementById('steps'), sv=document.getElementById('sVal'),
+        sb=document.getElementById('sBar'), wr=document.getElementById('warns');
+  document.getElementById('sumLbl').innerHTML='セーフティー<br>成立率 (推定)';
+  if(!cue){
+    el.innerHTML=`<div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。<br><br>
+      緑の点滅マーカーが<b style="color:#a5f3c0">セーフティーの推奨位置</b>です。<br>
+      的玉はドラッグで動かせます。</div>`;
+    sv.textContent='--'; sv.style.color='#e6edf3'; sb.style.width='0';
+    document.getElementById('sDist').textContent='--';
+    document.getElementById('sRail').textContent='--';
+    document.getElementById('sHard').textContent='--';
+    wr.style.display='none'; renderTipPanel(); updateHint(); return;
+  }
+  if(!safety){
+    el.innerHTML=`<div class="empty" style="color:#f87171">この位置からは有効なセーフティーが見つかりません。<br>
+      手玉を別の場所に置いてみてください。</div>`;
+    sv.textContent='0'; sv.style.color='#f87171'; sb.style.width='0';
+    wr.style.display='none'; renderTipPanel(); updateHint(); return;
+  }
+  const sf=safety, r=sf.rate;
+  sv.textContent=Math.round(r*100);
+  sv.style.color=r>0.7?'#4ade80':(r>0.4?'#ffd166':'#f87171');
+  sb.style.width=Math.round(r*100)+'%';
+  sb.style.background=r>0.7?'#4ade80':(r>0.4?'#ffd166':'#f87171');
+  document.getElementById('sDist').textContent=Math.round(sf.cuePot)+'″';
+  document.getElementById('sRail').textContent=(sf.cRails+sf.oRails)+'回';
+  document.getElementById('sHard').textContent=sf.snookered?'スヌーク':Math.round(sf.maxQ*100)+'%';
+
+  const ws=[];
+  if(sf.oHit) ws.push('⚠ 的玉が他の球に当たります。結果がぶれやすい配置です。');
+  if(sf.cHit) ws.push('⚠ 手玉が他の球に当たります。');
+  if(sf.maxQ>SAFE_OK_Q && !sf.snookered)
+    ws.push(`⚠ 相手に ${Math.round(sf.maxQ*100)}% のシュートが残ります（目標は 10% 以下）。`);
+  wr.innerHTML=ws.join('<br>'); wr.style.display=ws.length?'block':'none';
+
+  const [vl]=vertLabel(sf.b), sl=sideLabel(sf.a);
+  const pwn=Math.max(1,Math.min(5,Math.round(sf.sp*5+0.35)));
+  const bars=Array.from({length:5},(_,k)=>`<i class="${k<pwn?'on':''}"></i>`).join('');
+  const strp=STRIPED[sf.n]
+    ? `background:linear-gradient(180deg,#f4f1e6 0 26%,${BALLCOL[sf.n]} 26% 74%,#f4f1e6 74%);color:#161616;text-shadow:none;`
+    : `background:${BALLCOL[sf.n]};`;
+  const okTag = sf.snookered
+    ? '<span class="tag s">球の陰に隠す（スヌーク）</span>'
+    : (sf.maxQ<=SAFE_OK_Q ? `<span class="tag s">相手 ${Math.round(sf.maxQ*100)}% に抑える</span>`
+                          : `<span class="tag w">相手 ${Math.round(sf.maxQ*100)}%</span>`);
+  el.innerHTML=`<div class="step sel">
+    <div class="sh">
+      <span class="ord">S</span>
+      <span class="badge" style="${strp}">${sf.n}</span>
+      <span class="pk">${hitDesc(sf)}</span>
+      <span class="pr" style="color:${r>0.7?'#4ade80':(r>0.4?'#ffd166':'#f87171')}">${Math.round(r*100)}%</span>
+    </div>
+    <div class="sb">
+      <canvas class="tip" data-a="${sf.a}" data-b="${sf.b}"></canvas>
+      <div class="meta">
+        <div>力加減 <span class="pw">${bars}</span> ・ 手玉 <b>${Math.round(sf.cuePot)}″</b>走行${sf.cRails?`(${sf.cRails}ク)`:''}
+             ・ 的玉 <b>${Math.round(Math.hypot(sf.oEnd.x-sf.ox,sf.oEnd.y-sf.oy))}″</b>移動</div>
+        <div>残り位置: 手玉 (${Math.round(sf.cEnd.x)},${Math.round(sf.cEnd.y)}) ／ ${sf.n}番 (${Math.round(sf.oEnd.x)},${Math.round(sf.oEnd.y)})
+             ・ 距離 <b>${Math.round(sf.oppDist)}″</b></div>
+        <div>相手の最良シュート <b>${sf.snookered?'なし（隠れている）':Math.round(sf.maxQ*100)+'%'}</b>
+             ${sf.meanQ!==undefined?`（ばらつき込み平均 ${Math.round(sf.meanQ*100)}%）`:''}</div>
+        <div class="tags">
+          ${okTag}
+          <span class="tag ${vl.includes('引')?'d':(vl.includes('押')?'f':'s')}">${vl}</span>
+          ${sl?`<span class="tag e">${sl}</span>`:''}
+          ${sf.oHit?'<span class="tag w">的玉が他球に接触</span>':''}
+          ${sf.cHit?'<span class="tag w">手玉が他球に接触</span>':''}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="empty" style="padding:12px 6px;text-align:left;line-height:1.8">
+    <b style="color:#9fb0c2">成立率</b>とは、狙いと力加減が多少ずれても
+    「隠れる or 相手 ${Math.round(SAFE_OK_Q*100)}% 以下」を保てる割合です。<br>
+    的玉は手玉を置く前ならドラッグで動かせます。
+  </div>`;
+  el.querySelectorAll('canvas.tip').forEach(c=>drawTip(c,parseFloat(c.dataset.a),parseFloat(c.dataset.b)));
+  renderTipPanel(); updateHint();
+}
+
+function renderPanel(){
+  if(gameMode==='safe') return renderSafetyPanel();
+  document.getElementById('sumLbl').innerHTML='取り切り成功率<br>(推定)';
+  const el=document.getElementById('steps'), sv=document.getElementById('sVal'),
+        sb=document.getElementById('sBar'), wr=document.getElementById('warns');
+  if(!cue){
+    el.innerHTML=`<div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。<br><br>
+      白い点滅マーカーが<b style="color:#4dd0e1">推奨のフリーボール位置</b>です。<br>
+      （成功率 約 ${Math.round(bestSpotVal*100)}%）</div>`;
+    sv.textContent='--'; sv.style.color='#e6edf3'; sb.style.width='0';
+    document.getElementById('sDist').textContent='--';
+    document.getElementById('sRail').textContent='--';
+    document.getElementById('sHard').textContent='--';
+    wr.style.display='none'; renderTipPanel(); updateHint(); return;
+  }
+  if(!plan||!plan.steps.length){
+    el.innerHTML=`<div class="empty" style="color:#f87171">この位置からは 1 球目が狙えません。<br>別の場所に手玉を置いてください。</div>`;
+    sv.textContent='0'; sv.style.color='#f87171'; sb.style.width='0';
+    renderTipPanel(); updateHint(); return;
+  }
+
+  const p=plan.prob;
+  sv.textContent=Math.round(p*100);
+  sv.style.color=p>0.6?'#4ade80':(p>0.3?'#ffd166':'#f87171');
+  sb.style.width=Math.round(p*100)+'%';
+  sb.style.background=p>0.6?'#4ade80':(p>0.3?'#ffd166':'#f87171');
+
+  let tot=0,rails=0,hard=1,hardN=0;
+  for(const s of plan.steps){ tot+=s.dist; rails+=s.rails; if(s.q0<hard){hard=s.q0;hardN=s.n;} }
+  document.getElementById('sDist').textContent=Math.round(tot)+'″';
+  document.getElementById('sRail').textContent=rails+'回';
+  document.getElementById('sHard').textContent=hardN+'番 '+Math.round(hard*100)+'%';
+
+  const ws=[];
+  for(const s of plan.steps){
+    if(s.scr) ws.push(`⚠ ${s.n}番の後、スクラッチの危険。`);
+    if(s.hitb) ws.push(`⚠ ${s.n}番の後、手玉が他の球に接触します。`);
+    if(Math.abs(s.a)>0.07)
+      ws.push(`ℹ ${s.n}番は${s.a>0?'右':'左'}ひねり。スカートで手玉が${s.a>0?'左':'右'}へ飛ぶ分、狙いを補正。`);
+  }
+  if(!plan.complete) ws.push('⚠ 最後まで繋がるルートが見つかりませんでした。');
+  wr.innerHTML=ws.join('<br>'); wr.style.display=ws.length?'block':'none';
+
+  const circ='①②③④⑤⑥⑦⑧⑨';
+  el.innerHTML=plan.steps.map((s,i)=>{
+    const [vl,vc]=vertLabel(s.b), sl=sideLabel(s.a);
+    const cut=Math.round(Math.acos(clamp(s.cosT,-1,1))*180/Math.PI);
+    const sep=Math.round(Math.acos(clamp(s.ux*s.lx+s.uy*s.ly,-1,1))*180/Math.PI);
+    const pwn=Math.max(1,Math.min(5,Math.round(s.sp*5+0.35)));
+    const bars=Array.from({length:5},(_,k)=>`<i class="${k<pwn?'on':''}"></i>`).join('');
+    const qc=s.q0>0.75?'#4ade80':(s.q0>0.5?'#ffd166':'#f87171');
+    const strp=STRIPED[s.n]
+      ? `background:linear-gradient(180deg,#f4f1e6 0 26%,${BALLCOL[s.n]} 26% 74%,#f4f1e6 74%);color:#161616;text-shadow:none;`
+      : `background:${BALLCOL[s.n]};`;
+    const th=throwDeg(s);
+    const last=i===plan.steps.length-1;
+    return `<div class="step ${i===selStep?'sel':''}" data-i="${i}">
+      <div class="sh">
+        <span class="ord">${circ[i]||i+1}</span>
+        <span class="badge" style="${strp}">${s.n}</span>
+        <span class="pk">${pocketName(s.pi)}</span>
+        <span class="pr" style="color:${qc}">${Math.round(s.q0*100)}%</span>
+      </div>
+      <div class="sb">
+        <canvas class="tip" data-a="${s.a}" data-b="${s.b}"></canvas>
+        <div class="meta">
+          <div>カット <b>${cut}°</b> → 分離 <b>${s.dist>0.5?sep+'°':'—'}</b> ・ 手玉${Math.round(s.d1)}″/的玉${Math.round(s.d2)}″</div>
+          <div>力加減 <span class="pw">${bars}</span> ・ 手玉移動 <b>${Math.round(s.dist)}″</b>${s.rails?` (${s.rails}クッション)`:''}</div>
+          <div>スロー <b>${Math.abs(th).toFixed(1)}°</b>${Math.abs(th)>0.35?'（狙いを逆へ補正）':''}</div>
+          <div class="tags">
+            <span class="tag ${vc}">${vl}</span>
+            ${sl?`<span class="tag e">${sl}</span>`:''}
+            ${tipOverride[s.k]?'<span class="tag e">撞点 手動</span>':''}
+            ${last?'<span class="tag s">フィニッシュ</span>':`<span class="tag">次は ${plan.steps[i+1].n}番へ</span>`}
+            ${s.scr?'<span class="tag w">スクラッチ注意</span>':''}
+            ${s.hitb?'<span class="tag w">他球に接触</span>':''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('canvas.tip').forEach(c=>drawTip(c,parseFloat(c.dataset.a),parseFloat(c.dataset.b)));
+  el.querySelectorAll('.step').forEach(d=>d.addEventListener('click',()=>{
+    selStep=+d.dataset.i; renderPanel(); draw();
+    el.querySelector(`.step[data-i="${selStep}"]`)?.scrollIntoView({block:'nearest'});
+  }));
+  renderTipPanel();
+  updateHint();
+}
+function updateHint(){
+  const h=document.getElementById('hint');
+  if(!cue){
+    h.innerHTML= gameMode==='safe'
+      ? '<b>的玉はドラッグで移動</b>できます／空いた所をタップして手玉を配置 — 緑マーカーがセーフティー推奨位置'
+      : '<b>的玉はドラッグで移動</b>できます／空いた所をタップして手玉を配置 — 白マーカーが推奨位置';
+    return;
+  }
+  if(gameMode==='safe'){
+    h.innerHTML = safety
+      ? `<b>セーフティー</b> ${hitDesc(safety)} ／ ${safety.snookered?'スヌーク':'相手 '+Math.round(safety.maxQ*100)+'%'} ／ 成立率 ${Math.round(safety.rate*100)}%`
+      : 'この位置からは有効なセーフティーが見つかりません';
+    return;
+  }
+  if(!plan||!plan.steps.length){ h.innerHTML='この位置からは狙えません。別の場所をタップ'; return; }
+  const s=plan.steps[Math.min(selStep,plan.steps.length-1)];
+  const [vl]=vertLabel(s.b), sl=sideLabel(s.a);
+  const sep=Math.round(Math.acos(clamp(s.ux*s.lx+s.uy*s.ly,-1,1))*180/Math.PI);
+  h.innerHTML=`<b>${selStep+1}球目</b> ${s.n}番 → ${pocketName(s.pi)} ／ ${vl}${sl?'＋'+sl:''}${s.dist>0.5?' ／ 分離 '+sep+'°':''}`;
+}
+
+/* =========================================================================
+   11. 入力
+   ========================================================================= */
+function evPos(e){
+  const r=cv.getBoundingClientRect();
+  const [x,y]=untf((e.clientX-r.left-OX)/S,(e.clientY-r.top-OY)/S);
+  return {x:clamp(x,R,W-R), y:clamp(y,R,HT-R)};
+}
+function validCue(p){
+  for(const b of balls){ const dx=b.x-p.x, dy=b.y-p.y; if(dx*dx+dy*dy < BD*BD+0.1) return false; }
+  return true;
+}
+/* 的玉を置ける位置か（他球と重ならない・ポケット内でない） */
+function validBall(i,p){
+  for(let j=0;j<balls.length;j++){
+    if(j===i) continue;
+    const dx=balls[j].x-p.x, dy=balls[j].y-p.y;
+    if(dx*dx+dy*dy < BD*BD+0.15) return false;
+  }
+  for(const pk of POCKETS){
+    const dx=pk.x-p.x, dy=pk.y-p.y;
+    if(dx*dx+dy*dy < 6.0) return false;
+  }
+  return true;
+}
+/* 手玉を置くまでは的玉を動かせる */
+function editable(){ return cue===null; }
+
+let dragging=false, dragBall=-1, pendTimer=null, rackTimer=null;
+function setCue(p,live){
+  if(!validCue(p)) return;
+  cue=p;
+  if(live){ draw(); clearTimeout(pendTimer); pendTimer=setTimeout(recalc,110); }
+  else recalc();
+}
+function rackChanged(live){
+  clearTimeout(rackTimer);
+  if(live){ draw(); return; }
+  busy(true);
+  rackTimer=setTimeout(()=>{
+    prepare(); computeDP(); findBestSpot(); if(gameMode==='safe') findSafeSpot();
+    busy(false); renderPanel(); draw();
+  },20);
+}
+cv.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  const p=evPos(e);
+  if(editable()){                                  // 的玉のつかみ取り
+    /* 指でも掴めるよう、画面上 24px 相当を最低ラインにする */
+    let hit=-1, bd=Math.max(R*1.7, 24/Math.max(S,1));
+    for(let i=0;i<balls.length;i++){
+      const d=Math.hypot(balls[i].x-p.x, balls[i].y-p.y);
+      if(d<bd){ bd=d; hit=i; }
+    }
+    if(hit>=0){ dragBall=hit; try{cv.setPointerCapture(e.pointerId);}catch(_){}; return; }
+  }
+  dragging=true;
+  try{cv.setPointerCapture(e.pointerId);}catch(_){};
+  setCue(p,true);
+});
+cv.addEventListener('pointermove',e=>{
+  if(dragBall>=0){
+    e.preventDefault();
+    const p=evPos(e);
+    if(validBall(dragBall,p)){ balls[dragBall].x=p.x; balls[dragBall].y=p.y; rackChanged(true); }
+    return;
+  }
+  if(dragging){ e.preventDefault(); setCue(evPos(e),true); }
+});
+cv.addEventListener('pointerup',()=>{
+  if(dragBall>=0){ dragBall=-1; rackChanged(false); return; }
+  if(!dragging) return;
+  dragging=false; clearTimeout(pendTimer); recalc();
+});
+cv.addEventListener('pointercancel',()=>{ dragging=false; if(dragBall>=0){ dragBall=-1; rackChanged(false); } });
+
+document.getElementById('modes').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#modes .seg').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); mode=+b.dataset.m; rebuildRack();
+});
+function setOrient(o){
+  orient=o;
+  document.getElementById('oh').classList.toggle('on',o==='h');
+  document.getElementById('ov').classList.toggle('on',o==='v');
+  resize(); renderPanel();
+}
+document.getElementById('oh').onclick=()=>setOrient('h');
+document.getElementById('ov').onclick=()=>setOrient('v');
+/* テーブルコンディション */
+function setCondition(k){
+  applyCondition(k);
+  document.querySelectorAll('#conds .seg').forEach(x=>x.classList.toggle('on', x.dataset.c===k));
+  document.getElementById('condNote').textContent = CONDITIONS[k].note;
+  busy(true); draw();
+  setTimeout(()=>{
+    prepare(); computeDP(); findBestSpot();
+    safeSpot=null; if(gameMode==='safe') findSafeSpot();
+    busy(false); recalc();
+  },20);
+}
+document.getElementById('conds').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  setCondition(b.dataset.c);
+});
+
+/* 取扱説明書 */
+const helpEl=document.getElementById('help');
+function showHelp(v){ helpEl.hidden=!v; }
+document.getElementById('bHelp').onclick=()=>showHelp(true);
+document.getElementById('hClose').onclick=()=>showHelp(false);
+helpEl.addEventListener('click',e=>{ if(e.target===helpEl) showHelp(false); });
+
+document.getElementById('gmodes').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#gmodes .seg').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); gameMode=b.dataset.g;
+  busy(true); draw();
+  setTimeout(()=>{
+    if(gameMode==='safe' && !safeSpot) findSafeSpot();
+    busy(false); recalc();
+  },20);
+});
+document.getElementById('bNew').onclick=()=>rebuildRack();
+document.getElementById('bAuto').onclick=()=>{
+  const sp = gameMode==='safe' ? safeSpot : bestSpot;
+  if(sp){ cue={x:sp.x,y:sp.y}; recalc(); }
+};
+document.getElementById('bClear').onclick=()=>{ cue=null; plan=null; safety=null; renderPanel(); draw(); };
+document.getElementById('bPanel').onclick=e=>{
+  document.body.classList.toggle('pbig');
+  e.target.textContent = document.body.classList.contains('pbig') ? 'テーブル ▼' : 'プラン ▲';
+  requestAnimationFrame(resize);
+};
+/* 撞点コントロール */
+const tipCv=document.getElementById('tipCtl');
+tipCv.addEventListener('pointerdown',e=>{ if(!tipAnchor()) return; e.preventDefault();
+  tipDrag=true; try{tipCv.setPointerCapture(e.pointerId);}catch(_){}; applyTip(e); });
+tipCv.addEventListener('pointermove',e=>{ if(tipDrag){ e.preventDefault(); applyTip(e); } });
+tipCv.addEventListener('pointerup',()=>{ if(!tipDrag) return; tipDrag=false; clearTimeout(tipTimer); replan(); });
+tipCv.addEventListener('pointercancel',()=>{ tipDrag=false; });
+document.getElementById('tipAuto').onclick=()=>{
+  const an=tipAnchor(); delete tipOverride[an?an.k:selStep]; replan();
+};
+document.getElementById('tipAutoAll').onclick=()=>{ tipOverride={}; replan(); };
+document.getElementById('cNoEng').addEventListener('change',e=>{
+  noEnglish=e.target.checked;
+  if(noEnglish) for(const k in tipOverride) tipOverride[k].a=0;
+  if(!cue){ busy(true); setTimeout(()=>{ computeDP(); findBestSpot(); busy(false); renderPanel(); draw(); },20); }
+  else { busy(true); setTimeout(()=>{ computeDP(); findBestSpot(); busy(false); replan(); },20); }
+});
+
+const chk=(id,k)=>document.getElementById(id).addEventListener('change',e=>{ show[k]=e.target.checked; draw(); });
+chk('cAll','all'); chk('cGhost','ghost'); chk('cCue','cuePath');
+chk('cTan','tangent'); chk('cThrow','throwLine'); chk('cHeat','heat');
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ showHelp(false); return; }
+  if(e.key==='?'||e.key==='/'){ showHelp(helpEl.hidden); return; }
+  if(!helpEl.hidden) return;
+  if(e.key==='r'||e.key==='R') rebuildRack();
+  else if(e.key==='a'||e.key==='A'){ if(bestSpot){ cue={...bestSpot}; replan(); } }
+  else if(e.key==='v'||e.key==='V') setOrient(orient==='h'?'v':'h');
+  else if(e.key==='ArrowRight'&&plan){ selStep=Math.min(selStep+1,plan.steps.length-1); renderPanel(); draw(); }
+  else if(e.key==='ArrowLeft'&&plan){ selStep=Math.max(selStep-1,0); renderPanel(); draw(); }
+});
+let rzT=null;
+const onResize=()=>{ clearTimeout(rzT); rzT=setTimeout(resize,80); };
+window.addEventListener('resize',onResize);
+window.addEventListener('orientationchange',()=>setTimeout(resize,250));
+if(window.visualViewport) visualViewport.addEventListener('resize',onResize);
+
+/* start */
+document.getElementById('verNum').textContent=VERSION;
+document.getElementById('verNum2').textContent=VERSION;
+document.getElementById('condNote').textContent=CONDITIONS[condKey].note;
+document.getElementById('oh').classList.toggle('on',orient==='h');
+document.getElementById('ov').classList.toggle('on',orient==='v');
+applyCondition(condKey);
+resize();
+rebuildRack();
+</script>
+</body>
+</html>
