@@ -363,7 +363,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
   <header>
     <h1>ビリヤード<span>塾</span></h1>
     <div class="ver">v<span id="verNum"></span></div>
-    <div class="tagline">9ft 取り切りシミュレーター</div>
+    <div class="tagline">取り切りシミュレーター</div>
     <div class="spacer"></div>
     <div class="kbd"><b>R</b>新配置 <b>A</b>自動配置 <b>V</b>縦横 <b>Space</b>再生 <b>T</b>テーマ</div>
     <button id="bTheme" title="テーマを切り替え（T）">◐<span id="bThemeLbl"> テーマ</span></button>
@@ -728,7 +728,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
 <script>
 "use strict";
 /* =========================================================================
-   ビリヤード塾 — 9ft 取り切りシミュレーター
+   ビリヤード塾 — 取り切りシミュレーター
 
    ■ 構成
      1. 定数        単位・テーブル寸法・物理パラメータ・確率モデルの較正値
@@ -780,7 +780,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.1.0';
+const VERSION = '1.0.0';
 
 /* --- テーブルコンディション ---------------------------------------------
    ラシャの状態で「どこまで走るか」「回転がいつまで残るか」「スローの量」
