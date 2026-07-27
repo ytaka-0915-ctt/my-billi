@@ -16,7 +16,7 @@
   --line:#2e3846; --line2:#3c4859;
   --fg:#f4f8fc; --sub:#b4c2d1;
   --accent:#5fdcee; --accent2:#ffd67a;
-  --ok:#5fe694; --warn:#ffa552; --ng:#ff8b8b;
+  --warn:#ffa552;
   --hd1:#1c242e; --hd2:#101519;
   --stage1:#222c38; --stage2:#0a0e13;
   --btnfg:#dce6f1; --btnh:#33404f;
@@ -30,7 +30,7 @@ html[data-theme="midnight"]{
   --line:#2a3352; --line2:#3a4569;
   --fg:#f2f5ff; --sub:#b2bee0;
   --accent:#8fb8ff; --accent2:#ffd67a;
-  --ok:#63e6a0; --warn:#ffab5e; --ng:#ff9090;
+  --warn:#ffab5e;
   --hd1:#141c33; --hd2:#0a0e1a;
   --stage1:#1b2540; --stage2:#05070d;
   --btnfg:#e0e7fb; --btnh:#2a3455;
@@ -44,7 +44,7 @@ html[data-theme="light"]{
   --line:#c2cfdc; --line2:#a9b8c8;
   --fg:#0d151d; --sub:#41556a;
   --accent:#0b6f83; --accent2:#8a5900;
-  --ok:#0a6f39; --warn:#9a5100; --ng:#b52424;
+  --warn:#9a5100;
   --hd1:#ffffff; --hd2:#e5ecf3;
   --stage1:#d5dfea; --stage2:#9caabb;
   --btnfg:#1b2a37; --btnh:#d3dde8;
@@ -58,7 +58,7 @@ html[data-theme="hc"]{
   --line:#55637a; --line2:#6e7f96;
   --fg:#ffffff; --sub:#dde5ef;
   --accent:#71f2ff; --accent2:#ffdc4d;
-  --ok:#6dff9f; --warn:#ffb45c; --ng:#ff9494;
+  --warn:#ffb45c;
   --hd1:#0a0d12; --hd2:#000000;
   --stage1:#141a22; --stage2:#000000;
   --btnfg:#ffffff; --btnh:#28323e;
@@ -512,6 +512,8 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
           <div><i style="border-color:#4dd0e1"></i>手玉の走り（分離角・捻りのカーブ反映）</div>
           <div><i style="border-color:#9aa7b5; border-top-style:dotted"></i>タンジェント線（ストップ時の分離方向）</div>
           <div><i style="border-color:#c084fc; border-top-style:dotted"></i>スロー（無補正なら的玉が逸れる方向）</div>
+          <div><i style="border-color:#f87171; border-top-style:dashed"></i>相手に残る直球（セーフティー時）</div>
+          <div><i style="border-color:#fbbf24; border-top-style:dashed"></i>相手に残るバンク（セーフティー時）</div>
         </div>
       </div>
     </aside>
@@ -555,7 +557,9 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
         <li><i style="border-color:#9aa7b5;border-top-style:dotted"></i><b>タンジェント線</b>（灰・点線）ストップで撞いたときに手玉が出ていく方向。
             実際の手玉ラインとの開きが「分離角」です</li>
         <li><i style="border-color:#c084fc;border-top-style:dotted"></i><b>スロー</b>（紫・点線）補正しなかった場合に的玉がずれる方向</li>
-        <li><i style="border-color:#f87171;border-top-style:dashed"></i><b>相手のシュートライン</b>（赤・セーフティー時）相手に残してしまう入れ筋</li>
+        <li><i style="border-color:#f87171;border-top-style:dashed"></i><b>相手の直球ライン</b>（赤・セーフティー時）相手に残してしまう入れ筋</li>
+        <li><i style="border-color:#fbbf24;border-top-style:dashed"></i><b>相手のバンクライン</b>（黄・セーフティー時）1 クッションで狙われる筋。
+            クッション接点に成功率を表示します</li>
       </ul>
       <p>破線の丸に書かれた数字は<b>次の手玉の位置</b>です（②なら2球目を撞く位置）。
       セーフティーでは「手」「的」のマークが、それぞれの球の落ち着き先です。</p>
@@ -652,13 +656,31 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
 
       <h3>8. セーフティーモード</h3>
       <p>最小番号の球（3球なら7番／4球なら6番／6球なら4番）に当てたうえで、
-      相手に<b>「球の陰に隠す（スヌーク）」</b>か<b>「シュート率10%以下しか残さない」</b>のどちらかを狙います。</p>
+      相手に<b>「球の陰に隠す（スヌーク）」</b>か<b>「入れられる筋を残さない」</b>のどちらかを狙います。</p>
+      <p><b>相手の残り手は、直球（カット）だけでなく 1 クッションのバンクまで洗い出します。</b>
+      公式戦では、直球が無くてもバンクが素直に残っていればそのまま入れられてしまうためです。</p>
+      <table class="ht">
+        <tr><th>除外する手</th>
+            <td>相手に<b>直球（カット）が 10% を超えて残る</b>手、または
+                <b>バンクが 12% を超えて残る</b>手。入れられる可能性が高い手は選びません。</td></tr>
+        <tr><th>残してよい手</th>
+            <td>バンクの筋があっても、<b>配置が悪い・的玉が土手・距離が遠い・薄い</b>などで
+                成功率が極端に低ければ（12% 以下）、有効なセーフティーとして扱います。</td></tr>
+        <tr><th>優先する方向</th>
+            <td>上の条件を満たす手が複数あるときは、
+                <b>①球の陰に隠す（スヌーク）→ ②密着させる</b>の順に優先します。
+                密着＝手玉を<b>的玉に密着</b>させる、または<b>クッション際に貼り付ける</b>こと。
+                相手はキューが振れず、撞点も選べないので、入れられても次が作れません。</td></tr>
+      </table>
       <ul>
         <li>スクラッチ、ノークッション（＝ファウル）になる手は最初から除外しています</li>
         <li><b>成立率</b>＝狙いと力加減が多少ずれても条件を保てる割合</li>
         <li><b>置き成功率</b>＝手玉と的玉の移動距離から求めた「狙った所に止められる確率」。
             長く走らせるセーフティーほど下がるので、<b>移動の短い手が優先されます</b></li>
-        <li>相手に入れ筋が残る場合は、そのラインと確率を赤で表示します</li>
+        <li>相手に入れ筋が残る場合は、直球を<b style="color:#f87171">赤</b>、
+            バンクを<b style="color:#fbbf24">黄</b>のラインと確率で表示します</li>
+        <li>バンクの成功率は A級の実力で、素直な短いバンクで 30% 前後、
+            長い・薄い・的玉が土手のバンクで数 % になるよう較正しています</li>
       </ul>
       <p><b>方針を 2 つから選べます</b>（「ゲーム」欄でセーフティーを選ぶと出てきます）。
       同じ配置でも選ぶ手が変わります。</p>
@@ -667,7 +689,8 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
             <td><b>成立率</b>をいちばん重く見ます。狙いや力加減がずれても崩れない、確実な一手。
                 その代わり相手に少し入れ筋が残ることがあります。<b>迷ったらこちら。</b></td></tr>
         <tr><th>相手の失敗率重視</th>
-            <td><b>相手の最良シュート率</b>をいちばん低くする手（＝スヌーク優先）を選びます。
+            <td><b>相手の最良シュート率（直球・バンクの高いほう）</b>をいちばん低くする手
+                （＝スヌークと密着を最優先）を選びます。
                 決まれば相手はほぼ何もできませんが、自分の成立率は下がるので、
                 <b>失敗したときは逆に相手のチャンス</b>になります。</td></tr>
       </table>
@@ -738,6 +761,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
      5. ショット列挙 1 球について「撞点 × 力加減 × 捻り」を総当たりする中核
      6. DP           「ここに手玉があれば残りを取り切れる確率」の価値マップ
      7. ルート抽出   ビームサーチ（取り切り）／セーフティー探索
+                    （相手の直球・バンクを評価し、隠す・密着させる手を優先）
      8. 再計算       入力が変わったときに何を作り直すか
      9. 描画・再生
     10. パネル       右（スマホは下）の表示を組み立てる
@@ -780,7 +804,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 
 /* --- テーブルコンディション ---------------------------------------------
    ラシャの状態で「どこまで走るか」「回転がいつまで残るか」「スローの量」
@@ -970,6 +994,8 @@ function erf(x){
   return s*(1-((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x));
 }
 function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+/* 要素の取得は全てこれ経由（id は index.html 側と 1 対 1） */
+const $ = id => document.getElementById(id);
 function hitCircle(x,y,dx,dy,tmax,cx,cy,rad){
   const ox=x-cx, oy=y-cy;
   const c = ox*ox+oy*oy-rad*rad;
@@ -1110,7 +1136,7 @@ function impactState(b, P0, d1){
      pts などが差し替わるので、続けて別の球を計算するときは
      必要な値を先に複製しておくこと。
    ------------------------------------------------------------------------- */
-const SIM = {x:0,y:0,rails:0,scratch:false,hit:false,pts:null,railIdx:null,ux:0,uy:0};
+const SIM = {x:0,y:0,rails:0,scratch:false,hit:false,pts:null,railIdx:null};
 function simulate(sx,sy,ux,uy,pot,E,balls,rec){
   let x=sx,y=sy,rails=0,scratch=false,hit=false;
   const railGen = noEnglish ? 0 : RAIL_GEN;
@@ -1200,7 +1226,7 @@ function simulate(sx,sy,ux,uy,pot,E,balls,rec){
   }
   SIM.x=clamp(x,R,W-R); SIM.y=clamp(y,R,HT-R);
   SIM.rails=rails; SIM.scratch=scratch; SIM.hit=hit;
-  SIM.pts=pts; SIM.railIdx=railIdx; SIM.ux=ux; SIM.uy=uy;
+  SIM.pts=pts; SIM.railIdx=railIdx;
   return SIM;
 }
 
@@ -1436,7 +1462,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin){
           const val = imm*pos*lastPen*nearP*distPen*nv;
           if(val<=0) continue;
 
-          SI.pd=pd; SI.b=b; SI.a=a; SI.P0=P0; SI.f=f; SI.m=m;
+          SI.pd=pd; SI.b=b; SI.a=a; SI.P0=P0; SI.f=f;
           SI.dist=cuePot; SI.ex=ex; SI.ey=ey; SI.rails=rails;
           SI.scr=scr; SI.hit=hitb; SI.q0=q0; SI.imm=imm; SI.pos=pos; SI.sp=sp;
           SI.cosT=cosT; SI.sinT=sinT; SI.d1=d1;
@@ -1599,12 +1625,18 @@ function findBestSpot(){
    -------------------------------------------------------------------------
    最小番号の球に正しく当てたうえで、相手に
      ・球の陰に隠す（スヌーク）        … 当てる方向が一つも無い
-     ・シュート率 10% 以下しか残さない
+     ・直球（カット）は 10% 以下、バンクは 12% 以下しか残さない
    のどちらかを成立させる打ち方を探す。手玉と的玉の両方を転がして評価する。
+   相手の残り手は「直球（カット）」だけでなく「1 クッションのバンク」も
+   洗い出し、どちらかが入りそうならその手は除外する。
+   逆に、バンクでも配置が悪い・的玉が土手・距離が遠いなどで成功率が
+   極端に低ければ、そのまま有効なセーフティーとして扱う。
+   同じ条件なら「隠す（スヌーク）」→「密着させる」の順で優先する。
    さらに狙い/力加減を振って「その通りに打てなくても成立するか」を測り、
    成立率の高い（＝確率の高い）セーフティーを選ぶ。
    ========================================================================= */
-const SAFE_OK_Q = 0.10;                    // 相手に残してよいシュート率の上限
+const SAFE_OK_Q   = 0.10;   // 相手に残してよい直球（カット）のシュート率
+const SAFE_BANK_Q = 0.12;   // 相手に残してよいバンクの成功率（バンクは元々入りにくい）
 const TH_F=[], TH_C=[];
 for(let i=-17;i<=17;i++) TH_F.push(i*5*Math.PI/180);
 for(let i=-8;i<=8;i++)   TH_C.push(i*10*Math.PI/180);
@@ -1612,8 +1644,101 @@ const SB_F=[-0.45,-0.22,0,0.22,0.45], SB_C=[-0.40,0,0.40];
 const SA_F=[-0.35,0,0.35],            SA_C=[0];
 const SP_F=[0,18,45,90,160,260],      SP_C=[0,40,110,220];
 
+/* --- 相手のバンクショット（1 クッション）--------------------------------
+   クッションは法線 RAIL_N・接線 RAIL_T で跳ねるので、実際の反射は鏡像より
+   「長く」出る。tan(出) = (RAIL_T/RAIL_N)·tan(入) を満たすクッション上の点を
+   解き、そこを狙う筋として扱う。
+   バンクは狙い誤差がクッションで拡大し、的玉の走行距離も伸び、さらに
+   力加減・捻り・ラシャで反射角そのものがぶれる。直球と同じ誤差モデルに
+   BANK_ERR 倍と反射角のばらつきを足して、A級の実力での成功率を出す。
+   ＝ 短くて素直なバンクは 30% 前後、長い・薄い・的玉が土手のバンクは数 % になる。 */
+const BANK_ERR  = 2.30;   // クッションで狙い誤差が拡大する倍率
+const BANK_ANG  = 0.034;  // 反射角そのもののばらつき [rad]
+const BANK_CUT  = 0.34;   // これより薄いカットのバンクは実戦で狙わない（≒70°）
+const BANK_MINN = 2.6;    // 的玉がバンククッションから離れている最低距離 [inch]
+const BANK_MIND = 8.0;    // ポケットがバンククッションから離れている最低距離 [inch]
+/* クッション 4 枚（球の中心が走る境界線）。
+   ax = 固定される軸 ／ c = その座標 ／ [lo,hi] = 動く軸の範囲 ／ n = 内向き法線の符号 */
+const BANK_RAILS = [
+  {ax:'x', c:R,    lo:R, hi:HT-R, n: 1},
+  {ax:'x', c:W-R,  lo:R, hi:HT-R, n:-1},
+  {ax:'y', c:R,    lo:R, hi:W-R,  n: 1},
+  {ax:'y', c:HT-R, lo:R, hi:W-R,  n:-1}
+];
+/* cbRail / railOb は呼び出し元（opponentBest）で計算済みのものを受け取る */
+function bankBest(cx,cy,ob,others,cbRail,railOb){
+  const K = RAIL_T/RAIL_N;                              // 反射の「伸び」
+  let best=0, bestPi=-1, brx=0, bry=0;
+  for(const rl of BANK_RAILS){
+    const vert = rl.ax==='x';
+    const obN = ((vert?ob.x:ob.y) - rl.c)*rl.n;         // 的玉→クッションの法線距離
+    if(obN < BANK_MINN) continue;
+    const obT = vert ? ob.y : ob.x;
+    for(let pi=0;pi<6;pi++){
+      const pk = POCKETS[pi];
+      const pkN = ((vert?pk.x:pk.y) - rl.c)*rl.n;
+      if(pkN < BANK_MIND) continue;                     // 同じクッション上のポケットは対象外
+      /* クッション上の接点（反射の伸びを織り込んだ位置） */
+      const s = (obN*(vert?pk.y:pk.x) + K*pkN*obT)/(obN + K*pkN);
+      if(s < rl.lo+1.2 || s > rl.hi-1.2) continue;
+      const rx = vert?rl.c:s, ry = vert?s:rl.c;
+      /* ポケットの受け角 */
+      let ex=pk.x-rx, ey=pk.y-ry;
+      const d3=Math.hypot(ex,ey);
+      if(d3 < 4) continue;
+      ex/=d3; ey/=d3;
+      const cosPhi = ex*pk.ax + ey*pk.ay;
+      if(cosPhi < pk.cosAcc) continue;
+      /* 的玉をクッションへ向かわせる向きと、そのゴーストボール */
+      let lx=rx-ob.x, ly=ry-ob.y;
+      const d2=Math.hypot(lx,ly);
+      if(d2 < 2) continue;
+      lx/=d2; ly/=d2;
+      const gx=ob.x-lx*BD, gy=ob.y-ly*BD;
+      if(gx<R-0.25||gx>W-R+0.25||gy<R-0.25||gy>HT-R+0.25) continue;
+      let ax=gx-cx, ay=gy-cy;
+      const d1=Math.hypot(ax,ay);
+      if(d1 < 0.6) continue;
+      ax/=d1; ay/=d1;
+      const cosT = ax*lx + ay*ly;
+      if(cosT < BANK_CUT) continue;                     // 薄いバンクは狙えない
+      const sinT = Math.sqrt(Math.max(0,1-cosT*cosT));
+      const q = pocketProb(pocketMargin(pk,cosPhi),
+                  shotError(d1, d2+d3, cosT, sinT, cbRail, railOb)*BANK_ERR + BANK_ANG*d3);
+      if(q <= best) continue;                           // 塞がり判定は勝てる筋だけ（探索を軽く保つ）
+      let blocked=false;
+      for(const o of others){
+        const dx=o.x-gx, dy=o.y-gy;
+        if(dx*dx+dy*dy < BD*BD-0.05){ blocked=true; break; }
+      }
+      if(blocked) continue;
+      if(!segClear(cx,cy,gx,gy,others)) continue;       // 手玉→ゴースト
+      if(!segClear(ob.x,ob.y,rx,ry,others)) continue;   // 的玉→クッション
+      if(!segClear(rx,ry,pk.x,pk.y,others)) continue;   // クッション→ポケット
+      best=q; bestPi=pi; brx=rx; bry=ry;
+    }
+  }
+  return {q:best, pi:bestPi, rx:brx, ry:bry};
+}
+
+/* --- 密着（フリーズ）の度合い 0-1 ---------------------------------------
+   相手のキューが自由に振れない配置ほど、次の一手を作らせない。
+     ・手玉が的玉に密着   … 撞点もストロークも選べず、出しがまるで利かない
+     ・手玉がクッション際 … ブリッジが組めない
+   「隠す（スヌーク）」に次ぐ優先度でセーフティーの評価に入れる。 */
+const TIGHT_GAP = 3.2;   // これ以上すき間があれば密着ではない [inch]
+function tightness(cEnd, oEnd){
+  const gap  = Math.max(0, Math.hypot(cEnd.x-oEnd.x, cEnd.y-oEnd.y) - BD);
+  const ball = clamp(1 - gap/TIGHT_GAP, 0, 1);          // 的玉への密着
+  const rail = 1 - bridgeLim(cEnd.x, cEnd.y);           // クッションへの密着（0-0.8）
+  return clamp(Math.max(ball, 0.80*rail) + 0.25*Math.min(ball, rail), 0, 1);
+}
+
 /* セーフティー後、相手に何が残るかを評価する。
-   maxQ = 相手の最良シュート率 ／ snookered = 的玉に当てる筋が一つも無い */
+     maxQ      = 直球（カット）での最良シュート率
+     bankQ     = 1 クッションのバンクでの最良成功率
+     threat    = そのどちらか高いほう＝相手に残る本当の脅威
+     snookered = 的玉に直接当てる筋が一つも無い */
 function opponentBest(cx,cy,ob,others){
   const cbRail = 1 + CBRAIL_K*(1-bridgeLim(cx,cy));
   const railOb = railNear(ob.x, ob.y);
@@ -1642,7 +1767,15 @@ function opponentBest(cx,cy,ob,others){
     if(dx*(ob.x-gx)+dy*(ob.y-gy)<=0) continue;      // 手玉の進行方向に的玉があること
     if(segClearM(cx,cy,gx,gy,others,GRAZE)) canHit=true;
   }
-  return {maxQ,bestPi,bgx,bgy,snookered:!canHit};
+  /* バンクは「的玉に直接当てられる」ときにしか成立しない。
+     直球だけで既に基準（SAFE_OK_Q）を大きく超えている手はその時点で不成立なので、
+     バンクは探さない（bankNA = 未評価）。探索を軽く保つための割り切り。 */
+  const bankNA = !canHit || maxQ > SAFE_OK_Q*2;
+  const bk = bankNA ? {q:0, pi:-1, rx:0, ry:0}
+                    : bankBest(cx,cy,ob,others,cbRail,railOb);
+  return {maxQ, bestPi, bgx, bgy, snookered:!canHit, bankNA,
+          bankQ:bk.q, bankPi:bk.pi, brx:bk.rx, bry:bk.ry,
+          threat:Math.max(maxQ, bk.q)};
 }
 
 /* セーフティーの、衝突後の手玉ベクトル。
@@ -1662,9 +1795,10 @@ function safetyCueVec(b,a,P0,t,dx,dy,lx,ly,cT,sT){
 }
 
 /* 1 本のセーフティーを打ってみる。成立すれば SF に結果を書いて true。
-   SF は使い回しなので、値が必要なら snapSafety() で複製すること。 */
+   SF は使い回しなので、値が必要なら snapSafety() で複製すること。
+   ここは探索専用なので軌跡は記録しない（描画・再生は safetyCuePath / drawSafety）。 */
 const SF={};
-function trySafety(cx,cy,target,others,th,b,a,P0,rec){
+function trySafety(cx,cy,target,others,th,b,a,P0){
   if(noEnglish) a = 0;                              // 捻り無しはここでも必ず封じる
   let d0x=target.x-cx, d0y=target.y-cy;
   const D0=Math.hypot(d0x,d0y);
@@ -1692,18 +1826,18 @@ function trySafety(cx,cy,target,others,th,b,a,P0,rec){
 
   /* 的玉 */
   const objPot=P1*cT*cT;
-  const os=simulate(target.x,target.y,lx,ly,objPot,0,others,rec);
-  const oEnd={x:os.x,y:os.y}, oPts=rec?os.pts:null,
+  const os=simulate(target.x,target.y,lx,ly,objPot,0,others,false);
+  const oEnd={x:os.x,y:os.y},
         oPot=os.scratch, oRails=os.rails, oHit=os.hit;
   /* 手玉 */
   const cv=safetyCueVec(b,a,P0,t,dx,dy,lx,ly,cT,sT);
   const fx=cv.fx, fy=cv.fy, m=cv.m;
   const cuePot=cv.Q1*m*m;
   if(cuePot>CUEMAX*1.08) return false;
-  let cEnd={x:gx,y:gy}, cPts=rec?[[gx,gy]]:null, cScr=false, cRails=0, cHit=false;
+  let cEnd={x:gx,y:gy}, cScr=false, cRails=0, cHit=false;
   if(cuePot>0.5 && m>0.02){
-    const cs=simulate(gx,gy,fx/m,fy/m,cuePot,-SPIN_K*a*Math.sqrt(Math.max(cv.Q1,0.01))*0.88,others,rec);
-    cEnd={x:cs.x,y:cs.y}; cPts=rec?cs.pts:null; cScr=cs.scratch; cRails=cs.rails; cHit=cs.hit;
+    const cs=simulate(gx,gy,fx/m,fy/m,cuePot,-SPIN_K*a*Math.sqrt(Math.max(cv.Q1,0.01))*0.88,others,false);
+    cEnd={x:cs.x,y:cs.y}; cScr=cs.scratch; cRails=cs.rails; cHit=cs.hit;
   }
   if(cScr) return false;                                  // スクラッチは論外
   if(oPot) return false;                                  // 的玉が入ってしまうのはセーフティーでない
@@ -1713,20 +1847,28 @@ function trySafety(cx,cy,target,others,th,b,a,P0,rec){
   const ob={x:oEnd.x,y:oEnd.y,n:target.n};
   const op=opponentBest(cEnd.x,cEnd.y,ob,others);
   const oppDist=Math.hypot(cEnd.x-oEnd.x, cEnd.y-oEnd.y);
-  const good = op.snookered || op.maxQ<=SAFE_OK_Q;
+  /* 成立条件：隠れている、または「直球もバンクも入りそうにない」。
+     カットで入る筋もバンクで入る筋も残す手は、ここで不成立になる。 */
+  const good = op.snookered || (op.maxQ<=SAFE_OK_Q && op.bankQ<=SAFE_BANK_Q);
   /* 手玉・的玉を長く走らせるセーフティーは、狙ったところに置けない。
      実効移動距離から「置きたい所に置ける確率」を出して評価に掛ける。 */
   const ctrl = posFactor(cuePot*(1+POS_RAIL*cRails) + objPot*(1+POS_RAIL*oRails)*0.75, 0);
-  let sc = (op.snookered?1.15:(1-op.maxQ)) * (1+0.06*Math.min(oppDist/60,1)) * ctrl;
+  /* 相手が嫌がるのは「遠い」か「密着」。中途半端な距離がいちばん撞きやすいので、
+     大きいほうだけを加点する（密着のほうを重く見る）。 */
+  const tight = tightness(cEnd, oEnd);
+  const leave = Math.max(0.06*Math.min(oppDist/60,1), 0.30*tight);
+  let sc = (op.snookered?1.15:(1-op.threat)) * (1+leave) * ctrl;
   if(oHit) sc*=0.80;
   if(cHit) sc*=0.88;
 
   SF.th=th; SF.b=b; SF.a=a; SF.P0=P0; SF.t=t; SF.gx=gx; SF.gy=gy;
   SF.lx=lx; SF.ly=ly; SF.dx=dx; SF.dy=dy; SF.cT=cT; SF.sT=sT;
-  SF.cEnd=cEnd; SF.oEnd=oEnd; SF.cPts=cPts; SF.oPts=oPts;
+  SF.cEnd=cEnd; SF.oEnd=oEnd;
   SF.cRails=cRails; SF.oRails=oRails; SF.oHit=oHit; SF.cHit=cHit;
   SF.maxQ=op.maxQ; SF.snookered=op.snookered; SF.bestPi=op.bestPi;
   SF.bgx=op.bgx; SF.bgy=op.bgy; SF.oppDist=oppDist;
+  SF.bankQ=op.bankQ; SF.bankPi=op.bankPi; SF.brx=op.brx; SF.bry=op.bry;
+  SF.bankNA=op.bankNA; SF.threat=op.threat; SF.tight=tight;
   SF.score=sc; SF.good=good; SF.cuePot=cuePot; SF.objPot=objPot; SF.ctrl=ctrl;
   SF.sp=Math.sqrt(P0/PMAX);
   return true;
@@ -1738,19 +1880,22 @@ function snapSafety(cx,cy,target){
     cEnd:SF.cEnd, oEnd:SF.oEnd, cRails:SF.cRails, oRails:SF.oRails,
     oHit:SF.oHit, cHit:SF.cHit, maxQ:SF.maxQ, snookered:SF.snookered,
     bestPi:SF.bestPi, bgx:SF.bgx, bgy:SF.bgy, oppDist:SF.oppDist,
+    bankQ:SF.bankQ, bankPi:SF.bankPi, brx:SF.brx, bry:SF.bry, bankNA:SF.bankNA,
+    threat:SF.threat, tight:SF.tight, good:SF.good,
     cuePot:SF.cuePot, objPot:SF.objPot, ctrl:SF.ctrl, sp:SF.sp, score:SF.score};
 }
 
-/* 狙い・力加減を振って「成立率」を測る */
+/* 狙い・力加減を振って「成立率」を測る。
+   相手に残る脅威（threat）は直球とバンクの高いほうで見る。 */
 function robustness(cx,cy,target,others,st){
   const sErr = 0.0035;                                  // 狙いのばらつき [rad]
   const dTh  = clamp(sErr*st.t/(BD*Math.max(st.cT,0.15)), 0.008, 0.35);
   let ok=0, n=0, sumQ=0;
   for(const dt of [-dTh,0,dTh]) for(const kp of [0.86,1,1.14]){
     n++;
-    if(trySafety(cx,cy,target,others,st.th+dt,st.b,st.a,Math.max(st.P0*kp,st.t+4),false)){
+    if(trySafety(cx,cy,target,others,st.th+dt,st.b,st.a,Math.max(st.P0*kp,st.t+4))){
       if(SF.good) ok++;
-      sumQ+=SF.maxQ;
+      sumQ+=SF.threat;
     } else sumQ+=1;                                     // 打ち損じ（ファウル等）は最悪扱い
   }
   return {rate:ok/n, meanQ:sumQ/n};
@@ -1759,17 +1904,23 @@ function robustness(cx,cy,target,others,st){
 /* セーフティーの方針
    mine … 自分の成功率重視：狙いや力加減がずれても成立する、確実な一手
    opp  … 相手の失敗率重視：多少むずかしくても、相手をいちばん困らせる一手
-   どちらの方針でも「手玉・的玉の移動距離が短い＝置きたい所に置ける」を評価に入れる。 */
+   どちらの方針でも「手玉・的玉の移動距離が短い＝置きたい所に置ける」を評価に入れ、
+   同じ条件なら「隠す（スヌーク）」→「密着させる」の順で優先する。 */
 const SAFE_W = {
-  /* rate = 成立率 / opp = ばらつき込みで相手を抑える / maxq = 狙い通りに撞けたときに
-     相手に残る最良シュート / ctrl = 移動が短く狙った所に置ける / snook = 隠せる */
-  mine: {rate:1.00, opp:0.12, maxq:0.05, ctrl:0.28, snook:0.03},
-  opp : {rate:0.18, opp:1.00, maxq:0.45, ctrl:0.18, snook:0.45}
+  /* rate  = 成立率
+     opp   = ばらつき込みで相手を抑える
+     maxq  = 狙い通りに撞けたときに相手に残る脅威（直球・バンクの高いほう）
+     ctrl  = 移動が短く狙った所に置ける
+     snook = 球の陰に隠せる
+     tight = 手玉を的玉／クッションに密着させて相手のキューを振らせない */
+  mine: {rate:1.00, opp:0.12, maxq:0.06, ctrl:0.26, snook:0.16, tight:0.12},
+  opp : {rate:0.18, opp:1.00, maxq:0.45, ctrl:0.16, snook:0.62, tight:0.34}
 };
 function safeRank(c){
   const w=SAFE_W[safePref]||SAFE_W.mine;
-  return w.rate*c.rate + w.opp*(1-c.meanQ) + w.maxq*(1-c.maxQ)
-       + w.ctrl*(c.ctrl||1) + w.snook*(c.snookered?1:0) + 0.04*c.score;
+  return w.rate*c.rate + w.opp*(1-c.meanQ) + w.maxq*(1-c.threat)
+       + w.ctrl*c.ctrl + w.snook*(c.snookered?1:0) + w.tight*c.tight
+       + 0.04*c.score;
 }
 function findSafety(cx,cy){
   if(!balls.length) return null;
@@ -1779,20 +1930,23 @@ function findSafety(cx,cy){
     if(noEnglish && a!==0) continue;
     for(const pa of SP_F){
       const P0=Math.max(pa, 6);
-      if(!trySafety(cx,cy,target,others,th,b,a,P0,false)) continue;
+      if(!trySafety(cx,cy,target,others,th,b,a,P0)) continue;
       cands.push(snapSafety(cx,cy,target));
     }
   }
   if(!cands.length) return null;
-  cands.sort((x,y)=>y.score-x.score);
-  let best=null;
-  for(const c of cands.slice(0,26)){
+  /* 成立する手（相手に入れ筋もバンクも残さない手）を先に評価する */
+  cands.sort((x,y)=>(y.good-x.good)||(y.score-x.score));
+  let best=null, bestGood=null;
+  for(const c of cands.slice(0,28)){
     const r=robustness(cx,cy,target,others,c);
     c.rate=r.rate; c.meanQ=r.meanQ;
     c.rank=safeRank(c);
     if(!best||c.rank>best.rank) best=c;
+    if(c.good && (!bestGood||c.rank>bestGood.rank)) bestGood=c;
   }
-  return best;
+  /* 成立する手があるかぎり、入れ筋を残す手は選ばない */
+  return bestGood || best;
 }
 
 /* フリーボールでのセーフティー最適位置 */
@@ -1806,8 +1960,10 @@ function findSafeSpot(){
     if(bad) continue;
     let bs=0;
     for(const th of TH_C) for(const b of SB_C) for(const a of SA_C) for(const pa of SP_C){
-      if(!trySafety(x,y,target,others,th,b,a,Math.max(pa,6),false)) continue;
-      if(SF.score>bs) bs=SF.score;
+      if(!trySafety(x,y,target,others,th,b,a,Math.max(pa,6))) continue;
+      /* 入れ筋（直球・バンク）を残す手しか作れない位置は大きく割り引く */
+      const v = SF.good ? SF.score : SF.score*0.45;
+      if(v>bs) bs=v;
     }
     if(bs>0) list.push({x,y,s:bs});
   }
@@ -1823,7 +1979,7 @@ function findSafeSpot(){
 /* =========================================================================
    8. 再計算
    ========================================================================= */
-function busy(on){ document.getElementById('busy').classList.toggle('on', on); }
+function busy(on){ $('busy').classList.toggle('on', on); }
 
 /* いま有効なフリーボールの推奨位置（モードで切り替わる） */
 function currentSpot(){ return gameMode==='safe' ? safeSpot : bestSpot; }
@@ -1866,7 +2022,7 @@ function replan(){ recalc(true); }
 /* =========================================================================
    9. 描画
    ========================================================================= */
-const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const cv = $('cv'), ctx = cv.getContext('2d');
 let S=10, OX=0, OY=0, CVW=0, CVH=0;
 function bw(){ return orient==='h'? W  : HT; }
 function bh(){ return orient==='h'? HT : W;  }
@@ -1875,7 +2031,7 @@ function untf(u,v){ return orient==='h' ? [u,v] : [v, HT-u]; }
 function P(x,y){ const t=tf(x,y); return [OX+t[0]*S, OY+t[1]*S]; }
 
 function resize(){
-  const st = document.getElementById('stage');
+  const st = $('stage');
   const pad = SMALL? 12 : 26;
   const availW = Math.max(120, st.clientWidth - pad), availH = Math.max(120, st.clientHeight - pad);
   S = Math.min(availW/(bw()+2*RAIL), availH/(bh()+2*RAIL));
@@ -2202,13 +2358,13 @@ function bendDeg(pts){
 }
 
 /* セーフティー時の手玉の走行ライン（描画・再生で共用） */
-function safetyCuePath(sf,rec){
+function safetyCuePath(sf){
   if(sf.cuePot<=0.5) return null;
   const {fx,fy,m,Q1}=safetyCueVec(sf.b,sf.a,sf.P0,sf.t,sf.dx,sf.dy,sf.lx,sf.ly,sf.cT,sf.sT);
   if(m<=0.02) return null;
   const cs=simulate(sf.gx,sf.gy,fx/m,fy/m,sf.cuePot,
                     -SPIN_K*sf.a*Math.sqrt(Math.max(Q1,0.01))*0.88,
-                    balls.slice(1),rec!==false);
+                    balls.slice(1),true);
   return {pts:cs.pts.map(p=>[p[0],p[1]]), railIdx:(cs.railIdx||[]).slice()};
 }
 
@@ -2228,7 +2384,7 @@ function drawSafety(sf){
   drawPath(os.pts.map(p=>P(p[0],p[1])), os.railIdx, col, 0.96, Math.max(1.9,0.21*S), [7,4]);
 
   /* 手玉の走り */
-  const cpath = safetyCuePath(sf, true);
+  const cpath = safetyCuePath(sf);
   if(cpath) drawPath(cpath.pts.map(p=>P(p[0],p[1])), cpath.railIdx, '#5fdcee', 1, Math.max(1.9,0.21*S));
 
   /* 落ち着き先 */
@@ -2244,14 +2400,22 @@ function drawSafety(sf){
   mark(sf.oEnd, '的', col);
   mark(sf.cEnd, '手', '#eafcff');
 
-  /* 相手に残るシュートライン */
+  /* 相手に残るシュートライン（直球）と、バンクで狙われる筋 */
+  const A=P(sf.oEnd.x,sf.oEnd.y);
   if(!sf.snookered && sf.bestPi>=0){
-    const A=P(sf.oEnd.x,sf.oEnd.y), B2=P(POCKETS[sf.bestPi].x,POCKETS[sf.bestPi].y);
+    const B2=P(POCKETS[sf.bestPi].x,POCKETS[sf.bestPi].y);
     line(A,B2,'#f87171',Math.max(1.2,0.14*S),[3,4],0.85);
     const CB=P(sf.cEnd.x,sf.cEnd.y), GB=P(sf.bgx,sf.bgy);
     line(CB,GB,'#f87171',Math.max(1,0.11*S),[2,4],0.5);
     label((A[0]+B2[0])/2,(A[1]+B2[1])/2,`相手 ${Math.round(sf.maxQ*100)}%`,'#ffc9c9',0.95,3);
-  } else {
+  }
+  if(!sf.snookered && sf.bankPi>=0 && sf.bankQ>0.02){
+    const RP=P(sf.brx,sf.bry), BP=P(POCKETS[sf.bankPi].x,POCKETS[sf.bankPi].y);
+    line(A,RP,'#fbbf24',Math.max(1.1,0.12*S),[5,4],0.7);
+    line(RP,BP,'#fbbf24',Math.max(1.1,0.12*S),[5,4],0.7);
+    label(RP[0],RP[1],`バンク ${Math.round(sf.bankQ*100)}%`,'#ffe6a8',0.95,3);
+  }
+  if(sf.snookered){
     const p=P(sf.cEnd.x,sf.cEnd.y);
     label(p[0],p[1]-2.6*S,'スヌーク成立','#a5f3c0',0.95,3);
   }
@@ -2359,7 +2523,7 @@ function buildShots(fromStep, single){
        これを忘れると的玉が手玉の道すじを走ってしまう。 */
     const os=simulate(sf.ox,sf.oy,sf.lx,sf.ly,objPot,0,balls.slice(1),true);
     const objPts=os.pts.map(p=>[p[0],p[1]]);
-    const cp=safetyCuePath(sf,true);
+    const cp=safetyCuePath(sf);
     /* 的玉は balls の何番目か（＝再生中に静止球として描かない球） */
     let oi=balls.findIndex(b=>b.n===sf.n); if(oi<0) oi=0;
     return [{
@@ -2407,7 +2571,7 @@ function animStart(single){
   anim.hint=animHintFor(shots[0],0);
   if(gameMode!=='safe') selStep=shots[0].idx;
   updateAnimUI();
-  document.getElementById('hint').innerHTML=anim.hint;
+  $('hint').innerHTML=anim.hint;
   if(anim.raf) cancelAnimationFrame(anim.raf);
   anim.raf=requestAnimationFrame(animTick);
 }
@@ -2428,15 +2592,15 @@ function animTick(ts){
   if(anim.ph===0 && anim.t>=sh.T0){
     anim.t-=sh.T0; anim.ph=1;
     anim.hint=animHintFor(sh,1);
-    document.getElementById('hint').innerHTML=anim.hint;
+    $('hint').innerHTML=anim.hint;
   }
   if(anim.ph===1 && anim.t>=sh.T1){
     if(anim.i < anim.shots.length-1){
       anim.t-=sh.T1; anim.i++; anim.ph=0;   // 行き過ぎた分は次の手へ繰り越す
       const ns=anim.shots[anim.i];
       anim.hint=animHintFor(ns,0);
-      document.getElementById('hint').innerHTML=anim.hint;
-      if(gameMode!=='safe'){ selStep=ns.idx; renderPanel(); document.getElementById('hint').innerHTML=anim.hint; }
+      $('hint').innerHTML=anim.hint;
+      if(gameMode!=='safe'){ selStep=ns.idx; renderPanel(); $('hint').innerHTML=anim.hint; }
     } else {
       anim.t=sh.T1; drawAnim();
       anim.on=false; if(anim.raf) cancelAnimationFrame(anim.raf); anim.raf=0;
@@ -2501,18 +2665,18 @@ function drawAnim(){
   flushLabels();
 }
 function setAnimNote(txt,warn){
-  const el=document.getElementById('animNote');
+  const el=$('animNote');
   if(!el) return;
   el.textContent=txt; el.className='tipnote'+(warn?' warn':'');
 }
 function updateAnimUI(){
-  const play=document.getElementById('bPlay');
+  const play=$('bPlay');
   if(!play) return;
   play.textContent = anim.on ? '⏸ 再生中…' : '▶ 再生';
   const ok = !!cue && (gameMode==='safe' ? !!safety : !!(plan&&plan.steps.length));
   play.disabled=!ok;
-  document.getElementById('bStep1').disabled = !ok || gameMode==='safe';
-  document.getElementById('bStop').disabled = !anim.on;
+  $('bStep1').disabled = !ok || gameMode==='safe';
+  $('bStop').disabled = !anim.on;
   if(!anim.on && ok) setAnimNote(gameMode==='safe'
     ? '「再生」で手玉と的玉が実際にどう転がるかを見られます。'
     : '「再生」で選んでいる手から取り切りまで、実際の球の動きを再現します。');
@@ -2644,7 +2808,7 @@ const TIPSNAP = 0.045;                // これ以下は 0 に吸着（水平・
 const TIPSTEP = 0.04;                 // ボタン 1 回の微調整量
 /* 表示サイズから中心と半径を求める（スマホで大きくしても座標がずれないように） */
 function tipGeom(){
-  const cvs=document.getElementById('tipCtl');
+  const cvs=$('tipCtl');
   const sz = (cvs && cvs.clientWidth) ? cvs.clientWidth : TIPSZ;
   return {cvs, sz, rr: sz*TIPRR};
 }
@@ -2785,10 +2949,10 @@ function spinLabel(f){
 }
 function renderTipPanel(){
   const an=tipAnchor(), L=tipLimits();
-  const lbl=document.getElementById('tipStepLbl'), md=document.getElementById('tipMode');
-  const note=document.getElementById('tipNote');
-  const fB=document.getElementById('fineB'), fA=document.getElementById('fineA');
-  const prev=document.getElementById('tipPrev'), next=document.getElementById('tipNext');
+  const lbl=$('tipStepLbl'), md=$('tipMode');
+  const note=$('tipNote');
+  const fB=$('fineB'), fA=$('fineA');
+  const prev=$('tipPrev'), next=$('tipNext');
   const nSteps = (gameMode==='safe'||!plan) ? 0 : plan.steps.length;
   prev.disabled = !(nSteps>1 && selStep>0);
   next.disabled = !(nSteps>1 && selStep<nSteps-1);
@@ -2799,9 +2963,9 @@ function renderTipPanel(){
           .forEach(x=>{ x.disabled = noEnglish; });
   if(!an){
     lbl.textContent='—'; md.textContent='—'; md.className='tipmode auto';
-    document.getElementById('tipB').textContent='—';
-    document.getElementById('tipA').textContent='—';
-    document.getElementById('tipF').textContent='—';
+    $('tipB').textContent='—';
+    $('tipA').textContent='—';
+    $('tipF').textContent='—';
     fB.textContent='—'; fA.textContent='—';
     note.textContent='手玉を置くと設定できます。'; note.className='tipnote';
     drawTipCtl(); return;
@@ -2813,9 +2977,9 @@ function renderTipPanel(){
   md.textContent = an.safe ? '自動（セーフティー）' : ((man||manP)?'手動':'自動');
   md.className = 'tipmode '+((man||manP)&&!an.safe?'man':'auto');
   const [vl]=vertLabel(an.b), sl=sideLabel(an.a);
-  document.getElementById('tipB').textContent=`${an.b>=0?'+':''}${an.b.toFixed(2)}　${vl}`;
-  document.getElementById('tipA').textContent=`${an.a>=0?'+':''}${an.a.toFixed(2)}　${sl||'捻り無し'}`;
-  document.getElementById('tipF').textContent=spinLabel(an.f);
+  $('tipB').textContent=`${an.b>=0?'+':''}${an.b.toFixed(2)}　${vl}`;
+  $('tipA').textContent=`${an.a>=0?'+':''}${an.a.toFixed(2)}　${sl||'捻り無し'}`;
+  $('tipF').textContent=spinLabel(an.f);
   fB.textContent=`${an.b>=0?'+':''}${an.b.toFixed(2)}`;
   fA.textContent=`${an.a>=0?'+':''}${an.a.toFixed(2)}`;
   let t='', warn=false;
@@ -2848,11 +3012,33 @@ function applyTip(e){
 /* サマリー（大きな％と内訳）を空表示に戻す。
    取り切り／セーフティーのどちらでも、ルートが無いときはここを通す。 */
 function clearSummary(big, color){
-  const sv=document.getElementById('sVal');
+  const sv=$('sVal');
   sv.textContent=big; sv.style.color=color;
-  document.getElementById('sBar').style.width='0';
-  for(const id of ['sDist','sPos','sRail','sHard']) document.getElementById(id).textContent='--';
-  document.getElementById('warns').style.display='none';
+  $('sBar').style.width='0';
+  for(const id of ['sDist','sPos','sRail','sHard']) $(id).textContent='--';
+  $('warns').style.display='none';
+}
+/* 大きな％表示とバー（取り切り・セーフティー共通） */
+function setSummary(v, color){
+  const p=Math.round(v*100), sv=$('sVal'), sb=$('sBar');
+  sv.textContent=p; sv.style.color=color;
+  sb.style.width=p+'%'; sb.style.background=color;
+}
+/* 警告リスト（0 件なら隠す） */
+function setWarns(ws){
+  const wr=$('warns');
+  wr.innerHTML=ws.join('<br>'); wr.style.display=ws.length?'block':'none';
+}
+/* 手玉が無い・ルートが無いときの空表示。呼び出し側は return で抜ける */
+function panelEmpty(html, big, color){
+  $('steps').innerHTML=html;
+  clearSummary(big, color); renderTipPanel(); updateHint();
+}
+/* カード内の撞点サムネイルを描いてパネルを閉じる（両モード共通の締め） */
+function panelDone(el){
+  el.querySelectorAll('canvas.tip')
+    .forEach(c=>drawTip(c, parseFloat(c.dataset.a), parseFloat(c.dataset.b)));
+  renderTipPanel(); updateHint();
 }
 
 /* ---- セーフティーのパネル -------------------------------------------- */
@@ -2865,45 +3051,46 @@ function hitDesc(sf){
                 : `${sf.n}番の${side}側に ${thick}（カット${deg}°）`;
 }
 function renderSafetyPanel(){
-  const el=document.getElementById('steps'), sv=document.getElementById('sVal'),
-        sb=document.getElementById('sBar'), wr=document.getElementById('warns');
-  document.getElementById('sumLbl').innerHTML='セーフティー<br>成立率 (推定)';
-  if(!cue){
-    el.innerHTML=`<div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。<br><br>
+  $('sumLbl').innerHTML='セーフティー<br>成立率 (推定)';
+  if(!cue) return panelEmpty(
+    `<div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。<br><br>
       緑の点滅マーカーが<b style="color:#a5f3c0">セーフティーの推奨位置</b>です。<br>
-      的玉はドラッグで動かせます。</div>`;
-    clearSummary('--','#e6edf3'); renderTipPanel(); updateHint(); return;
-  }
-  if(!safety){
-    el.innerHTML=`<div class="empty" style="color:#f87171">この位置からは有効なセーフティーが見つかりません。<br>
-      手玉を別の場所に置いてみてください。</div>`;
-    clearSummary('0','#f87171'); renderTipPanel(); updateHint(); return;
-  }
+      的玉はドラッグで動かせます。</div>`, '--', '#e6edf3');
+  if(!safety) return panelEmpty(
+    `<div class="empty" style="color:#f87171">この位置からは有効なセーフティーが見つかりません。<br>
+      手玉を別の場所に置いてみてください。</div>`, '0', '#f87171');
   const sf=safety, r=sf.rate, rc=pctColor(r,0.7,0.4);
-  sv.textContent=Math.round(r*100);
-  sv.style.color=rc;
-  sb.style.width=Math.round(r*100)+'%';
-  sb.style.background=rc;
-  document.getElementById('sDist').textContent=Math.round(sf.cuePot)+'″';
-  document.getElementById('sPos').textContent=Math.round((sf.ctrl!==undefined?sf.ctrl:1)*100)+'%';
-  document.getElementById('sRail').textContent=(sf.cRails+sf.oRails)+'回';
-  document.getElementById('sHard').textContent=sf.snookered?'スヌーク':Math.round(sf.maxQ*100)+'%';
+  setSummary(r, rc);
+  $('sDist').textContent=Math.round(sf.cuePot)+'″';
+  $('sPos').textContent=Math.round(sf.ctrl*100)+'%';
+  $('sRail').textContent=(sf.cRails+sf.oRails)+'回';
+  const threat = sf.threat, bankQ = sf.bankQ;
+  $('sHard').textContent=sf.snookered?'スヌーク':Math.round(threat*100)+'%';
 
   const ws=[];
-  if(sf.ctrl!==undefined && sf.ctrl<0.86)
+  if(sf.ctrl<0.86)
     ws.push(`⚠ 手玉と的玉の移動が長く（合計 ${Math.round(sf.cuePot+sf.objPot)}″）、狙った所に置けない確率が上がります（置き成功率 ${Math.round(sf.ctrl*100)}%）。`);
   if(sf.oHit) ws.push('⚠ 的玉が他の球に当たります。結果がぶれやすい配置です。');
   if(sf.cHit) ws.push('⚠ 手玉が他の球に当たります。');
-  if(sf.maxQ>SAFE_OK_Q && !sf.snookered)
-    ws.push(`⚠ 相手に ${Math.round(sf.maxQ*100)}% のシュートが残ります（目標は 10% 以下）。`);
-  wr.innerHTML=ws.join('<br>'); wr.style.display=ws.length?'block':'none';
+  if(!sf.snookered && sf.maxQ>SAFE_OK_Q)
+    ws.push(`⚠ 相手に ${Math.round(sf.maxQ*100)}% の直球（カット）が残ります（目標は ${Math.round(SAFE_OK_Q*100)}% 以下）。`);
+  if(!sf.snookered && bankQ>SAFE_BANK_Q)
+    ws.push(`⚠ 相手に ${Math.round(bankQ*100)}% のバンクが残ります（目標は ${Math.round(SAFE_BANK_Q*100)}% 以下）。`);
+  setWarns(ws);
 
   const [vl]=vertLabel(sf.b), sl=sideLabel(sf.a);
   const bars=powerBars(sf.sp), strp=badgeStyle(sf.n);
   const okTag = sf.snookered
     ? '<span class="tag s">球の陰に隠す（スヌーク）</span>'
-    : (sf.maxQ<=SAFE_OK_Q ? `<span class="tag s">相手 ${Math.round(sf.maxQ*100)}% に抑える</span>`
-                          : `<span class="tag w">相手 ${Math.round(sf.maxQ*100)}%</span>`);
+    : (sf.good ? `<span class="tag s">相手 ${Math.round(threat*100)}% に抑える</span>`
+                       : `<span class="tag w">相手 ${Math.round(threat*100)}%</span>`);
+  /* 密着（フリーズ）は隠すのに次ぐ強いセーフティー。成立していればタグで示す */
+  const tightTag = sf.tight>=0.55
+    ? `<span class="tag s">密着させる（${Math.hypot(sf.cEnd.x-sf.oEnd.x,sf.cEnd.y-sf.oEnd.y)-BD < TIGHT_GAP*0.5 ? '的玉に' : 'クッションに'}）</span>`
+    : '';
+  const bankTag = (!sf.snookered && bankQ>0.02)
+    ? `<span class="tag ${bankQ<=SAFE_BANK_Q?'s':'w'}">バンク ${Math.round(bankQ*100)}%</span>` : '';
+  const el=$('steps');
   el.innerHTML=`<div class="step sel">
     <div class="sh">
       <span class="ord">S</span>
@@ -2916,13 +3103,16 @@ function renderSafetyPanel(){
       <div class="meta">
         <div>力加減 <span class="pw">${bars}</span> ・ 手玉 <b>${Math.round(sf.cuePot)}″</b>走行${sf.cRails?`(${sf.cRails}ク)`:''}
              ・ 的玉 <b>${Math.round(Math.hypot(sf.oEnd.x-sf.ox,sf.oEnd.y-sf.oy))}″</b>移動
-             ・ 置き成功率 <b>${Math.round((sf.ctrl!==undefined?sf.ctrl:1)*100)}%</b></div>
+             ・ 置き成功率 <b>${Math.round(sf.ctrl*100)}%</b></div>
         <div>残り位置: 手玉 (${Math.round(sf.cEnd.x)},${Math.round(sf.cEnd.y)}) ／ ${sf.n}番 (${Math.round(sf.oEnd.x)},${Math.round(sf.oEnd.y)})
              ・ 距離 <b>${Math.round(sf.oppDist)}″</b></div>
-        <div>相手の最良シュート <b>${sf.snookered?'なし（隠れている）':Math.round(sf.maxQ*100)+'%'}</b>
-             ${sf.meanQ!==undefined?`（ばらつき込み平均 ${Math.round(sf.meanQ*100)}%）`:''}</div>
+        <div>相手の最良シュート <b>${sf.snookered?'なし（隠れている）'
+             :`直球 ${Math.round(sf.maxQ*100)}%${sf.bankNA?'':` ／ バンク ${Math.round(bankQ*100)}%`}`}</b>
+             （ばらつき込み平均 ${Math.round(sf.meanQ*100)}%）</div>
         <div class="tags">
           ${okTag}
+          ${tightTag}
+          ${bankTag}
           <span class="tag ${vl.includes('引')?'d':(vl.includes('押')?'f':'s')}">${vl}</span>
           ${sl?`<span class="tag e">${sl}</span>`:''}
           ${sf.oHit?'<span class="tag w">的玉が他球に接触</span>':''}
@@ -2933,50 +3123,43 @@ function renderSafetyPanel(){
   </div>
   <div class="empty" style="padding:12px 6px;text-align:left;line-height:1.8">
     <b style="color:#9fb0c2">成立率</b>とは、狙いと力加減が多少ずれても
-    「隠れる or 相手 ${Math.round(SAFE_OK_Q*100)}% 以下」を保てる割合です。<br>
+    「隠れる or 直球 ${Math.round(SAFE_OK_Q*100)}% 以下かつバンク ${Math.round(SAFE_BANK_Q*100)}% 以下」を
+    保てる割合です。相手の<b style="color:#ffe6a8">バンク</b>も計算に入れて、
+    入りそうな筋を残す手は除外しています。<br>
     いまの方針は<b style="color:#9fb0c2">${safePref==='mine'?'自分の成功率重視':'相手の失敗率重視'}</b>。
     「ゲーム」欄で切り替えられます。<br>
     的玉は手玉を置く前ならドラッグで動かせます。
   </div>`;
-  el.querySelectorAll('canvas.tip').forEach(c=>drawTip(c,parseFloat(c.dataset.a),parseFloat(c.dataset.b)));
-  renderTipPanel(); updateHint();
+  panelDone(el);
 }
 
 function renderPanel(){
   if(gameMode==='safe') return renderSafetyPanel();
-  document.getElementById('sumLbl').innerHTML='取り切り成功率<br>(推定)';
-  const el=document.getElementById('steps'), sv=document.getElementById('sVal'),
-        sb=document.getElementById('sBar'), wr=document.getElementById('warns');
-  if(!cue){
-    el.innerHTML=`<div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。<br><br>
+  $('sumLbl').innerHTML='取り切り成功率<br>(推定)';
+  if(!cue) return panelEmpty(
+    `<div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。<br><br>
       白い点滅マーカーが<b style="color:#4dd0e1">推奨のフリーボール位置</b>です。<br>
-      （成功率 約 ${Math.round(bestSpotVal*100)}%）</div>`;
-    clearSummary('--','#e6edf3'); renderTipPanel(); updateHint(); return;
-  }
-  if(!plan||!plan.steps.length){
-    el.innerHTML= tipOverride[0]||powOverride[0]
+      （成功率 約 ${Math.round(bestSpotVal*100)}%）</div>`, '--', '#e6edf3');
+  if(!plan||!plan.steps.length) return panelEmpty(
+    tipOverride[0]||powOverride[0]
       ? `<div class="empty" style="color:#f87171">指定した撞点／力加減では 1 球目が狙えません。<br>
          撞点を戻すか「この手を自動に」を押してください。</div>`
-      : `<div class="empty" style="color:#f87171">この位置からは 1 球目が狙えません。<br>別の場所に手玉を置いてください。</div>`;
-    clearSummary('0','#f87171'); renderTipPanel(); updateHint(); return;
-  }
+      : `<div class="empty" style="color:#f87171">この位置からは 1 球目が狙えません。<br>別の場所に手玉を置いてください。</div>`,
+    '0', '#f87171');
 
   const p=plan.prob, pc=pctColor(p,0.6,0.3);
-  sv.textContent=Math.round(p*100);
-  sv.style.color=pc;
-  sb.style.width=Math.round(p*100)+'%';
-  sb.style.background=pc;
+  setSummary(p, pc);
 
   let tot=0,rails=0,hard=1,hardN=0,posAll=1;
   for(const s of plan.steps){
     tot+=s.dist; rails+=s.rails;
     if(s.q0<hard){hard=s.q0;hardN=s.n;}
-    if(s.pos!==undefined) posAll*=s.pos;
+    posAll*=s.pos;
   }
-  document.getElementById('sDist').textContent=Math.round(tot)+'″';
-  document.getElementById('sRail').textContent=rails+'回';
-  document.getElementById('sHard').textContent=hardN+'番 '+Math.round(hard*100)+'%';
-  document.getElementById('sPos').textContent=Math.round(posAll*100)+'%';
+  $('sDist').textContent=Math.round(tot)+'″';
+  $('sRail').textContent=rails+'回';
+  $('sHard').textContent=hardN+'番 '+Math.round(hard*100)+'%';
+  $('sPos').textContent=Math.round(posAll*100)+'%';
 
   const ws=[];
   /* 最後の一発のフリ角（30°未満で組めているか） */
@@ -2990,15 +3173,15 @@ function renderPanel(){
   for(const s of plan.steps){
     if(s.scr) ws.push(`⚠ ${s.n}番の後、スクラッチの危険。`);
     if(s.hitb) ws.push(`⚠ ${s.n}番の後、手玉が他の球に接触します。`);
-    if(s.pos!==undefined && s.pos<0.86)
+    if(s.pos<0.86)
       ws.push(`⚠ ${s.n}番の出しが ${Math.round(s.dist)}″${s.rails?`／${s.rails}クッション`:''}と長く、ポジションミスの確率が上がります（出し成功率 ${Math.round(s.pos*100)}%）。`);
     if(Math.abs(s.a)>0.07)
       ws.push(`ℹ ${s.n}番は${s.a>0?'右':'左'}ひねり。スカートで手玉が${s.a>0?'左':'右'}へ飛ぶ分、狙いを補正。`);
   }
   if(!plan.complete) ws.push('⚠ 最後まで繋がるルートが見つかりませんでした。');
-  wr.innerHTML=ws.join('<br>'); wr.style.display=ws.length?'block':'none';
+  setWarns(ws);
 
-  const circ='①②③④⑤⑥⑦⑧⑨';
+  const circ='①②③④⑤⑥⑦⑧⑨', el=$('steps');
   el.innerHTML=plan.steps.map((s,i)=>{
     const [vl,vc]=vertLabel(s.b), sl=sideLabel(s.a);
     const cut=Math.round(Math.acos(clamp(s.cosT,-1,1))*180/Math.PI);
@@ -3019,7 +3202,7 @@ function renderPanel(){
         <div class="meta">
           <div>カット <b>${cut}°</b> → 分離 <b>${s.dist>0.5?sep+'°':'—'}</b> ・ 手玉${Math.round(s.d1)}″(${(s.d1/12.5).toFixed(1)}P)/的玉${Math.round(s.d2)}″</div>
           <div>力加減 <span class="pw">${bars}</span> ・ 手玉移動 <b>${Math.round(s.dist)}″</b>${s.rails?` (${s.rails}クッション)`:''}${
-            last?'':` ・ 出し <b>${Math.round((s.pos!==undefined?s.pos:1)*100)}%</b>`}</div>
+            last?'':` ・ 出し <b>${Math.round(s.pos*100)}%</b>`}</div>
           <div>スロー <b>${Math.abs(th).toFixed(1)}°</b>${Math.abs(th)>0.35?'（狙いを逆へ補正）':''}${
             last?` ・ 最終球のフリ <b>${cut}°</b>${cut<LAST_CUT?'（30°未満 ◎）':''}`:''}</div>
           <div class="tags">
@@ -3030,7 +3213,7 @@ function renderPanel(){
             <span class="tag ${s.d1<=NEAR_PT?'s':'w'}">${s.d1<=NEAR_PT?'2ポイント以内':'2ポイント超'}</span>
             ${last?`<span class="tag ${cut<LAST_CUT?'s':'w'}">フィニッシュ フリ${cut}°</span>`
                   :`<span class="tag">次は ${plan.steps[i+1].n}番へ</span>`}
-            ${!last&&s.pos!==undefined&&s.pos<0.86?'<span class="tag w">出しが長い</span>':''}
+            ${!last&&s.pos<0.86?'<span class="tag w">出しが長い</span>':''}
             ${s.scr?'<span class="tag w">スクラッチ注意</span>':''}
             ${s.hitb?'<span class="tag w">他球に接触</span>':''}
           </div>
@@ -3039,17 +3222,15 @@ function renderPanel(){
     </div>`;
   }).join('');
 
-  el.querySelectorAll('canvas.tip').forEach(c=>drawTip(c,parseFloat(c.dataset.a),parseFloat(c.dataset.b)));
   el.querySelectorAll('.step').forEach(d=>d.addEventListener('click',()=>{
     animKill(); selStep=+d.dataset.i; renderPanel(); draw();
     el.querySelector(`.step[data-i="${selStep}"]`)?.scrollIntoView({block:'nearest'});
   }));
-  renderTipPanel();
-  updateHint();
+  panelDone(el);
 }
 /* 盤面下のひとこと案内。いまの状態でユーザーが次に何をすべきかを出す */
 function updateHint(){
-  const h=document.getElementById('hint');
+  const h=$('hint');
   updateAnimUI();
   if(anim.on){ h.innerHTML=anim.hint; return; }
   if(!cue){
@@ -3060,7 +3241,8 @@ function updateHint(){
   }
   if(gameMode==='safe'){
     h.innerHTML = safety
-      ? `<b>セーフティー</b> ${hitDesc(safety)} ／ ${safety.snookered?'スヌーク':'相手 '+Math.round(safety.maxQ*100)+'%'} ／ 成立率 ${Math.round(safety.rate*100)}%`
+      ? `<b>セーフティー</b> ${hitDesc(safety)} ／ ${safety.snookered?'スヌーク'
+          :(safety.tight>=0.55?'密着 ':'')+'相手 '+Math.round(safety.threat*100)+'%'} ／ 成立率 ${Math.round(safety.rate*100)}%`
       : 'この位置からは有効なセーフティーが見つかりません';
     return;
   }
@@ -3153,7 +3335,7 @@ cv.addEventListener('pointerup',()=>{
 });
 cv.addEventListener('pointercancel',()=>{ dragging=false; if(dragBall>=0){ dragBall=-1; rackChanged(false); } });
 
-document.getElementById('modes').addEventListener('click',e=>{
+$('modes').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   document.querySelectorAll('#modes .seg').forEach(x=>x.classList.remove('on'));
   b.classList.add('on'); mode=+b.dataset.m; rebuildRack();
@@ -3161,19 +3343,19 @@ document.getElementById('modes').addEventListener('click',e=>{
 function setOrient(o){
   animKill();
   orient=o;
-  document.getElementById('oh').classList.toggle('on',o==='h');
-  document.getElementById('ov').classList.toggle('on',o==='v');
+  $('oh').classList.toggle('on',o==='h');
+  $('ov').classList.toggle('on',o==='v');
   resize(); renderPanel();
 }
-document.getElementById('oh').onclick=()=>setOrient('h');
-document.getElementById('ov').onclick=()=>setOrient('v');
+$('oh').onclick=()=>setOrient('h');
+$('ov').onclick=()=>setOrient('v');
 /* テーブルコンディション（物理パラメータが変わるので全部計算し直す） */
-document.getElementById('conds').addEventListener('click',e=>{
+$('conds').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   const k=b.dataset.c;
   applyCondition(k);
   document.querySelectorAll('#conds .seg').forEach(x=>x.classList.toggle('on', x.dataset.c===k));
-  document.getElementById('condNote').textContent = CONDITIONS[k].note;
+  $('condNote').textContent = CONDITIONS[k].note;
   heavy(()=>{
     prepare(); computeDP(); findBestSpot();
     safeSpot=null; if(gameMode==='safe') findSafeSpot();
@@ -3181,10 +3363,10 @@ document.getElementById('conds').addEventListener('click',e=>{
 });
 
 /* 取扱説明書 */
-const helpEl=document.getElementById('help');
+const helpEl=$('help');
 function showHelp(v){ helpEl.hidden=!v; }
-document.getElementById('bHelp').onclick=()=>showHelp(true);
-document.getElementById('hClose').onclick=()=>showHelp(false);
+$('bHelp').onclick=()=>showHelp(true);
+$('hClose').onclick=()=>showHelp(false);
 helpEl.addEventListener('click',e=>{ if(e.target===helpEl) showHelp(false); });
 
 /* =========================================================================
@@ -3205,9 +3387,9 @@ function setTheme(k,save){
   themeKey = th.k;
   document.documentElement.setAttribute('data-theme', th.k);
   document.querySelector('meta[name="theme-color"]').setAttribute('content', th.tc);
-  const bl=document.getElementById('bThemeLbl');
+  const bl=$('bThemeLbl');
   if(bl) bl.textContent=' '+th.label;
-  const bt=document.getElementById('bTheme');
+  const bt=$('bTheme');
   if(bt) bt.title=`テーマを切り替え（T）— 現在: ${th.label}`;
   if(save!==false){ try{ localStorage.setItem('bjuku.theme', th.k); }catch(_){} }
 }
@@ -3215,41 +3397,41 @@ function nextTheme(){
   const i=THEMES.findIndex(t=>t.k===themeKey);
   setTheme(THEMES[(i+1)%THEMES.length].k);
 }
-document.getElementById('bTheme').onclick=nextTheme;
+$('bTheme').onclick=nextTheme;
 
 /* =========================================================================
    再生（アニメーション）の操作
    ========================================================================= */
-document.getElementById('bPlay').onclick=()=>{ if(anim.on) animStop(); else animStart(false); };
-document.getElementById('bStep1').onclick=()=>{ animKill(); animStart(true); };
-document.getElementById('bStop').onclick=()=>animStop();
-document.getElementById('spds').addEventListener('click',e=>{
+$('bPlay').onclick=()=>{ if(anim.on) animStop(); else animStart(false); };
+$('bStep1').onclick=()=>{ animKill(); animStart(true); };
+$('bStop').onclick=()=>animStop();
+$('spds').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   document.querySelectorAll('#spds .seg').forEach(x=>x.classList.remove('on'));
   b.classList.add('on'); animSpeed=parseFloat(b.dataset.s);
 });
-document.getElementById('cTrail').addEventListener('change',e=>{
+$('cTrail').addEventListener('change',e=>{
   anim.keepTrail=e.target.checked;
 });
 
 const SPREF_NOTE = {
   mine:'狙いや力加減が多少ずれても成立する、確実なセーフティーを選びます。相手に少し入れ筋が残ることがあります。',
-  opp :'相手をいちばん困らせる一手（スヌーク優先）を選びます。自分の成立率は少し下がります。'
+  opp :'相手をいちばん困らせる一手（隠す→密着の順で優先）を選びます。自分の成立率は少し下がります。'
 };
 function updateSafeUI(){
-  const box=document.getElementById('safebox');
+  const box=$('safebox');
   box.hidden = gameMode!=='safe';
   document.querySelectorAll('#sprefs .seg').forEach(x=>x.classList.toggle('on', x.dataset.sp===safePref));
-  document.getElementById('sprefNote').textContent = SPREF_NOTE[safePref];
+  $('sprefNote').textContent = SPREF_NOTE[safePref];
 }
-document.getElementById('gmodes').addEventListener('click',e=>{
+$('gmodes').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   document.querySelectorAll('#gmodes .seg').forEach(x=>x.classList.remove('on'));
   b.classList.add('on'); gameMode=b.dataset.g;
   updateSafeUI();
   heavy(()=>{ if(gameMode==='safe' && !safeSpot) findSafeSpot(); });
 });
-document.getElementById('sprefs').addEventListener('click',e=>{
+$('sprefs').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b || b.dataset.sp===safePref) return;
   safePref=b.dataset.sp; updateSafeUI();
   heavy(()=>{ safeSpot=null; findSafeSpot(); });     // 方針で推奨位置も変わる
@@ -3259,13 +3441,13 @@ function placeAtSpot(){
   const sp=currentSpot();
   if(sp){ cue={x:sp.x,y:sp.y}; recalc(); }
 }
-document.getElementById('bNew').onclick=()=>rebuildRack();
-document.getElementById('bAuto').onclick=placeAtSpot;
-document.getElementById('bClear').onclick=()=>{
+$('bNew').onclick=()=>rebuildRack();
+$('bAuto').onclick=placeAtSpot;
+$('bClear').onclick=()=>{
   animKill(); cue=null; plan=null; safety=null; renderPanel(); draw();
 };
 /* 撞点コントロール */
-const tipCv=document.getElementById('tipCtl');
+const tipCv=$('tipCtl');
 tipCv.addEventListener('pointerdown',e=>{
   const an=tipAnchor(); if(!an || an.safe) return;
   e.preventDefault();
@@ -3284,19 +3466,19 @@ document.querySelectorAll('#tipsec .fine').forEach(row=>{
   });
 });
 /* 撞点を設定するシュートの切り替え */
-document.getElementById('tipPrev').onclick=()=>tipSelect(-1);
-document.getElementById('tipNext').onclick=()=>tipSelect(1);
+$('tipPrev').onclick=()=>tipSelect(-1);
+$('tipNext').onclick=()=>tipSelect(1);
 /* 力加減 */
-document.getElementById('pows').addEventListener('click',e=>{
+$('pows').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   setPow(b.dataset.p);
 });
-document.getElementById('tipAuto').onclick=()=>{
+$('tipAuto').onclick=()=>{
   const an=tipAnchor(), k=an?an.k:selStep;
   delete tipOverride[k]; delete powOverride[k]; replan();
 };
-document.getElementById('tipAutoAll').onclick=()=>{ tipOverride={}; powOverride={}; replan(); };
-document.getElementById('cNoEng').addEventListener('change',e=>{
+$('tipAutoAll').onclick=()=>{ tipOverride={}; powOverride={}; replan(); };
+$('cNoEng').addEventListener('change',e=>{
   noEnglish=e.target.checked;
   /* チェックしたら、全ステップの撞点をまとめて「芯（中心）」に戻す。
      左右だけ 0 にすると引き／押しの指定だけが残って挙動が読めないので、
@@ -3308,7 +3490,7 @@ document.getElementById('cNoEng').addEventListener('change',e=>{
   heavy(()=>{ computeDP(); findBestSpot(); }, true);   // 価値マップから作り直し
 });
 
-const chk=(id,k)=>document.getElementById(id).addEventListener('change',e=>{ show[k]=e.target.checked; draw(); });
+const chk=(id,k)=>$(id).addEventListener('change',e=>{ show[k]=e.target.checked; draw(); });
 chk('cAll','all'); chk('cGhost','ghost'); chk('cCue','cuePath');
 chk('cTan','tangent'); chk('cThrow','throwLine'); chk('cHeat','heat');
 
@@ -3338,15 +3520,15 @@ if(window.visualViewport) visualViewport.addEventListener('resize',onResize);
 /* =========================================================================
    起動
    ========================================================================= */
-document.getElementById('verNum').textContent=VERSION;
-document.getElementById('verNum2').textContent=VERSION;
-document.getElementById('condNote').textContent=CONDITIONS[condKey].note;
-document.getElementById('oh').classList.toggle('on',orient==='h');
-document.getElementById('ov').classList.toggle('on',orient==='v');
+$('verNum').textContent=VERSION;
+$('verNum2').textContent=VERSION;
+$('condNote').textContent=CONDITIONS[condKey].note;
+$('oh').classList.toggle('on',orient==='h');
+$('ov').classList.toggle('on',orient==='v');
 let savedTheme=null;
 try{ savedTheme=localStorage.getItem('bjuku.theme'); }catch(_){}   // プライベートモードでは読めない
 setTheme(savedTheme||'dark', false);
-anim.keepTrail=document.getElementById('cTrail').checked;
+anim.keepTrail=$('cTrail').checked;
 updateSafeUI();
 applyCondition(condKey);
 updateAnimUI();
