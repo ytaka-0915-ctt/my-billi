@@ -429,7 +429,6 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
           <button class="seg" data-s="0.4">遅い</button>
           <button class="seg on" data-s="0.8">普通</button>
           <button class="seg" data-s="1.2">早い</button>
-          <button class="seg" data-s="real" title="実際のラシャの転がり速度で再生します">実時間</button>
         </div>
         <label class="chk" style="width:100%;margin-top:7px">
           <input type="checkbox" id="cTrail" checked>通った軌跡を残す</label>
@@ -537,6 +536,12 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       <p>9フィート台に的玉をランダムに並べ、フリーボール（手玉を好きな所に置ける状態）から
       <b>いちばん確実な取り切りルート</b>、または<b>いちばん有効なセーフティー</b>を計算して表示します。
       手玉と的玉の動きは実際の物理（分離角・引き/押し・捻り・クッション・球どうしの衝突）で計算しています。</p>
+      <p class="note"><b>v1.0.4 の主な変更（動きの修正）</b>：セーフティーで
+      <b>手玉が的玉の反対側へ抜けてしまう</b>（＝タンジェント線の裏側を走る）ありえない動きを直しました。
+      あわせて、セーフティーの<b>的玉の勢い</b>を取り切り側と同じ物理（衝突時のポテンシャル）に統一し、
+      球どうしの衝突（クラスター）の<b>分離角</b>も 30 度ルールが出る式に直し、
+      当たったあとに<b>手玉と的玉がぶつかり直す（キス）手</b>は選ばないようにしました。
+      また、再生速度の<b>「実時間」を廃止</b>し、<b>遅い / 普通 / 早い</b> の 3 つにしました。</p>
       <p class="note"><b>v1.0.3 の主な変更</b>：押しと引きの走る量を物理どおりに直し、
       <b>真っすぐすぎる出しを避けて「アングルを作る」</b>組み立てになりました。
       <b>9番のコンビネーション</b>と<b>クラスターを割る手</b>も攻め手として扱い、
@@ -662,10 +667,9 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
         <li>球の速さは<b>等減速（転がり抵抗）</b>で計算しています。強く撞いた球は速く、
             出しの終わりではゆっくり止まります</li>
         <li><b>「▶ この一手だけ」</b>＝いま選んでいるカードの一手だけを再生します</li>
-        <li><b>遅い / 普通 / 早い / 実時間</b> で再生速度を変えられます。
-            <b>「実時間」</b>（v1.0.3）は実際のラシャの転がり減速で流すので、
-            出しの<b>「最後にゆっくり止まる」</b>感じがそのまま出ます。
-            それ以外の 3 つは見やすさ優先で、実時間のおよそ 3〜4 倍速です</li>
+        <li><b>遅い / 普通 / 早い</b> で再生速度を変えられます。
+            いずれも見やすさ優先で、実物のおよそ 3〜4 倍速です。
+            減速のしかたは物理どおりなので、出しの<b>「最後にゆっくり止まる」</b>感じは残ります</li>
         <li>手玉が他の球に当たる手（クラスターを割る手）では、
             <b>当てられた球も一緒に動きます</b>。コンビネーションでは
             1 球目が 9 番を弾き、9 番がポケットへ向かうところまで再生されます（v1.0.3）</li>
@@ -916,7 +920,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
            A-4 手玉距離に依らないカット難度を追加（薄切りが近距離で簡単すぎた）
            A-5 スロー係数を実測の 2 倍へ（5.5 → 11）
            A-6 力加減のプリセットを「必要最小の何倍か」の相対指定に
-           A-7 再生に「実時間」速度を追加
+           A-7 再生に「実時間」速度を追加（→ v1.0.4 で撤去）
      戦術  B-1 アングル窓 ― 真っすぐすぎる出しを減点（実測 フリ10°未満 31% → 12%）
            B-3 クッションを使う出しの過剰な減点を撤廃
            B-4 近すぎる的玉へのダブルヒット制限
@@ -924,6 +928,23 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
            B-6 9 番のコンビネーションを攻め手として追加
      守り  C-1 スヌークの「きつさ」＝ 1 クッションのキック筋の本数で評価
            C-2 相手のセーフティー返しを 1 段読む（＝ 2 手先まで読む）
+
+   ■ v1.0.4 の変更点（ありえない球の動きの修正）
+     D-1 セーフティーの衝突後の手玉が、タンジェント線の裏側＝中心線の反対側へ
+         抜けていた。safetyCueVec() が接線 t̂ に厚みの符号 sg を重ねて掛けており、
+         th<0 側の手（候補の約半分）だけ接線が反転していた。t̂ は d̂ から中心線成分を
+         抜いた残りなので向きは既に正しく、sg は不要。
+         （検証：ランダム 2,138 手中 1,041 手が裏側 → 0 手）
+     D-2 セーフティーの的玉の勢いだけ (P0−t)·cos²θ という別式で出しており、
+         手玉（IMP.Q ベース）と別々の物理が走っていた。取り切り側と同じ
+         衝突時ポテンシャル IMP.Q に統一（探索・描画・再生の 3 か所）。
+     D-3 球どうしの衝突（クラスター）の分離角の式で、第 2 項に進行方向 d̂ ではなく
+         中心線 n̂ を入れていた。薄いほど分離角が足りず、かすっただけでも
+         速さが 0.77 倍に落ちていた。d̂ に直して 30 度ルールが出るようにした。
+     D-4 キス判定が「落ち着き先どうしの距離」だけだったので、先に止まった的玉の
+         上を手玉が後から通り抜ける絵が出ていた（採用手 372 中 13 手）。
+         共通の時間パラメータで両球を同時に走らせる掃引判定（kissPaths）を追加。
+     D-5 再生速度の「実時間」を撤去。遅い / 普通 / 早い の 3 つだけにした。
    ========================================================================= */
 
 /* =========================================================================
@@ -947,7 +968,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.0.3';
+const VERSION = '1.0.4';
 
 /* --- テーブルコンディション ---------------------------------------------
    ラシャの状態で「どこまで走るか」「回転がいつまで残るか」「スローの量」
@@ -1501,7 +1522,12 @@ function simulate(sx,sy,ux,uy,pot,E,balls,rec,resolve){
       const sN=Math.hypot(tx2,ty2);                 // = sinθ
       if(sN>1e-6){ tx2/=sN; ty2/=sN; }
       (hits || (hits=[])).push({i:bi, x:ob.x, y:ob.y, ux:nx2, uy:ny2, pot:pot*cN*cN});
-      const fx2=(5/7)*sN*tx2+(2/7)*nx2, fy2=(5/7)*sN*ty2+(2/7)*ny2;
+      /* 抜けていく向きは v = (5/7)·sinθ·t̂ + (2/7)·f·d̂。
+         v1.0.4 バグ修正 ―― 第 2 項に「進行方向 d̂」ではなく「中心線 n̂」を
+         入れていたので、薄く当たるほど分離角が足りず、さらに
+         かすっただけでも速さが 0.77 倍に落ちていた（実際はほぼ素通り）。
+         d̂ = (ux,uy) に直すと 30 度ルールも自然に出る。 */
+      const fx2=(5/7)*sN*tx2+(2/7)*ux, fy2=(5/7)*sN*ty2+(2/7)*uy;
       const m2=Math.hypot(fx2,fy2);
       pot *= m2*m2;
       if(m2<0.02 || pot<=0.4){ pot=0; break; }
@@ -2491,18 +2517,24 @@ function returnSafety(cEnd, oEnd, n, others){
 }
 
 /* セーフティーの、衝突後の手玉ベクトル。
-   物理は取り切りと同じ v = (5/7)·sinθ·t̂ + (2/7)·f·d̂ で、
-   薄く当てる向き（th の符号）だけ接線の向きを反転させる。
-   探索（trySafety）と描画・再生（safetyCuePath）で必ず同じ値を使うため共通化。 */
+   物理は取り切りと同じ v = (5/7)·|sinθ|·t̂ + (2/7)·f·d̂。
+   探索（trySafety）と描画・再生（safetyCuePath）で必ず同じ値を使うため共通化。
+
+   v1.0.4 バグ修正 ―― ここで th の符号 sg を接線に掛けていた。
+   t̂ は「手玉の進行方向 d̂ から中心線成分を抜いた残り」なので、
+   薄く当てる向きは t̂ 自身がすでに持っている（左に薄ければ t̂ も左を向く）。
+   そこへさらに sg を掛けると、th<0 側の手（＝半分の手）だけ接線が反転し、
+   手玉が中心線の反対側＝タンジェント線の裏側へ抜けていく絵になっていた。
+   これは 2 球衝突では絶対に起こらない動きなので、sg は掛けない。 */
 function safetyCueVec(b,a,P0,t,dx,dy,lx,ly,cT,sT){
   impactState(b,P0,t);
   const f=IMP.f, Q1=IMP.Q;                    // Q1 = 滑走ぶんの割り増し込み
-  let tx=dx-lx*cT, ty=dy-ly*cT;               // 接線方向
+  let tx=dx-lx*cT, ty=dy-ly*cT;               // 接線方向（向きも符号もこれで正しい）
   const tm=Math.hypot(tx,ty);
   if(tm>1e-6){tx/=tm;ty/=tm;} else {tx=0;ty=0;}
-  const s=Math.abs(sT), sg=sT<0?-1:1;
-  const fx=(5/7)*s*sg*tx+(2/7)*f*dx;
-  const fy=(5/7)*s*sg*ty+(2/7)*f*dy;
+  const s=Math.abs(sT);                       // |sinθ| ＝ 接線成分の大きさ
+  const fx=(5/7)*s*tx+(2/7)*f*dx;
+  const fy=(5/7)*s*ty+(2/7)*f*dy;
   return {f, Q1, fx, fy, m:Math.hypot(fx,fy)};
 }
 
@@ -2536,13 +2568,18 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
   if(b> TIPMAX*Math.min(1,lim+0.40)+1e-9 || b< -TIPMAX*lim-1e-9) return false;
   if(Math.abs(a)>TIPMAX*lim+1e-9 || Math.hypot(a,b)>TIPMAX+1e-9) return false;
 
+  /* 衝突時の手玉の状態。的玉に渡る勢いも手玉が走る距離も、
+     ここで出る「衝突時のポテンシャル Q1」から分け合う。
+     v1.0.4 バグ修正 ―― 的玉だけ (P0−t)·cos²θ という別式で出していたため、
+     引きでは的玉が速すぎ・押しでは遅すぎ、手玉と的玉で別々の物理が
+     走っていた（取り切り側は 1.0.3 で IMP.Q に直っている）。 */
+  const cvec=safetyCueVec(b,a,P0,t,dx,dy,lx,ly,cT,sT);
   /* 的玉 */
-  const objPot=P1*cT*cT;
+  const objPot=cvec.Q1*cT*cT;
   const os=simulate(target.x,target.y,lx,ly,objPot,0,others,false);
   const oEnd={x:os.x,y:os.y},
         oScr=os.scratch, oRails=os.rails, oHit=os.hit;
   /* 手玉 */
-  const cvec=safetyCueVec(b,a,P0,t,dx,dy,lx,ly,cT,sT);
   const fx=cvec.fx, fy=cvec.fy, m=cvec.m;
   const cuePot=cvec.Q1*m*m;
   if(cuePot>CUEMAX*1.08) return false;
@@ -2600,6 +2637,88 @@ function snapSafety(cx,cy,target){
     threat:SF.threat, tight:SF.tight, good:SF.good, hitFull:SF.hitFull, hide:SF.hide,
     cuePot:SF.cuePot, objPot:SF.objPot, ctrl:SF.ctrl,
     spd:SF.spd, pw:SF.pw, score:SF.score};
+}
+
+/* --- キス（当たったあとで手玉と的玉がぶつかり直す）の判定 -----------------
+   trySafety は「落ち着き先どうしの距離」しか見ていなかったので、
+   先に止まった的玉の上を手玉があとから通り抜ける絵が出ていた
+   （実測 372 手中 11 手＋逆向き 12 手）。手玉と的玉はすり抜けないので
+   これは描けてはいけない動きになる。
+
+   手玉も的玉も同じ割合で減速するから、共通の時間パラメータ u で
+     進んだ距離 d(u) = 2u√P − u²   （u = √P で停止）
+   と書ける。両球を同時に走らせて、どこかで球 1 個ぶんより近づいたらキス。
+   キスの先は 2 球衝突が絡んで読めないので、その手は選ばない。
+
+   刻みごとに「点どうしの距離」を見るだけでは、走り出しの速い区間で
+   球 1 個ぶんを一気に飛び越えてしまう（強い手では 1 刻み 7″ も進む）。
+   1 刻みの中では両球とも直線に動くので、相対運動も直線になる。
+   その線分上の最小距離を解析的に出せば、刻みが粗くても取りこぼさない。 */
+function pathCur(pts){                     // 道すじを距離で引くためのカーソル
+  const n=pts.length, seg=new Float64Array(n>1?n-1:0);
+  let acc=0;
+  for(let i=1;i<n;i++){ acc+=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]); seg[i-1]=acc; }
+  return {pts, seg, i:0};
+}
+function curAt(c,d,out){                   // d は必ず増える方向に呼ぶこと
+  const {pts,seg}=c, m=seg.length;
+  if(!m){ out[0]=pts[0][0]; out[1]=pts[0][1]; return out; }
+  while(c.i<m-1 && seg[c.i]<d) c.i++;
+  const i=c.i, prev=i?seg[i-1]:0, L=seg[i]-prev;
+  const u=L<1e-9?0:clamp((d-prev)/L,0,1);
+  out[0]=pts[i][0]+(pts[i+1][0]-pts[i][0])*u;
+  out[1]=pts[i][1]+(pts[i+1][1]-pts[i][1])*u;
+  return out;
+}
+const KISS_P0=[0,0], KISS_P1=[0,0], KISS_Q0=[0,0], KISS_Q1=[0,0], KISS_N=100;
+const KISS_GAP = BD-0.05;      // これより近づいたらキス（接触は BD ちょうど）
+const KISS_ARM = BD+0.30;      // いったんここまで離れてから判定を始める
+/* 1 刻みのあいだの、2 球の最接近距離の 2 乗（相対運動が直線なのでこれで厳密） */
+function sweepMin2(p0,p1,q0,q1){
+  const ax=p0[0]-q0[0], ay=p0[1]-q0[1];
+  const bx=(p1[0]-q1[0])-ax, by=(p1[1]-q1[1])-ay;
+  const bb=bx*bx+by*by;
+  let s = bb<1e-12 ? 0 : -(ax*bx+ay*by)/bb;
+  s = s<0?0:(s>1?1:s);
+  const dx=ax+bx*s, dy=ay+by*s;
+  return dx*dx+dy*dy;
+}
+function kissPaths(oPts,oPot,cPts,cPot){
+  const so=Math.sqrt(Math.max(oPot,0)), sc=Math.sqrt(Math.max(cPot,0));
+  const uMax=Math.max(so,sc);
+  if(uMax<=1e-6) return false;
+  const co=pathCur(oPts), cc=pathCur(cPts);
+  const g2=KISS_GAP*KISS_GAP, arm2=KISS_ARM*KISS_ARM;
+  let p0=curAt(co,0,KISS_P0).slice(), q0=curAt(cc,0,KISS_Q0).slice();
+  /* 衝突直後の 2 球はちょうど接している（間隔 = BD）。分離角ぶん必ず
+     離れていくので、まず 1 刻みだけ空ける。押しで真っすぐ追いかける手は
+     間隔が BD のまま伸びないので、そこは「ひらくのを待つ」ようにはしない
+     ―― 追いついて当たり直すのは実際に起きるキスだから。 */
+  let armed=false;
+  for(let i=1;i<=KISS_N;i++){
+    const u=uMax*i/KISS_N, uo=Math.min(u,so), uc=Math.min(u,sc);
+    const p1=curAt(co, 2*uo*so-uo*uo, KISS_P1);
+    const q1=curAt(cc, 2*uc*sc-uc*uc, KISS_Q1);
+    if(armed && sweepMin2(p0,p1,q0,q1) < g2) return true;
+    if(!armed){
+      const dx=p1[0]-q1[0], dy=p1[1]-q1[1];
+      if(dx*dx+dy*dy > arm2 || i>=2) armed=true;
+    }
+    p0[0]=p1[0]; p0[1]=p1[1]; q0[0]=q1[0]; q0[1]=q1[1];
+  }
+  return false;
+}
+/* 候補 1 本ぶんの道すじを実際に引いてキスを見る（描画と同じ引き方）。
+   重いので、勝ち残った上位候補にだけ掛ける。 */
+function kissSafety(c, others){
+  if(c.cuePot<=0.5) return false;
+  const os=simulate(c.ox,c.oy,c.lx,c.ly,Math.max(c.objPot,0.01),0,others,true);
+  const oPts=os.pts.map(p=>[p[0],p[1]]);          // SIM は使い回しなので先に複製
+  const v=safetyCueVec(c.b,c.a,c.P0,c.t,c.dx,c.dy,c.lx,c.ly,c.cT,c.sT);
+  if(v.m<=0.02) return false;
+  const cs=simulate(c.gx,c.gy,v.fx/v.m,v.fy/v.m,c.cuePot,
+                    -SPIN_K*c.a*Math.sqrt(Math.max(v.Q1,0.01))*0.88,others,true);
+  return kissPaths(oPts, c.objPot, cs.pts, c.cuePot);
 }
 
 /* 狙い・力加減を振って「成立率」を測る。
@@ -2682,7 +2801,8 @@ function safeRank(c){
        + w.ret*(1-(c.ret||0))
        + w.tight*c.tight
        + w.long*c.longFac + w.rail*clamp(c.cRails,0,2)/2 + w.disg*(c.disg||0)
-       + 0.04*c.score;
+       + 0.04*c.score
+       - (c.kiss ? 1.20 : 0);        // 途中でキスする手は最後の手段
 }
 function findSafety(cx,cy){
   if(!balls.length) return null;
@@ -2709,6 +2829,9 @@ function findSafety(cx,cy){
     c.disg=disguiseOf(aims, c.th);
     c.snook = c.snookered ? snookTight(c.cEnd.x, c.cEnd.y, {x:c.oEnd.x,y:c.oEnd.y}, others) : 0;
     c.ret=0;
+    /* 途中でキスする手は、その先が読めない＝おすすめできない */
+    c.kiss = kissSafety(c, others);
+    if(c.kiss) c.good=false;
     c.rank=safeRank(c);
   }
   /* 2 段目：上位だけ「相手のセーフティー返し」を 1 段読む（＝ 2 手先まで読む）。
@@ -3212,8 +3335,9 @@ function drawSafety(sf){
     ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=Math.max(1,0.12*S);
     ctx.beginPath(); ctx.arc(G[0],G[1],R*S,0,7); ctx.stroke(); ctx.restore();
   }
-  /* 的玉の走り */
-  const os=simulate(sf.ox,sf.oy,sf.lx,sf.ly,Math.max((sf.P0-sf.t)*sf.cT*sf.cT,0),0,balls.slice(1),true);
+  /* 的玉の走り（勢いは探索が出した objPot をそのまま使う。
+     ここで別式を立てると、描いた線と成立率の計算が食い違う） */
+  const os=simulate(sf.ox,sf.oy,sf.lx,sf.ly,Math.max(sf.objPot,0),0,balls.slice(1),true);
   drawPath(os.pts.map(p=>P(p[0],p[1])), os.railIdx, col, 0.96, Math.max(1.9,0.21*S), [7,4]);
 
   /* 手玉の走り */
@@ -3265,15 +3389,13 @@ function drawSafety(sf){
    捻りによるクッションの反射角の変化・ゆるやかなカーブも再生に現れる。
    ========================================================================= */
 /* ACC は「見た目の速さ」用に大きめに取った減速度。
-   実際のラシャの転がり減速は 4〜10 inch/s² 程度なので、
-   100″ 転がるのに 4.5〜7 秒かかる（ACC=108 だと 1.36 秒＝実時間の 3〜4 倍速）。
-   出しの「最後にゆっくり止まる」感じは練習では大事なので、
-   v1.0.3 で速度の選択肢に「実時間」を足した。 */
+   実際のラシャの転がり減速は 4〜10 inch/s² 程度で、100″ 転がるのに 4.5〜7 秒
+   かかるが、それでは練習台として待たされるだけなので、見やすさを取って
+   ACC=108（100″ を 1.36 秒＝実物のおよそ 3〜4 倍速）で流す。
+   「最後にゆっくり止まる」感じは減速の形が同じなので、これでも残る。 */
 const ACC = 108;                 // 見た目の速さ [inch/s²]
-const ACC_REAL = 7;              // 実際のラシャの転がり減速 [inch/s²]
 let animSpeed = 0.8;             // 遅い 0.4 / 普通 0.8 / 早い 1.2（#spds の初期選択と合わせる）
-let realTime  = false;           // 「実時間」を選んでいるか
-function accel(){ return realTime ? ACC_REAL : ACC; }
+function accel(){ return ACC; }
 /* 再生の状態。ph は 0 = 手玉が的玉へ向かう / 1 = 当たった後、
    i は何手目か、t はその段階に入ってからの経過秒。 */
 const anim = {on:false, shots:null, i:0, ph:0, t:0, raf:0, last:0, keepTrail:true, hint:''};
@@ -3353,7 +3475,6 @@ function aimPath(cx,cy,gx,gy,a){
 const PACE_REF = 110;    // 基準ポテンシャル（ふつうの力加減はこのあたり）
 const PACE_B   = 0.65;
 function shotPace(P0){
-  if(realTime) return 1;                 // 「実時間」は物理どおりに流す
   return clamp(Math.pow(PACE_REF/Math.max(P0,1), PACE_B/2), 0.55, 1.8);
 }
 function shotTimes(sh){
@@ -3381,7 +3502,7 @@ function buildShots(fromStep, single){
   if(gameMode==='safe'){
     if(!safety) return null;
     const sf=safety;
-    const objPot=Math.max((sf.P0-sf.t)*sf.cT*sf.cT, 0.01);
+    const objPot=Math.max(sf.objPot, 0.01);
     /* simulate() は同じ SIM オブジェクトを使い回すので、
        次の simulate（手玉側）を呼ぶ前に的玉の道すじを複製しておく。
        これを忘れると的玉が手玉の道すじを走ってしまう。 */
@@ -4429,9 +4550,7 @@ $('spds').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   document.querySelectorAll('#spds .seg').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
-  /* 「実時間」は減速度も手ごとのペース補正も実物どおりに切り替える */
-  realTime = (b.dataset.s==='real');
-  animSpeed = realTime ? 1 : parseFloat(b.dataset.s);
+  animSpeed = parseFloat(b.dataset.s);
   if(anim.shots) anim.shots.forEach(shotTimes);   // 再生中でも尺度を作り直す
 });
 $('cTrail').addEventListener('change',e=>{
