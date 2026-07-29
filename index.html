@@ -561,6 +561,23 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       <p>9フィート台に的玉をランダムに並べ、フリーボール（手玉を好きな所に置ける状態）から
       <b>いちばん確実な取り切りルート</b>、または<b>いちばん有効なセーフティー</b>を計算して表示します。
       手玉と的玉の動きは実際の物理（分離角・引き/押し・捻り・クッション・球どうしの衝突）で計算しています。</p>
+      <p class="note"><b>v1.0.7 の主な変更</b>：
+      <b>①近いサイドポケットを使うようになりました</b>
+      — <b>遠いコーナーのほうがフリ（カット角）が緩い</b>配置では、これまで角度だけを見て
+      遠いコーナーを選んでいました。狙いのずれは<b>的玉の走る距離ぶん拡大する</b>ので、
+      <b>サイドのフリが 50°未満で収まるなら近いサイドのほうが確実</b>です。
+      <b>最後の一発は角度だけ</b>、<b>途中の球はポジションしやすいときだけ</b>サイドを狙います
+      （<b>狙った所に手玉を止められる</b>ことと、<b>止まった先から次の球が撞ける</b>ことの両方を見ます）。
+      <b>スクラッチする筋は優遇しません</b>（サイドは対角へ飛び込みやすいので回避が絶対条件）。
+      該当する手には<b>「近いサイドを使う」</b>タグが付きます。<br>
+      <b>②セーフティーの「相手の失敗率重視」を強くしました</b>
+      — <b>相手にバンクの可能性が残る手を割り引き</b>、
+      <b>ほぼ確実にファウルになる配置</b>か<b>遠めの的玉の裏に隠す配置</b>を選びます。
+      これまでは「直球とバンクの高いほう」しか見ていなかったため、直球のほうが高い手では
+      <b>バンクが残っているかどうかが評価に入っていませんでした</b>
+      （直球 9%・バンク 11% の手と、直球 9%・バンク 0% の手が同じ点）。
+      あわせて<b>相手のファウル率</b>をパネルに出しています。
+      <b>「自分の成功率重視」の答えは変わりません</b>（新しい重みは「相手の失敗率重視」だけに効きます）。</p>
       <p class="note"><b>v1.0.6 の主な変更</b>：
       <b>弾いた的玉が元の場所に戻らなくなりました</b>
       — 手玉が的玉に当たったあと他の球を弾いた場合、これまでは<b>次の一手で
@@ -842,7 +859,10 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
             <td><b>相手の最良シュート率（直球・バンクの高いほう）</b>をいちばん低くする手
                 （＝スヌークと密着を最優先）を選びます。
                 決まれば相手はほぼ何もできませんが、自分の成立率は下がるので、
-                <b>失敗したときは逆に相手のチャンス</b>になります。</td></tr>
+                <b>失敗したときは逆に相手のチャンス</b>になります。<br>
+                <b>v1.0.7 から、バンクで入れられる可能性が残る手を割り引きます。</b>
+                その代わりに<b>ほぼ確実にファウルになる配置</b>（的玉に当たらない・スクラッチする）か、
+                <b>遠めの的玉の裏に隠す配置</b>（距離があるぶん相手の失敗率が上がる）を選びます。</td></tr>
       </table>
 
       <h3>10. テーブルコンディション</h3>
@@ -993,6 +1013,18 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
                 カードに<b>難所</b>タグを付けます。難所の球には<b>最終球なみに「近く・厚く」入る出し</b>を
                 要求するので、手前の一手で寄せておく組み立てになります。
                 難所が終盤に残ってしまう配置では警告を出します。</td></tr>
+        <tr><th>近いサイドを使う<br><span style="font-weight:600">（v1.0.7）</span></th>
+            <td><b>近いサイドより、遠いコーナーのほうがフリ（カット角）が緩い</b>配置があります。
+                角度だけを見るとコーナーが有利ですが、<b>狙いのずれは的玉の走る距離ぶん拡大する</b>ので、
+                <b>サイドのフリが 50°未満で収まるなら、距離の短い近いサイドのほうが確実</b>です。
+                <b>最後の一発</b>は角度だけで判断し、<b>途中の球</b>は
+                <b>ポジションしやすいときだけ</b>サイドを狙います。ポジションしやすさは
+                <b>①狙った所に手玉を止められるか</b>と
+                <b>②止まった先から次の球が撞けるか</b>の両方で見ます
+                （②が無いと、サイドを選んだせいで次が撞けなくなるルートまで拾ってしまいます）。
+                <b>スクラッチする筋は優遇しません</b>
+                （サイドは対角のサイド・コーナーへ飛び込みやすいので、回避が絶対条件）。
+                選ばれた手には<b>近いサイドを使う</b>タグが付きます。</td></tr>
         <tr><th>逃げ道を確保</th>
             <td>次の球への入り筋が<b>1 本しかない位置</b>と<b>クッションに張り付く位置</b>を減点します。
                 狙えるポケットが複数残る位置＝多少ずれても立て直せる位置を優先します。
@@ -1038,6 +1070,17 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
                 v1.0.5 からは<b>狙いと力加減がずれても成立する手（成立率 60% 以上）</b>だけを
                 成立と認めます。隠しきれない配置では自然に
                 <b>「厚みを消す・離す・密着させる」</b>手が選ばれます。</td></tr>
+        <tr><th>バンクを残さず<br>ファウルか<br>「遠めの裏」へ<br><span style="font-weight:600">（v1.0.7）</span></th>
+            <td><b>相手の失敗率重視</b>のときだけ効く評価です。相手の脅威を
+                「直球とバンクの<b>高いほう</b>」でしか見ていなかったので、直球のほうが高い手では
+                <b>バンクが残っているかどうかが点数に入っていませんでした</b>
+                （直球 9%・バンク 11% と 直球 9%・バンク 0% が同点）。
+                v1.0.7 では<b>残るバンクを許容値（12%）に対する割合で割り引き</b>、
+                <b>①ほぼ確実にファウルになる配置</b>（キック筋がほとんど無い＝
+                的玉に当たらない・スクラッチする）か、
+                <b>②遠めの的玉の裏に隠す配置</b>（隠れている × 手玉と的玉の距離）
+                のどちらかへ寄せます。パネルに<b>相手のファウル率</b>を出し、
+                <b>ほぼ確実にファウル</b>／<b>遠めの○番の裏に隠す</b>タグが付きます。</td></tr>
         <tr><th>相手の<br>セーフティー返し<br><span style="font-weight:600">（v1.0.3）</span></th>
             <td>入れられなくても<b>楽に返されるセーフティーは失敗</b>です。
                 とくにロングセーフティーは距離があるぶん、相手も
@@ -1093,7 +1136,8 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
    ■ 「確率」と「好み」を分けている理由
      画面に出す％は上の式そのもの。それとは別に、実戦の極意
      （厚み 9 割・力 1 割／最終球から逆算／難所は中盤で処理／逃げ道を確保／
-      アングルを作る／セーフティーは厚みを消す・離す・クッションで送る・攻めた振り）を
+      アングルを作る／近いサイドを使う／
+      セーフティーは厚みを消す・離す・クッションで送る・攻めた振り）を
      「好み」としてルート選択にだけ掛けている。
      確率モデルが見ていない再現性を買う仕組みで、表示する％は汚さない。
 
@@ -1182,6 +1226,40 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
          ※ 価値マップ（Vb）は台の元配置から 1 度だけ作る（1 手ごとに作り直すと
            数百 ms かかる）。割ったことの得失は breakFactor() が見るが、
            「いま狙える筋がゼロの球を割り出す」ところまでは先読みできない。
+
+   ■ v1.0.7 の変更点（ポケットの選び方と、相手の失敗率重視の中身）
+     F-1 セーフティー「相手の失敗率重視」で、バンクの可能性を残す手を割り引き、
+         ①ほぼ確実にファウルになる配置 ②遠めの的玉の裏に隠す配置 に寄せた。
+         threat = max(直球, バンク) しか見ていなかったので、直球のほうが高い手では
+         バンクの可否が評価に入らず、「直球 9%・バンク 11%」と
+         「直球 9%・バンク 0%」が同点になっていた。
+         ・bankRisk()  … 残るバンクを許容値 SAFE_BANK_Q に対する割合で割り引く
+         ・snookRead() … キック筋の走査から相手のファウル率も取る（従来の
+                        きつさは筋が KICK_OK 本で頭打ちなので、ほぼ確実に
+                        ファウルになる配置どうしの優劣が付かなかった）
+         ・fhide       … 隠す × 手玉と的玉の距離＝「遠めの的玉の裏に隠す」
+         3 つとも重みは opp だけに置き、mine（自分の成功率重視）は 0 のまま。
+     F-2 取り切りで「近いサイドを使う」を極意に追加（markSidePicks / SIDE_*）。
+         遠いコーナーのほうがフリが緩い配置では、確率モデルは角度の緩い
+         コーナーを選ぶ。狙いのずれは的玉の走る距離ぶん拡大するので、
+         サイドのフリが SIDE_CUT（50°）未満で収まるなら近いサイドのほうが確実。
+         上限は当初 60°で入れたが、実測で 50°以上の帯だけシュート率を落とす
+         裾（最悪 −6.7pt）が出たので 50°で切った。40〜50°の帯は平均 +12.3pt。
+         ・最後の一発 … 角度だけを見る
+         ・途中の球   … 加えて「ポジションしやすい」ことを 2 つで見る。
+                        出し成功率 SIDE_POS_OK 以上（狙った所に止められる）と、
+                        出し先の価値が台で最良の位置の SIDE_NV_OK 倍以上
+                        （止まった先から次の球が撞ける）。
+         スクラッチする手は優遇しない（サイドは飛び込みやすく回避が絶対条件）。
+         ルートの好み（pref）にだけ掛けるので、表示するシュート率は変わらない。
+         上乗せは仕上げのルート探索だけに掛け、価値マップ（DP）には入れない。
+         DP に混ぜると地図がサイド狙いに引っ張られ、手前の球の出しまで
+         組み替わって取り切り率が落ちる（実測 6 球で 71.9% → 63.8%。
+         最終球は 91.5% → 95.8% と良くなるのに 4 手目が 95.8% → 82.0%）。
+         （検証：同一 30 配置で V106 比 平均 +0.09pt・最良 +4.4・最悪 −4.1、
+           上昇 4 / 下降 2。出し先の条件を外すと 平均 −0.14pt・上昇 3 / 下降 3、
+           SIDE_NV_OK を 0.85 に上げると 平均 −0.01pt なので 0.75 を採った）
+     F-3 cos → 度の変換を angDeg() に統一（同じ式が 12 か所に散っていた）。
    ========================================================================= */
 
 /* =========================================================================
@@ -1205,7 +1283,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.0.6';
+const VERSION = '1.0.7';
 
 /* --- テーブルコンディション ---------------------------------------------
    ラシャの状態で「どこまで走るか」「回転がいつまで残るか」「スローの量」
@@ -1389,7 +1467,7 @@ function posFactor(dist, rails){
    ルートの好みにだけ効かせ、表示するシュート率そのものは変えない。 */
 const LAST_CUT = 30;
 function lastShotPref(cosT){
-  const deg = Math.acos(clamp(cosT,-1,1))*180/Math.PI;
+  const deg = angDeg(cosT);
   return deg <= LAST_CUT ? 1 : Math.max(0.22, 0.86 - (deg-LAST_CUT)*0.020);
 }
 
@@ -1496,10 +1574,56 @@ function hardPref(k, cosT, d1){
 const ANG_LO = 12, ANG_HI = 35;
 function angleWindow(cosT, isLast){
   if(isLast) return 1;
-  const deg = Math.acos(clamp(cosT,-1,1))*180/Math.PI;
+  const deg = angDeg(cosT);
   if(deg < ANG_LO) return 0.72 + 0.28*(deg/ANG_LO);       // 真っすぐは 3 割弱の減点
   if(deg > ANG_HI) return Math.max(0.45, 1 - (deg-ANG_HI)*0.022);
   return 1;
+}
+
+/* --- 実戦の極意 ⑥「近いサイドを使う」（v1.0.7）--------------------------
+   遠いコーナーのほうがフリが緩い配置では、確率モデルは角度の緩いコーナーを
+   選びがちになる。ところが狙いのずれは的玉の走る距離ぶん拡大するので、
+   フリが SIDE_CUT 未満で収まるなら、近いサイドのほうが実戦では確実に入る。
+     ・最後の一発 … フリが SIDE_CUT 未満なら近いサイドを狙う
+     ・途中の球   … 加えて「ポジションしやすい」ときだけ狙う。これは
+                    「狙った所に手玉を止められる（pos）」と
+                    「止まった先が次の球にとって良い位置（nv）」の両方で見る。
+                    後者が無いと、サイドを選んだせいで次が撞けなくなる
+                    ルートまで拾ってしまう（実測で取り切り率 −14 ポイント）。
+   スクラッチする手は優遇しない（サイドは対角のサイド・コーナーへ飛び込みやすく、
+   回避が絶対条件）。ルートの好みにだけ効かせ、表示するシュート率は変えない。
+   条件を満たした手では、遠いコーナーへ振り直させる減点
+   （最後の一発の薄さ lastShotPref ／ 途中の球のアングル窓 angleWindow）を
+   打ち消してから上乗せする。この 2 つが「遠いコーナーのほうが緩い」配置で
+   サイドを外していた本体だから。 */
+/* 上限は当初 60°で入れたが、60°ぎりぎり（実測 59°）の手まで拾うと
+   遠いコーナーがほぼ真っすぐな配置でシュート率を 5 ポイント落としていた。
+   取り切り率が上がったのは 34〜48°の帯なので、50°で切る。 */
+const SIDE_CUT    = 50*Math.PI/180;  // サイドを狙ってよいフリ角の上限
+const SIDE_PREF   = 1.25;            // 条件を満たした近いサイドへの上乗せ
+const SIDE_POS_OK = 0.90;            // 途中の球で「ポジションしやすい」とみなす出し成功率
+const SIDE_NV_OK  = 0.75;            // 出し先の価値が、台でいちばん良い位置の何倍以上か
+const SIDE_ANG = new Float64Array(6);   // 各筋のフリ角 [rad]（使い回し）
+const SIDE_OK  = new Uint8Array(6);     // その筋を「近いサイド」として優遇するか
+/* pdata の筋ごとに「近いサイド（＝遠いコーナーのほうがフリが緩い）」を立てる。
+   list は 1 球ぶんの狙える筋なので最大 6 本。添字は list と 1 対 1。 */
+function markSidePicks(list, cx, cy){
+  const n = list.length;
+  for(let i=0;i<n;i++){
+    const pd = list[i];
+    const ax = pd.gx-cx, ay = pd.gy-cy, d1 = Math.hypot(ax,ay);
+    SIDE_ANG[i] = d1<0.6 ? Math.PI : Math.acos(clamp((ax*pd.lx+ay*pd.ly)/d1,-1,1));
+    SIDE_OK[i]  = 0;
+  }
+  for(let i=0;i<n;i++){
+    if(list[i].pk.corner || SIDE_ANG[i] >= SIDE_CUT) continue;
+    for(let j=0;j<n;j++){
+      /* 遠いコーナーなのにフリはサイドと同じか緩い ＝ サイドを使うべき配置 */
+      if(list[j].pk.corner && list[j].d2 > list[i].d2 && SIDE_ANG[j] <= SIDE_ANG[i]){
+        SIDE_OK[i]=1; break;
+      }
+    }
+  }
 }
 
 /* --- 近すぎる的玉：ダブルヒット／プッシュショットの反則域 ----------------
@@ -1579,6 +1703,8 @@ function erf(x){
   return s*(1-((((1.061405429*t-1.453152027)*t+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x));
 }
 function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+/* cos から角度（度）へ。カット角・分離角の判定と表示で共用する */
+function angDeg(cos){ return Math.acos(clamp(cos,-1,1))*180/Math.PI; }
 /* 要素の取得は全てこれ経由（id は index.html 側と 1 対 1） */
 const $ = id => document.getElementById(id);
 function hitCircle(x,y,dx,dy,tmax,cx,cy,rad){
@@ -2302,6 +2428,7 @@ function bridgeLim(cx,cy){
 const A_NONE = [0];        // ノーイングリッシュ用の左右撞点（芯だけ）
 function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
   const list = LAY.pdata[k], others = LAY.others[k], nextV = Vb[k+1];
+  const nvMax = nextV.max;                    // 「近いサイド」の出し先の判定に使う
   const isLast = (k === balls.length-1);      // 取り切りの最後の一発か
   const endgame = (balls.length - k) <= 2;    // 終盤＝最終球から逆算を強く効かせる
   /* ノーイングリッシュはここで一括して封じる。
@@ -2314,9 +2441,16 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
   const bMaxUp = TIPMAX*Math.min(1, lim+0.40);
   const bMaxDn = TIPMAX*lim;
   const aMax   = TIPMAX*lim;
+  /* 「近いサイドを使う」（v1.0.7）は仕上げのルート探索でだけ効かせる。
+     価値マップ（DP）に混ぜると地図そのものがサイド狙いに引っ張られ、
+     手前の球の出しまで組み替わって取り切り率が落ちる
+     （実測: 6 球で 71.9% → 63.8%。最終球は 91.5% → 95.8% と良くなるのに、
+     4 手目が 95.8% → 82.0% になっていた）。コンビを DP に入れないのと同じ理由。 */
+  if(fine) markSidePicks(list, cx, cy); else SIDE_OK.fill(0);
 
   for(let pi=0; pi<list.length; pi++){
     const pd = list[pi];
+    const sideOk = SIDE_OK[pi];
     let ax = pd.gx-cx, ay = pd.gy-cy;
     const d1 = Math.hypot(ax,ay);
     if(d1 < 0.6) continue;
@@ -2459,7 +2593,20 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
           /* 同じ確率なら手玉の移動が短いルートを選ぶ（軽い好みだけ）。
              クッションそのものへの減点は v1.0.3 で外した（B-3）。 */
           const distPen = 1 - 0.03*Math.min(cuePot/150,1);
-          const pref = imm*pos*lastPen*nearP*hardP*angP*powPref*distPen*tipPref;
+          /* 近いサイドを使う（v1.0.7）。スクラッチする手は対象外。
+             「ポジションしやすい」を 2 つで見る。
+               pos … 狙った所に手玉を止められるか
+               nv  … 止まった先が、次の球にとって良い位置か
+                     （台でいちばん良い位置＝ nvMax の SIDE_NV_OK 倍以上）
+             最後の一発は出しが要らないので pos = 1・nv = 1 で、
+             どちらの条件も自動的に満たす（＝角度だけで決まる）。
+             sideFac は「遠いコーナーへ振り直させる減点」＝最後の一発の薄さ
+             （lastPen）と途中の球のアングル窓（angP）を打ち消して上乗せする。
+             どちらも下限があるので 0 除算にはならない。 */
+          const sidePick = !!sideOk && !scr && pos >= SIDE_POS_OK
+                        && nv >= SIDE_NV_OK*nvMax[sIdx];
+          const sideFac  = sidePick ? SIDE_PREF/(lastPen*angP) : 1;
+          const pref = imm*pos*lastPen*nearP*hardP*angP*powPref*distPen*tipPref*sideFac;
           const val = pref*nvw;
           if(val<=0) continue;
 
@@ -2471,6 +2618,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
           SI.ux=m>0.02?fx/m:0; SI.uy=m>0.02?fy/m:0;
           SI.tx=tx; SI.ty=ty; SI.ax=ax; SI.ay=ay; SI.E0=E0;
           SI.needRail = (rails>0);
+          SI.sidePick = sidePick;
           SI.pref = pref;
           cb(val);
         }
@@ -2579,7 +2727,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
           SI.cosT=cosT; SI.sinT=sinT; SI.d1=d1;
           SI.ux=m>0.02?fx/m:0; SI.uy=m>0.02?fy/m:0;
           SI.tx=tx; SI.ty=ty; SI.ax=ax; SI.ay=ay; SI.E0=E0;
-          SI.needRail=false; SI.pref=pref;
+          SI.needRail=false; SI.sidePick=false; SI.pref=pref;
           cb(pref);                     // 決まれば取り切り完了なので nv は掛けない
         }
       }
@@ -2658,11 +2806,19 @@ function cellValue(k,cx,cy,useOv){
   return best*railFactor(cx,cy)*escapeFactor(opts);
 }
 
+/* ぼかし版ごとの最大値。「この球にとって台でいちばん良い位置」の目安で、
+   近いサイドを使うかどうかの「ポジションしやすい」判定に使う（v1.0.7）。 */
+function gridMax(a){
+  let m=0;
+  for(let i=0;i<a.length;i++) if(a[i]>m) m=a[i];
+  return m;
+}
 function computeDP(){
   const N = balls.length;
   const ones = new Float32Array(GN).fill(1);
   Vb = new Array(N+1);
   Vb[N] = [ones,ones,ones,ones];
+  Vb[N].max = [1,1,1,1];
   for(let k=N-1;k>=0;k--){
     const g = new Float32Array(GN);
     const rem = BASE.rem[k];
@@ -2681,6 +2837,7 @@ function computeDP(){
     }
     Vb[k]=[blurGrid(g,1),blurGrid(g,2),blurGrid(g,4),blurGrid(g,6)];
     Vb[k].raw = g;
+    Vb[k].max = Vb[k].map(gridMax);
   }
 }
 
@@ -2723,6 +2880,7 @@ function snapStep(k,cx,cy){
     b:SI.b, a:SI.a, P0:SI.P0, f:SI.f, spd:SI.spd, pw:SI.pw, close:SI.close,
     dist:SI.dist, ex:SI.ex, ey:SI.ey, rails:SI.rails, gap:SI.gap,
     scr:SI.scr, hitb:SI.hit, hitRes:SI.hitRes, q:SI.imm, q0:SI.q0, pos:SI.pos,
+    sidePick:SI.sidePick,
     cosT:SI.cosT, sinT:SI.sinT, ux:SI.ux, uy:SI.uy,
     tx:SI.tx, ty:SI.ty, ax:SI.ax, ay:SI.ay, lx:SI.pd.lx, ly:SI.pd.ly, E0:SI.E0,
     /* コンビネーション（決まれば取り切り完了）*/
@@ -3015,21 +3173,31 @@ function hideValue(op){
    「キック筋が 40 本あるゆるいスヌーク」を区別できていなかった。
 
    ここでは 1 クッションのキックで的玉に当たる方向の本数を数え、
-     0 = いくらでも当たる（甘い） / 1 = ほぼ当てられない（ファウル濃厚）
-   を返す。スヌークが成立した候補だけで回すので探索は軽いまま。 */
+     tight … 0 = いくらでも当たる（甘い） / 1 = ほぼ当てられない
+   を返す。スヌークが成立した候補だけで回すので探索は軽いまま。
+
+   v1.0.7 では同じ走査から foul（相手がファウルする割合）も取る。
+   tight は「筋が KICK_OK 本あれば甘い」で頭打ちになるので、
+   ほぼ確実にファウルになる配置どうしの優劣が付かなかった。
+   走査した向きのうち
+     ・的玉に当たらない（空クッション、別の球に先に当たる）
+     ・スクラッチする
+   の割合をそのまま返し、相手の失敗率重視でこれを見る。 */
 const KICK_DIRS = 40;      // 走査する方向の数
 const KICK_POT  = 420;     // 相手がキックに使う力加減（1〜2 クッション届く強さ）
 const KICK_OK   = 8;       // これだけ筋があればスヌークとしては甘い
-function snookTight(cx, cy, ob, others){
+function snookRead(cx, cy, ob, others){
   const all = others.concat([ob]);
-  let ways = 0;
+  let ways = 0, foul = 0;
   for(let i=0;i<KICK_DIRS;i++){
     const a = i/KICK_DIRS*Math.PI*2;
     const s = simulate(cx, cy, Math.cos(a), Math.sin(a), KICK_POT, 0, all, false, false);
-    if(!s.hit || s.rails < 1) continue;
-    if(Math.hypot(s.x-ob.x, s.y-ob.y) < BD+0.5) ways++;
+    /* resolve を渡していないので simulate は球に当たった時点で止まる。
+       ＝ SIM の座標がそのまま接触点で、的玉に当たったかどうかが分かる。 */
+    const onOb = s.hit && s.rails >= 1 && Math.hypot(s.x-ob.x, s.y-ob.y) < BD+0.5;
+    if(onOb) ways++; else foul++;
   }
-  return clamp(1 - ways/KICK_OK, 0, 1);
+  return {tight: clamp(1 - ways/KICK_OK, 0, 1), foul: foul/KICK_DIRS};
 }
 
 /* --- 相手の「セーフティー返し」------------------------------------------
@@ -3341,11 +3509,16 @@ const SAFE_W = {
      tight = 手玉を的玉／クッションに密着させて相手のキューを振らせない
      long  = 手玉と的玉を離す（ロングセーフティー）
      rail  = クッションを使って手玉を難所へ送る
-     disg  = 入れ狙いに見せかける（攻めた振り） */
+     disg  = 入れ狙いに見せかける（攻めた振り）
+     bank  = 相手にバンクの可能性を残す手を割り引く（v1.0.7）
+     foul  = ほぼ確実にファウルになる配置を選ぶ（v1.0.7）
+     fhide = 遠めの的玉の裏に隠す＝隠す × 距離（v1.0.7）
+   v1.0.7 の 3 つは「相手の失敗率重視」だけに効かせる（mine は 0）。
+   基準の方針（自分の成功率重視）が出す答えを変えないため。 */
   mine: {rate:1.00, opp:0.12, maxq:0.06, ctrl:0.26, hide:0.18, snk:0.14, ret:0.14,
-         tight:0.12, long:0.10, rail:0.04, disg:0.05},
+         tight:0.12, long:0.10, rail:0.04, disg:0.05, bank:0, foul:0, fhide:0},
   opp : {rate:0.18, opp:1.00, maxq:0.45, ctrl:0.16, hide:0.66, snk:0.50, ret:0.30,
-         tight:0.34, long:0.30, rail:0.09, disg:0.10}
+         tight:0.34, long:0.30, rail:0.09, disg:0.10, bank:0.40, foul:0.45, fhide:0.30}
 };
 /* セーフティー自体の実行難度（v1.0.5 / P-5）。
    v1.0.4 は取り切り側に aPen があるのに、セーフティー側には捻りの減点が
@@ -3357,6 +3530,15 @@ function safeExec(c){
   const thin = Math.max(0, Math.abs(c.th) - SAFE_THIN0)/SAFE_THIN_W;
   return 1 - 0.55*c.a*c.a - (Math.abs(c.a)>0.05?0.10:0) - 0.18*thin*thin;
 }
+/* --- 相手の失敗率重視で「バンクを残さない」（v1.0.7）---------------------
+   threat は直球とバンクの高いほうしか見ないので、直球のほうが高い手では
+   バンクの可否がまったく評価に入っていなかった（直球 9%・バンク 11% の手と
+   直球 9%・バンク 0% の手が同じ点になる）。バンクで入れられる可能性が残る手を
+   許容値（SAFE_BANK_Q）に対する割合で割り引き、
+     ・ほぼ確実にファウルになる配置（foul）
+     ・遠めの的玉の裏に隠す配置（隠す × 距離）
+   のどちらかへ寄せる。 */
+function bankRisk(c){ return clamp((c.bankQ||0)/SAFE_BANK_Q, 0, 1); }
 function safeRank(c){
   const w=SAFE_W[safePref]||SAFE_W.mine;
   const s = w.rate*c.rate + w.opp*(1-c.meanQ) + w.maxq*(1-c.threat)
@@ -3364,8 +3546,12 @@ function safeRank(c){
        + w.ret*(1-(c.ret||0))
        + w.tight*c.tight
        + w.long*c.longFac + w.rail*clamp(c.cRails,0,2)/2 + w.disg*(c.disg||0)
+       + w.foul*(c.foul||0) + w.fhide*c.hide*c.longFac
+       - w.bank*bankRisk(c)
        + 0.04*c.score;
-  return s*safeExec(c)
+  /* bank は唯一の減点項なので、望みの無い候補ばかりのときに素点が負へ回り込むと
+     実行難度（safeExec）を掛ける向きが逆になる。0 で止めておく。 */
+  return Math.max(s,0)*safeExec(c)
        - (c.kiss ? 1.20 : 0);        // 途中でキスする手は最後の手段
 }
 function findSafety(cx,cy){
@@ -3391,7 +3577,11 @@ function findSafety(cx,cy){
     const r=robustness(cx,cy,target,others,c);
     c.rate=r.rate; c.meanQ=r.meanQ;
     c.disg=disguiseOf(aims, c.th);
-    c.snook = c.snookered ? snookTight(c.cEnd.x, c.cEnd.y, {x:c.oEnd.x,y:c.oEnd.y}, c.layout) : 0;
+    /* 隠れている手だけ、相手のキック筋を読む（きつさとファウル率） */
+    const sk = c.snookered
+      ? snookRead(c.cEnd.x, c.cEnd.y, {x:c.oEnd.x,y:c.oEnd.y}, c.layout)
+      : {tight:0, foul:0};
+    c.snook = sk.tight; c.foul = sk.foul;
     c.ret=0;
     /* 途中でキスする手は、その先が読めない＝おすすめできない */
     c.kiss = kissSafety(c, others);
@@ -3842,7 +4032,7 @@ function drawStep(st, active){
     drawPath(pts, railIdx, col, a, Math.max(1.9,0.21*S));
     /* 分離角の表示（手玉ラインの途中を指す） */
     if(active && show.tangent){
-      const sep = Math.acos(clamp(st.ux*st.lx+st.uy*st.ly,-1,1))*180/Math.PI;
+      const sep = angDeg(st.ux*st.lx+st.uy*st.ly);
       const along = Math.min(7.5, Math.max(2.6, st.dist*0.42));
       const L1 = P(st.gx+st.ux*along, st.gy+st.uy*along);
       label(L1[0],L1[1],`分離 ${Math.round(sep)}°`,'#b6f4ff',a*0.95,2);
@@ -3874,7 +4064,7 @@ function drawStep(st, active){
   if(active && plan){
     const nx = plan.steps[plan.steps.indexOf(st)+1];
     if(nx){
-      const deg = Math.round(Math.acos(clamp(nx.cosT,-1,1))*180/Math.PI);
+      const deg = Math.round(angDeg(nx.cosT));
       label(E[0], E[1]+2.4*S, `次のフリ ${deg}°`,
             deg<ANG_LO ? '#ffbf8a' : '#b6f4ff', a*0.95, 1);
     }
@@ -4729,8 +4919,8 @@ function renderSafetyPanel(){
     `<div class="empty" style="color:#f87171">この位置からは有効なセーフティーが見つかりません。<br>
       手玉を別の場所に置いてみてください。</div>`, '0', '#f87171');
   const sf=safety, r=sf.rate, rc=pctColor(r,0.7,0.4);
-  /* snook / ret は上位候補だけに付く値。付いていない手は 0 として扱う */
-  sf.snook = sf.snook||0; sf.ret = sf.ret||0;
+  /* snook / foul / ret は上位候補だけに付く値。付いていない手は 0 として扱う */
+  sf.snook = sf.snook||0; sf.foul = sf.foul||0; sf.ret = sf.ret||0;
   setSummary(r, rc);
   $('sMiss').textContent=sf.good?'成立':'不成立';
   $('sDist').textContent=Math.round(sf.cuePot)+'″';
@@ -4759,7 +4949,13 @@ function renderSafetyPanel(){
   if(sf.snookered && sf.snook<0.35)
     ws.push(`⚠ スヌークは成立していますが、相手に 1 クッションのキック筋がかなり残っています（きつさ ${Math.round(sf.snook*100)}%）。当てられればファウルは取れません。`);
   else if(sf.snookered && sf.snook>=0.75)
-    ws.push(`ℹ きついスヌークです（きつさ ${Math.round(sf.snook*100)}%）。キック筋がほとんど無いので、ファウル＝フリーボールが期待できます。`);
+    ws.push(`ℹ きついスヌークです（きつさ ${Math.round(sf.snook*100)}%）。キック筋がほとんど無いので、ファウル＝フリーボールが期待できます（相手のファウル率 ${Math.round(sf.foul*100)}%）。`);
+  /* 相手の失敗率重視では、バンクの可能性が残る手より
+     「ほぼ確実にファウル」か「遠めの的玉の裏に隠す」手を選ぶ（v1.0.7） */
+  if(safePref==='opp' && bankQ>0.02)
+    ws.push(`ℹ 相手の失敗率重視では、バンクの可能性が残る手を割り引いています。`
+      + `この手にはまだ ${Math.round(bankQ*100)}% のバンクが残るので、`
+      + `別の位置からならファウル狙い（隠す）か、遠めの${sf.n}番の裏に隠す手が作れるかもしれません。`);
   if(sf.ret>=0.55)
     ws.push(`⚠ 相手は入れられませんが、セーフティーで返しやすい配置です（返しやすさ ${Math.round(sf.ret*100)}%）。`);
   if(sf.oppDist<28)
@@ -4772,6 +4968,11 @@ function renderSafetyPanel(){
     ? `<span class="tag s">球の陰に隠す（スヌーク・きつさ ${Math.round((sf.snook||0)*100)}%）</span>`
     : (sf.good ? `<span class="tag s">相手 ${Math.round(threat*100)}% に抑える</span>`
                        : `<span class="tag w">相手 ${Math.round(threat*100)}%</span>`);
+  /* 相手の失敗率重視で狙う 2 つの形（v1.0.7）*/
+  const foulTag = (sf.snookered && sf.foul>=0.90)
+    ? `<span class="tag s">ほぼ確実にファウル（${Math.round(sf.foul*100)}%）</span>` : '';
+  const farHideTag = (!sf.snookered && sf.hide>=0.50 && sf.longFac>=0.50)
+    ? `<span class="tag s">遠めの${sf.n}番の裏に隠す</span>` : '';
   const retTag = sf.ret>=0.55
     ? `<span class="tag w">返されやすい ${Math.round(sf.ret*100)}%</span>`
     : (sf.ret<=0.25 ? '<span class="tag s">返しも作らせない</span>' : '');
@@ -4811,10 +5012,13 @@ function renderSafetyPanel(){
              （ばらつき込み平均 ${Math.round(sf.meanQ*100)}%）</div>
         <div>相手が取れる厚み <b>${sf.snookered?'なし（当てられない）':Math.round(sf.hitFull*100)+'%'}</b>
              ・ 実質の隠れ具合 <b>${Math.round(sf.hide*100)}%</b></div>
-        <div>${sf.snookered?`スヌークのきつさ <b>${Math.round(sf.snook*100)}%</b>（1クッションのキック筋の少なさ）・ `:''
+        <div>${sf.snookered?`スヌークのきつさ <b>${Math.round(sf.snook*100)}%</b>（1クッションのキック筋の少なさ）`
+             +` ・ 相手のファウル率 <b>${Math.round(sf.foul*100)}%</b> ・ `:''
              }相手のセーフティー返し <b>${Math.round(sf.ret*100)}%</b></div>
         <div class="tags">
           ${okTag}
+          ${foulTag}
+          ${farHideTag}
           ${retTag}
           ${thinTag}
           ${tightTag}
@@ -4885,7 +5089,7 @@ function renderPanel(){
   const ws=[];
   /* 最後の一発のフリ角（30°未満で組めているか） */
   const lastS=plan.steps[plan.steps.length-1];
-  const lastCut=Math.round(Math.acos(clamp(lastS.cosT,-1,1))*180/Math.PI);
+  const lastCut=Math.round(angDeg(lastS.cosT));
   if(lastS.combo)
     ws.push(`ℹ ${lastS.n}番から${lastS.combo.Ln}番へのコンビで上がるルートです。決まればその時点で取り切り完了。`);
   else {
@@ -4918,6 +5122,11 @@ function renderPanel(){
         if(potx) ws.push(`ℹ ${s.n}番の後、弾かれた${potx}がそのまま落ちます。台から消えるので、以降の手順からは外しています。`);
       }
     }
+    /* 「近いサイドを使う」（v1.0.7）。遠いコーナーより角度はきついが距離が短い */
+    if(s.sidePick)
+      ws.push(`ℹ ${s.n}番は近い${pocketName(s.pi)}を狙います（フリ ${Math.round(angDeg(s.cosT))}°）。`
+        + `遠いコーナーのほうが角度は緩みますが、的玉の走る距離が短いサイドのほうが確実です`
+        + `（スクラッチしない筋だけを候補にしています）。`);
     if(s.close)
       ws.push(`⚠ ${s.n}番は手玉との隙間が ${Math.max(0,s.d1-BD).toFixed(1)}″しかありません。引きや強い撞点はダブルヒットの反則になります。`);
     /* 通り道のすき間（v1.0.5 / P-8）。球 1/4 個分を切る筋は狙って通せない */
@@ -4940,7 +5149,7 @@ function renderPanel(){
   /* アングルを作れているか（真っすぐに出していないか） */
   for(let i=0;i<plan.steps.length-1;i++){
     const nx=plan.steps[i+1];
-    const d=Math.round(Math.acos(clamp(nx.cosT,-1,1))*180/Math.PI);
+    const d=Math.round(angDeg(nx.cosT));
     if(d<ANG_LO && !nx.combo && i+1 < plan.steps.length-1)
       ws.push(`ℹ ${plan.steps[i].n}番から${nx.n}番へフリ ${d}°（ほぼ真っすぐ）。角度が無いぶん、次は力で出すことになります。`);
   }
@@ -4951,14 +5160,14 @@ function renderPanel(){
   el.innerHTML=plan.steps.map((s,i)=>{
     const [vl,vc]=vertLabel(s.b), sl=sideLabel(s.a);
     const cb=s.combo;
-    const cut=Math.round(Math.acos(clamp(s.cosT,-1,1))*180/Math.PI);
-    const sep=Math.round(Math.acos(clamp(s.ux*s.lx+s.uy*s.ly,-1,1))*180/Math.PI);
+    const cut=Math.round(angDeg(s.cosT));
+    const sep=Math.round(angDeg(s.ux*s.lx+s.uy*s.ly));
     const bars=powerBars(s.pw), strp=badgeStyle(s.n);
     const qc=pctColor(s.q0,0.75,0.5);
     const th=throwDeg(s);
     const last=i===plan.steps.length-1;
     const nx=last?null:plan.steps[i+1];
-    const nxCut=nx?Math.round(Math.acos(clamp(nx.cosT,-1,1))*180/Math.PI):null;
+    const nxCut=nx?Math.round(angDeg(nx.cosT)):null;
     return `<div class="step ${i===selStep?'sel':''}" data-i="${i}">
       <div class="sh">
         <span class="ord">${circ[i]||i+1}</span>
@@ -4973,7 +5182,7 @@ function renderPanel(){
           <div>力加減 <span class="pw">${bars}</span> ${powerText(s.pw)}${
             cb?'':` ・ 手玉移動 <b>${Math.round(s.dist)}″</b>${s.rails?` (${s.rails}クッション)`:''}`}${
             last||cb?'':` ・ 出し <b>${Math.round(s.pos*100)}%</b>`}</div>
-          <div>${cb?`9番まで <b>${Math.round(cb.dL)}″</b> ・ 1球目→9番のカット <b>${Math.round(Math.acos(clamp(cb.cos2,-1,1))*180/Math.PI)}°</b>`
+          <div>${cb?`9番まで <b>${Math.round(cb.dL)}″</b> ・ 1球目→9番のカット <b>${Math.round(angDeg(cb.cos2))}°</b>`
                   :`スロー <b>${Math.abs(th).toFixed(1)}°</b>${Math.abs(th)>0.35?'（狙いを逆へ補正）':''}${
             last?` ・ 最終球のフリ <b>${cut}°</b>${cut<LAST_CUT?'（30°未満 ◎）':''}`
                 : ` ・ 次のフリ <b>${nxCut}°</b>${nxCut<ANG_LO?'（真っすぐ）':(nxCut<=ANG_HI?'（◎ アングル良好）':'')}`}`}</div>
@@ -4989,6 +5198,7 @@ function renderPanel(){
             ${tipOverride[s.k]?'<span class="tag e">撞点 手動</span>':''}
             ${powOverride[s.k]?`<span class="tag e">力加減 ${POWLBL[powOverride[s.k]]}</span>`:''}
             <span class="tag ${s.d1<=NEAR_PT?'s':'w'}">${s.d1<=NEAR_PT?'2ポイント以内':'2ポイント超'}</span>
+            ${s.sidePick?'<span class="tag s">近いサイドを使う</span>':''}
             ${s.hard>HARD_TAG?'<span class="tag w">難所</span>':''}
             ${s.moved?'<span class="tag d">前の手で動いた位置</span>':''}
             ${cb?'<span class="tag s">決まれば上がり</span>'
@@ -5033,7 +5243,7 @@ function updateHint(){
   if(!plan||!plan.steps.length){ h.innerHTML='この位置からは狙えません。別の場所をタップ'; return; }
   const s=plan.steps[Math.min(selStep,plan.steps.length-1)];
   const [vl]=vertLabel(s.b), sl=sideLabel(s.a);
-  const sep=Math.round(Math.acos(clamp(s.ux*s.lx+s.uy*s.ly,-1,1))*180/Math.PI);
+  const sep=Math.round(angDeg(s.ux*s.lx+s.uy*s.ly));
   if(s.combo){
     h.innerHTML=`<b>${selStep+1}球目</b> ${s.n}番→${s.combo.Ln}番のコンビ → ${pocketName(s.pi)} ／ ${thickLabel(s.cosT)}で当てる ／ 決まれば上がり`;
     return;
