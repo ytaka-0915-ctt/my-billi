@@ -561,6 +561,26 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       <p>9フィート台に的玉をランダムに並べ、フリーボール（手玉を好きな所に置ける状態）から
       <b>いちばん確実な取り切りルート</b>、または<b>いちばん有効なセーフティー</b>を計算して表示します。
       手玉と的玉の動きは実際の物理（分離角・引き/押し・捻り・クッション・球どうしの衝突）で計算しています。</p>
+      <p class="note"><b>v1.0.8 の主な変更（セーフティーの「密着」を実戦の確率で見る）</b>：
+      <b>①転がしてからの密着を当てにしなくなりました</b>
+      — 手玉と的玉を<b>2 ポイント（25″）以上転がしたうえで、最後にぴったり密着させる</b>のは、
+      土手が受け止めてくれる場合を除いて<b>至難の業</b>で、実戦では狙って作る手ではありません。
+      これまでは落ち着き先どうしの距離だけを見て満点の密着として加点していたため、
+      総当たり探索が<b>「長々と転がして偶然くっつく 1 本」</b>を拾っていました。
+      いまは<b>転がした距離から「最後のすき間がどれだけばらつくか」</b>を出し、
+      <b>期待できる密着</b>で評価します（手玉か的玉が 2 ポイント転がった時点で密着の加点は 0、
+      <b>土手ぎわの密着は土手が止めてくれるので残します</b>）。
+      その代わりに<b>他の的玉の裏に隠す手を優先</b>します。<br>
+      <b>②密着をスヌークと数えていた誤りを直しました</b>
+      — 手玉が的玉に<b>くっついている配置を「相手は的玉に当てられない＝完全スヌーク」</b>と
+      読んでいました（台の真ん中の密着でも<b>隠れ具合 100%</b>の満点）。
+      接触している時点ですでに当たっているので、相手はそのまま押し出せば反則にはなりません。
+      密着は<b>「隠した」のではなく「相手のキューを振らせない」</b>手として数えます。<br>
+      この 2 つで、同じ配置でも<b>本物の「球の裏に隠す」手が選ばれやすく</b>なりました
+      （検証：1,548 手で<b>2 ポイント以上転がしてからの密着 1.6〜1.7% → 0.4%</b>、
+      <b>密着をスヌークと誤って数えた手 41 件 → 0 件</b>、
+      その一方で<b>本物のスヌークは 481→490・551→558 と増加</b>、
+      成立率は 0.519→0.521・0.469→0.473）。</p>
       <p class="note"><b>v1.0.7 の主な変更</b>：
       <b>①近いサイドポケットを使うようになりました</b>
       — <b>遠いコーナーのほうがフリ（カット角）が緩い</b>配置では、これまで角度だけを見て
@@ -834,6 +854,16 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
                 密着＝手玉を<b>的玉に密着</b>させる、または<b>クッション際に貼り付ける</b>こと。
                 相手はキューが振れず、撞点も選べないので、入れられても次が作れません。
                 くわしくは<b>「13. 実戦の極意」</b>を見てください。</td></tr>
+        <tr><th>密着は<br>「作れる密着」<br>だけ数える<br><span style="font-weight:600">（v1.0.8）</span></th>
+            <td><b>2 ポイント（25″）以上転がしたあとに、土手以外でぴったり密着させるのは
+                狙って作れません</b>。転がした距離から<b>最後のすき間のばらつき</b>を出し、
+                <b>期待できる密着</b>で評価します（1 ポイントまでの転がりなら満点、
+                手玉か的玉が 2 ポイント転がると密着ぶんの加点は 0、
+                <b>土手ぎわの密着は土手が止めてくれるので残す</b>）。
+                当てにできない密着には<b>「結果的に密着」</b>タグと説明が出ます。
+                <b>密着そのものはスヌークとして数えません</b>（くっついている＝すでに当たっているので、
+                相手はそのまま押し出せば反則にはならない）。
+                そのぶん<b>他の的玉の裏に隠す手</b>が優先されます。</td></tr>
       </table>
       <ul>
         <li>スクラッチ、ノークッション（＝ファウル）になる手は最初から除外しています</li>
@@ -844,6 +874,10 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
             「相手に何が残るか」を判定します（v1.0.5）。再生でも一緒に動きます</li>
         <li><b>置き成功率</b>＝手玉と的玉の移動距離から求めた「狙った所に止められる確率」。
             長く走らせるセーフティーほど下がるので、<b>移動の短い手が優先されます</b></li>
+        <li><b>密着の作れる度</b>（v1.0.8）＝そのすき間を狙って作れるかどうか。
+            <b>手玉と的玉が実際に転がった距離</b>から出します。
+            100% なら狙って作れる密着、0% なら<b>決まったら儲けものの密着</b>で、
+            点数には入れません（パネルの<b>すき間</b>の横に出ます）</li>
         <li>相手に入れ筋が残る場合は、直球を<b style="color:#f87171">赤</b>、
             バンクを<b style="color:#fbbf24">黄</b>のラインと確率で表示します</li>
         <li>バンクの成功率は A級の実力で、素直な短いバンクで 30% 前後、
@@ -1039,6 +1073,27 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
         <tr><th>キューボールを<br>長く止めない</th>
             <td><b>手玉と的玉を離す（ロングセーフティー）</b>ほど、相手はシュートも出しも難しくなります。
                 中途半端な距離がいちばん撞きやすいので、<b>離す</b>か<b>密着させる</b>かのどちらかに寄せます。</td></tr>
+        <tr><th>転がしてからの<br>密着は<br>当てにしない<br><span style="font-weight:600">（v1.0.8）</span></th>
+            <td>密着は強いセーフティーですが、<b>土手以外で完全に密着させるのは至難の業</b>です。
+                手玉と的玉を<b>2 ポイント（25″）以上転がしたうえで、最後にぴったりくっつける</b>のは
+                実戦では狙って作る手ではなく、<b>決まったら儲けもの</b>です。
+                ところが v1.0.7 までは落ち着き先どうしの距離しか見ていなかったので、
+                <b>3,675 通りの総当たり</b>が「長々と転がして偶然くっつく 1 本」を見つけ、
+                <b>他の球の裏に隠す素直な手より上に来る</b>ことがありました。<br>
+                v1.0.8 では<b>転がした距離から最後のすき間のばらつき</b>を出し、
+                <b>狙いどおりのすき間ではなく期待できるすき間</b>で密着を評価します
+                （<b>1 ポイントまでの転がりなら満点／2 ポイントで加点 0</b>。
+                手玉と的玉のばらつきは独立なので二乗和で合わせます）。
+                <b>土手ぎわの密着は土手が止めてくれる</b>ので、
+                長く転がしてもばらつきを 35% まで落として残します。
+                <b>手玉がクッション際でブリッジが組めない</b>ぶんは転がしても作れるので割り引きません。<br>
+                あわせて<b>密着をスヌークと数えていた誤りも直しました</b>。
+                くっついている手玉は 72 方向のゴーストがすべて後ろ側に来るため
+                「当てる筋が一つも無い＝完全スヌーク」と読み、
+                <b>台の真ん中の密着でも隠れ具合 100%</b> の満点になっていました。
+                接触している時点ですでに当たっているので、
+                相手は押し出すだけで反則にはなりません。<b>密着は「隠した」のではなく
+                「相手のキューを振らせない」手</b>として数えます。</td></tr>
         <tr><th>クッション<br>セーフティー</th>
             <td>直接隠せないときは、<b>1〜2 クッションで手玉を難所へ送る</b>手を探します。
                 そのために力加減の候補も強い側まで広げました。</td></tr>
@@ -1137,7 +1192,8 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
      画面に出す％は上の式そのもの。それとは別に、実戦の極意
      （厚み 9 割・力 1 割／最終球から逆算／難所は中盤で処理／逃げ道を確保／
       アングルを作る／近いサイドを使う／
-      セーフティーは厚みを消す・離す・クッションで送る・攻めた振り）を
+      セーフティーは厚みを消す・離す・クッションで送る・攻めた振り・
+      転がしてからの密着は当てにしない）を
      「好み」としてルート選択にだけ掛けている。
      確率モデルが見ていない再現性を買う仕組みで、表示する％は汚さない。
 
@@ -1260,6 +1316,40 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
            上昇 4 / 下降 2。出し先の条件を外すと 平均 −0.14pt・上昇 3 / 下降 3、
            SIDE_NV_OK を 0.85 に上げると 平均 −0.01pt なので 0.75 を採った）
      F-3 cos → 度の変換を angDeg() に統一（同じ式が 12 か所に散っていた）。
+
+   ■ v1.0.8 の変更点（セーフティーの「密着」を実戦の確率で見る）
+     G-1 「2 ポイント以上転がしてからの密着」を当てにしないようにした。
+         土手以外で完全に密着させるのは至難の業で、実戦では狙って作る手ではない
+         （＝決まったら儲けもの）。v1.0.7 までは落ち着き先どうしの距離しか
+         見ていなかったので、狙い × 撞点 × 捻り × 力加減の総当たり（3,675 本）が
+         「長々と転がして偶然くっつく 1 本」を満点の密着として拾い、
+         他の球の裏に隠す素直な手を押しのけていた。
+         ・simulate() に SIM.run（実際に転がった道のり）を追加
+         ・freezeErr() … 転がりが FRZ_FREE（1 ポイント）を超えたぶんから
+                        最後のすき間のばらつきを出す。手玉と的玉のばらつきは
+                        独立なので二乗和（hypot）。FRZ_SPAN（＋1 ポイント）で
+                        密着ぶんの加点はちょうど 0 になる。
+                        土手ぎわは土手が止めてくれるので FRZ_RAIL（65%）減らす。
+         ・tightness() … 狙いどおりのすき間ではなく「期待できるすき間」で見る。
+                        クッションへの密着（ブリッジが組めない）は転がしても
+                        作れるので割り引かない。
+         ・SAFE_W …… 重みを密着から隠す側へ寄せた
+                        （mine hide 0.18→0.22 / tight 0.12→0.10、
+                         opp  hide 0.66→0.72 / tight 0.34→0.26）
+     G-2 密着をスヌークと数えていた誤りを直した（G-1 の根本原因）。
+         手玉が的玉にくっついていると、opponentBest() の 72 方向走査は
+         どのゴーストも手玉の後ろ側に来るため full <= 0 で全部はじかれ、
+         canHit = false ＝「相手は的玉に当てられない」＝ 完全スヌークになっていた。
+         台の真ん中の完全な密着でも hide = 1.00・score 1.15 の満点で、
+         これが「長く転がして偶然くっつく手」を最上位に押し上げていた。
+         接触している時点ですでに当たっているので、相手はそのまま押し出せば
+         反則にはならない。すき間 FROZEN_EPS（0.20″）以下は
+         canHit = true / hitFull = 1（真っ芯でしか当てられない）として扱う。
+         密着の価値は tightness（相手のキューが振れない）だけで数える。
+         （検証：同一 1,548 手で 2 ポイント以上転がしてからの密着 1.6〜1.7% → 0.4%、
+           密着をスヌークと誤って数えた手 41 → 0、本物のスヌークは
+           481→490（mine）・551→558（opp）と増え、失った本物のスヌークは 1 件。
+           成立率は 0.519→0.521・0.469→0.473、成立した手 37.9% → 38.1%）
    ========================================================================= */
 
 /* =========================================================================
@@ -1283,7 +1373,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.0.7';
+const VERSION = '1.0.8';
 
 /* --- テーブルコンディション ---------------------------------------------
    ラシャの状態で「どこまで走るか」「回転がいつまで残るか」「スローの量」
@@ -1870,7 +1960,7 @@ function impactState(b, P0, d1){
      pts などが差し替わるので、続けて別の球を計算するときは
      必要な値を先に複製しておくこと。SIM.hits も同様。
    ------------------------------------------------------------------------- */
-const SIM = {x:0,y:0,rails:0,scratch:false,hit:false,pts:null,railIdx:null,hits:null};
+const SIM = {x:0,y:0,rails:0,scratch:false,hit:false,pts:null,railIdx:null,hits:null,run:0};
 const NOHITS = [];
 const MAX_COL = 2;        // 1 手で解く球どうしの衝突はここまで（暴走防止）
 function struckIdx(hits,i){
@@ -1879,6 +1969,7 @@ function struckIdx(hits,i){
 }
 function simulate(sx,sy,ux,uy,pot,E,balls,rec,resolve){
   let x=sx,y=sy,rails=0,scratch=false,hit=false;
+  let run=0;                       /* 実際に転がった道のり（クッション込み。v1.0.8） */
   const railGen = noEnglish ? 0 : RAIL_GEN;
   if(noEnglish) E = 0;
   const pts = rec?[[x,y]]:null;
@@ -1929,9 +2020,9 @@ function simulate(sx,sy,ux,uy,pot,E,balls,rec,resolve){
       const p=POCKETS[i], tt=hitCircle(x,y,ux,uy,step,p.x,p.y,p.corner?2.25:2.45);
       if(tt<st) st=tt;
     }
-    if(st<=bt && st<Infinity){ scratch=true; x+=ux*st; y+=uy*st; if(rec)pts.push([x,y]); break; }
+    if(st<=bt && st<Infinity){ scratch=true; x+=ux*st; y+=uy*st; run+=st; if(rec)pts.push([x,y]); break; }
     if(bt<Infinity){
-      hit=true; x+=ux*bt; y+=uy*bt; pot-=bt; if(rec)pts.push([x,y]);
+      hit=true; x+=ux*bt; y+=uy*bt; pot-=bt; run+=bt; if(rec)pts.push([x,y]);
       if(!resolve || nCol>=MAX_COL || pot<=0.4) break;
       /* --- 2 球衝突 -------------------------------------------------------
          中心線 n̂ 方向にだけ力が伝わる。当たられた球は n̂ へ、
@@ -1958,7 +2049,7 @@ function simulate(sx,sy,ux,uy,pot,E,balls,rec,resolve){
       continue;
     }
 
-    x+=ux*step; y+=uy*step; pot-=step;
+    x+=ux*step; y+=uy*step; pot-=step; run+=step;
     E *= Math.exp(-SPIN_DK*step);                 /* 横回転は走るほど抜ける */
     if(rec) pts.push([x,y]);
     if(pot<=0.4) break;
@@ -1995,7 +2086,7 @@ function simulate(sx,sy,ux,uy,pot,E,balls,rec,resolve){
   }
   SIM.x=clamp(x,R,W-R); SIM.y=clamp(y,R,HT-R);
   SIM.rails=rails; SIM.scratch=scratch; SIM.hit=hit;
-  SIM.pts=pts; SIM.railIdx=railIdx; SIM.hits=hits||NOHITS;
+  SIM.pts=pts; SIM.railIdx=railIdx; SIM.hits=hits||NOHITS; SIM.run=run;
   return SIM;
 }
 
@@ -2989,11 +3080,12 @@ function findBestSpot(){
    洗い出し、どちらかが入りそうならその手は除外する。
    逆に、バンクでも配置が悪い・的玉が土手・距離が遠いなどで成功率が
    極端に低ければ、そのまま有効なセーフティーとして扱う。
-   実戦の極意として、次の 4 つを評価に組み込んでいる。
+   実戦の極意として、次の 5 つを評価に組み込んでいる。
      ・完全に隠せなくても「厚みを取らせない」だけで十分効く（hideValue）
      ・手玉と的玉を離す＝ロングセーフティーを優先する（longFac）
      ・直接隠せないときはクッションで手玉を難所へ送る（cRails）
      ・入れ狙いに見せて厚みをわずかに外す「攻めた振り」（disguiseOf）
+     ・転がしてからの密着は狙って作れないので当てにしない（freezeErr。v1.0.8）
    さらに狙い/力加減を振って「その通りに打てなくても成立するか」を測り、
    成立率の高い（＝確率の高い）セーフティーを選ぶ。
    ========================================================================= */
@@ -3094,11 +3186,40 @@ function bankBest(cx,cy,ob,others,cbRail,railOb){
      ・手玉がクッション際 … ブリッジが組めない
    「隠す（スヌーク）」に次ぐ優先度でセーフティーの評価に入れる。 */
 const TIGHT_GAP = 3.2;   // これ以上すき間があれば密着ではない [inch]
-function tightness(cEnd, oEnd){
+
+/* --- 「転がしてからの密着」は狙って作れない（v1.0.8 / G-1）---------------
+   手玉と的玉を 2 ポイント（25″）以上転がしたうえで、最後にぴったり密着させるのは
+   土手が受け止めてくれる場合を除いて至難の業で、実戦では狙って作る手ではない
+   （＝決まったら儲けもの）。ところが v1.0.7 までは落ち着き先どうしの距離だけを見て
+   満点の密着として加点していたため、総当たり探索が「長々と転がして偶然くっつく
+   1 本」を拾い、他の的玉の裏に隠す素直な手より上に来ることがあった。
+
+   ここでは転がした距離から「最後のすき間がどれだけばらつくか」を出し、
+   狙いどおりのすき間ではなく期待できるすき間で密着を評価する。
+     FRZ_FREE … ここまでの転がりなら密着は作れる（1 ポイント）
+     FRZ_SPAN … これだけ余分に転がると密着ぶんの加点は消える（＋1 ポイント）
+                ＝手玉か的玉が 2 ポイント転がった時点で密着の加点は 0
+     FRZ_RAIL … 土手ぎわの密着は土手が止めてくれるので、ばらつきをこれだけ減らす
+   手玉と的玉の両方が転がるぶんは独立なので、二乗和（hypot）で合わせる。
+   クッションへの密着（ブリッジが組めない）は転がしても作れるので割り引かない。 */
+const FRZ_FREE = 12.5, FRZ_SPAN = 12.5, FRZ_RAIL = 0.65;
+function freezeErr(cEnd, oEnd, cRun, oRun){
+  const ec = Math.max(0, (cRun||0) - FRZ_FREE);
+  const eo = Math.max(0, (oRun||0) - FRZ_FREE);
+  if(ec<=0 && eo<=0) return 0;
+  const rail = Math.max(railNear(cEnd.x, cEnd.y), railNear(oEnd.x, oEnd.y));
+  return TIGHT_GAP*Math.hypot(ec, eo)/FRZ_SPAN*(1 - FRZ_RAIL*rail);
+}
+/* t = 総合の密着度（評価に使う） / ball = 期待できる的玉への密着
+   frz = 密着を当てにできる度合い（1 = 狙って作れる / 0 = 運） / gap = 実際のすき間 */
+function tightness(cEnd, oEnd, cRun, oRun){
   const gap  = Math.max(0, Math.hypot(cEnd.x-oEnd.x, cEnd.y-oEnd.y) - BD);
-  const ball = clamp(1 - gap/TIGHT_GAP, 0, 1);          // 的玉への密着
+  const err  = freezeErr(cEnd, oEnd, cRun, oRun);
+  const frz  = clamp(1 - err/TIGHT_GAP, 0, 1);
+  const ball = clamp(1 - (gap + err)/TIGHT_GAP, 0, 1);  // 的玉への密着（ばらつき込み）
   const rail = 1 - bridgeLim(cEnd.x, cEnd.y);           // クッションへの密着（0-0.8）
-  return clamp(Math.max(ball, 0.80*rail) + 0.25*Math.min(ball, rail), 0, 1);
+  return {t: clamp(Math.max(ball, 0.80*rail) + 0.25*Math.min(ball, rail), 0, 1),
+          ball, rail, frz, gap};
 }
 
 /* セーフティー後、相手に何が残るかを評価する。
@@ -3106,7 +3227,9 @@ function tightness(cEnd, oEnd){
      bankQ     = 1 クッションのバンクでの最良成功率
      threat    = そのどちらか高いほう＝相手に残る本当の脅威
      snookered = 的玉に直接当てる筋が一つも無い
+                 （密着は当てられている状態なのでスヌークではない。v1.0.8 / G-2）
      hitFull   = 相手が取れる最大の「厚み」（1 = 真っ芯 / 0.3 以下 = かすりだけ） */
+const FROZEN_EPS = 0.20;   // これ以下のすき間は「密着（＝すでに当たっている）」[inch]
 function opponentBest(cx,cy,ob,others){
   const cbRail = 1 + CBRAIL_K*(1-bridgeLim(cx,cy));
   const railOb = railNear(ob.x, ob.y);
@@ -3144,6 +3267,17 @@ function opponentBest(cx,cy,ob,others){
     canHit=true;
     if(full>hitFull) hitFull=full;
   }
+  /* 密着はスヌークではない（v1.0.8 / G-2）。
+     手玉が的玉にくっついていると、72 方向のどのゴーストも手玉の後ろ側に来るので
+     full <= 0 で全部はじかれ、canHit = false ＝「相手は的玉に当てられない」＝
+     完全スヌークと読んでいた。台の真ん中での完全な密着まで hide = 1.00 の満点に
+     なるため、総当たり探索が「長々と転がして偶然くっつく 1 本」を最上位に拾い、
+     他の球の裏に隠す素直な手を押しのけていた。
+     実際には接触している時点で当たっているので、相手はそのまま押し出せば
+     反則にはならない（＝当てる筋を消せていない）。真っ芯でしか当てられない
+     ＝ hitFull = 1 として扱い、「隠した」ぶんの加点はしない。
+     密着の価値は相手のキューが振れないこと（tightness）だけで数える。 */
+  if(!canHit && Math.hypot(ob.x-cx, ob.y-cy) < BD + FROZEN_EPS){ canHit=true; hitFull=1; }
   /* バンクは「的玉に直接当てられる」ときにしか成立しない。
      直球だけで既に基準（SAFE_OK_Q）を大きく超えている手はその時点で不成立なので、
      バンクは探さない（bankNA = 未評価）。探索を軽く保つための割り切り。 */
@@ -3281,16 +3415,16 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
   const objPot=cvec.Q1*cT*cT;
   const os=simulate(target.x,target.y,lx,ly,objPot,0,others,false,true);
   const oEnd={x:os.x,y:os.y},
-        oScr=os.scratch, oRails=os.rails, oHit=os.hit;
+        oScr=os.scratch, oRails=os.rails, oHit=os.hit, oRun=os.run;
   const oHits=os.hits.length?os.hits.slice():null;
   /* 手玉 */
   const fx=cvec.fx, fy=cvec.fy, m=cvec.m;
   const cuePot=cvec.Q1*m*m;
   if(cuePot>CUEMAX*1.08) return false;
-  let cEnd={x:gx,y:gy}, cScr=false, cRails=0, cHit=false, cHits=null;
+  let cEnd={x:gx,y:gy}, cScr=false, cRails=0, cHit=false, cHits=null, cRun=0;
   if(cuePot>0.5 && m>0.02){
     const cs=simulate(gx,gy,fx/m,fy/m,cuePot,-SPIN_K*a*Math.sqrt(Math.max(cvec.Q1,0.01))*0.88,others,false,true);
-    cEnd={x:cs.x,y:cs.y}; cScr=cs.scratch; cRails=cs.rails; cHit=cs.hit;
+    cEnd={x:cs.x,y:cs.y}; cScr=cs.scratch; cRails=cs.rails; cHit=cs.hit; cRun=cs.run;
     cHits=cs.hits.length?cs.hits.slice():null;
   }
   if(cScr) return false;                                  // スクラッチは論外
@@ -3323,8 +3457,10 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
      実効移動距離から「置きたい所に置ける確率」を出して評価に掛ける。 */
   const ctrl = posFactor(cuePot*(1+POS_RAIL*cRails) + objPot*(1+POS_RAIL*oRails)*0.75, 0);
   /* ロングセーフティー優先 ― 手玉と的玉を離すほど、相手はシュートも出しも難しくなる。
-     嫌なのは「遠い」か「密着」で、中途半端な距離がいちばん撞きやすい。 */
-  const tight = tightness(cEnd, oEnd);
+     嫌なのは「遠い」か「密着」で、中途半端な距離がいちばん撞きやすい。
+     密着は「転がした距離ぶんばらつく」ので、当てにできるぶんだけ数える（v1.0.8）。 */
+  const tg = tightness(cEnd, oEnd, cRun, oRun);
+  const tight = tg.t;
   const longFac = clamp(oppDist/LONG_REF, 0, 1);
   const leave = Math.max(0.16*longFac, 0.30*tight);
   let sc = (op.snookered?1.15:(1-op.threat)*(1+0.30*hide)) * (1+leave) * ctrl;
@@ -3339,6 +3475,7 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
   SF.bgx=op.bgx; SF.bgy=op.bgy; SF.oppDist=oppDist; SF.longFac=longFac;
   SF.bankQ=op.bankQ; SF.bankPi=op.bankPi; SF.brx=op.brx; SF.bry=op.bry;
   SF.bankNA=op.bankNA; SF.threat=op.threat; SF.tight=tight;
+  SF.frz=tg.frz; SF.gapRaw=tg.gap; SF.cRun=cRun; SF.oRun=oRun;
   SF.hitFull=op.hitFull; SF.hide=hide;
   SF.score=sc; SF.good=good; SF.cuePot=cuePot; SF.objPot=objPot; SF.ctrl=ctrl;
   SF.spd=Math.sqrt(P0/SPD_REF);
@@ -3354,6 +3491,7 @@ function snapSafety(cx,cy,target){
     bestPi:SF.bestPi, bgx:SF.bgx, bgy:SF.bgy, oppDist:SF.oppDist, longFac:SF.longFac,
     bankQ:SF.bankQ, bankPi:SF.bankPi, brx:SF.brx, bry:SF.bry, bankNA:SF.bankNA,
     threat:SF.threat, tight:SF.tight, good:SF.good, hitFull:SF.hitFull, hide:SF.hide,
+    frz:SF.frz, gapRaw:SF.gapRaw, cRun:SF.cRun, oRun:SF.oRun,
     cuePot:SF.cuePot, objPot:SF.objPot, ctrl:SF.ctrl,
     spd:SF.spd, pw:SF.pw, score:SF.score};
 }
@@ -3507,6 +3645,8 @@ const SAFE_W = {
      snk   = スヌークのきつさ（キック筋が少ない＝ファウルを取れる。v1.0.3）
      ret   = 相手のセーフティー返しが楽なら割り引く（v1.0.3）
      tight = 手玉を的玉／クッションに密着させて相手のキューを振らせない
+             （v1.0.8：転がしてからの密着は狙って作れないので、
+               当てにできるぶんだけが tight に入る。重みも隠す側へ寄せた）
      long  = 手玉と的玉を離す（ロングセーフティー）
      rail  = クッションを使って手玉を難所へ送る
      disg  = 入れ狙いに見せかける（攻めた振り）
@@ -3515,10 +3655,10 @@ const SAFE_W = {
      fhide = 遠めの的玉の裏に隠す＝隠す × 距離（v1.0.7）
    v1.0.7 の 3 つは「相手の失敗率重視」だけに効かせる（mine は 0）。
    基準の方針（自分の成功率重視）が出す答えを変えないため。 */
-  mine: {rate:1.00, opp:0.12, maxq:0.06, ctrl:0.26, hide:0.18, snk:0.14, ret:0.14,
-         tight:0.12, long:0.10, rail:0.04, disg:0.05, bank:0, foul:0, fhide:0},
-  opp : {rate:0.18, opp:1.00, maxq:0.45, ctrl:0.16, hide:0.66, snk:0.50, ret:0.30,
-         tight:0.34, long:0.30, rail:0.09, disg:0.10, bank:0.40, foul:0.45, fhide:0.30}
+  mine: {rate:1.00, opp:0.12, maxq:0.06, ctrl:0.26, hide:0.22, snk:0.14, ret:0.14,
+         tight:0.10, long:0.10, rail:0.04, disg:0.05, bank:0, foul:0, fhide:0},
+  opp : {rate:0.18, opp:1.00, maxq:0.45, ctrl:0.16, hide:0.72, snk:0.50, ret:0.30,
+         tight:0.26, long:0.30, rail:0.09, disg:0.10, bank:0.40, foul:0.45, fhide:0.30}
 };
 /* セーフティー自体の実行難度（v1.0.5 / P-5）。
    v1.0.4 は取り切り側に aPen があるのに、セーフティー側には捻りの減点が
@@ -4956,6 +5096,11 @@ function renderSafetyPanel(){
     ws.push(`ℹ 相手の失敗率重視では、バンクの可能性が残る手を割り引いています。`
       + `この手にはまだ ${Math.round(bankQ*100)}% のバンクが残るので、`
       + `別の位置からならファウル狙い（隠す）か、遠めの${sf.n}番の裏に隠す手が作れるかもしれません。`);
+  /* 「転がしてからの密着」は狙って作れないので、密着ぶんを点数に入れていないことを伝える（v1.0.8）*/
+  if(sf.gapRaw < TIGHT_GAP*0.25 && (sf.frz||0) < 0.5)
+    ws.push(`ℹ 手玉と${sf.n}番は結果的に密着しますが、手玉 ${Math.round(sf.cRun||0)}″・${sf.n}番 ${Math.round(sf.oRun||0)}″ 転がしたあとに`
+      + `土手以外で密着させるのは狙って作れません（当てにできる度合い ${Math.round((sf.frz||0)*100)}%）。`
+      + `密着ぶんは加点せず、他の球の裏に隠す手を優先して選んでいます。`);
   if(sf.ret>=0.55)
     ws.push(`⚠ 相手は入れられませんが、セーフティーで返しやすい配置です（返しやすさ ${Math.round(sf.ret*100)}%）。`);
   if(sf.oppDist<28)
@@ -4976,10 +5121,14 @@ function renderSafetyPanel(){
   const retTag = sf.ret>=0.55
     ? `<span class="tag w">返されやすい ${Math.round(sf.ret*100)}%</span>`
     : (sf.ret<=0.25 ? '<span class="tag s">返しも作らせない</span>' : '');
-  /* 密着（フリーズ）は隠すのに次ぐ強いセーフティー。成立していればタグで示す */
+  /* 密着（フリーズ）は隠すのに次ぐ強いセーフティー。成立していればタグで示す。
+     v1.0.8：転がしてからの密着は狙って作れないので、当てにできない密着は
+     「結果的に密着」として別タグにし、点数にも入れない。 */
   const tightTag = sf.tight>=0.55
-    ? `<span class="tag s">密着させる（${sf.oppDist-BD < TIGHT_GAP*0.5 ? '的玉に' : 'クッションに'}）</span>`
-    : '';
+    ? `<span class="tag s">密着させる（${sf.gapRaw < TIGHT_GAP*0.5 ? '的玉に' : 'クッションに'}）</span>`
+    : (sf.gapRaw < TIGHT_GAP*0.25 && (sf.frz||0) < 0.5
+        ? `<span class="tag w">結果的に密着（狙って作れる密着ではない ${Math.round((sf.frz||0)*100)}%）</span>`
+        : '');
   const bankTag = (!sf.snookered && bankQ>0.02)
     ? `<span class="tag ${bankQ<=SAFE_BANK_Q?'s':'w'}">バンク ${Math.round(bankQ*100)}%</span>` : '';
   /* 実戦の極意がどれだけ効いた手なのかをタグで示す */
@@ -5002,11 +5151,12 @@ function renderSafetyPanel(){
     <div class="sb">
       <canvas class="tip" data-a="${sf.a}" data-b="${sf.b}"></canvas>
       <div class="meta">
-        <div>力加減 <span class="pw">${bars}</span> ・ 手玉 <b>${Math.round(sf.cuePot)}″</b>走行${sf.cRails?`(${sf.cRails}ク)`:''}
-             ・ 的玉 <b>${Math.round(Math.hypot(sf.oEnd.x-sf.ox,sf.oEnd.y-sf.oy))}″</b>移動
+        <div>力加減 <span class="pw">${bars}</span> ・ 手玉 <b>${Math.round(sf.cRun||0)}″</b>転がる${sf.cRails?`(${sf.cRails}ク)`:''}
+             ・ ${sf.n}番 <b>${Math.round(sf.oRun||0)}″</b>転がる${sf.oRails?`(${sf.oRails}ク)`:''}
              ・ 置き成功率 <b>${Math.round(sf.ctrl*100)}%</b></div>
         <div>残り位置: 手玉 (${Math.round(sf.cEnd.x)},${Math.round(sf.cEnd.y)}) ／ ${sf.n}番 (${Math.round(sf.oEnd.x)},${Math.round(sf.oEnd.y)})
-             ・ 距離 <b>${Math.round(sf.oppDist)}″</b></div>
+             ・ 距離 <b>${Math.round(sf.oppDist)}″</b>${sf.gapRaw < TIGHT_GAP
+                 ? ` ・ すき間 <b>${sf.gapRaw.toFixed(1)}″</b>（密着の作れる度 <b>${Math.round((sf.frz||0)*100)}%</b>）` : ''}</div>
         <div>相手の最良シュート <b>${sf.snookered?'なし（隠れている）'
              :`直球 ${Math.round(sf.maxQ*100)}%${sf.bankNA?'':` ／ バンク ${Math.round(bankQ*100)}%`}`}</b>
              （ばらつき込み平均 ${Math.round(sf.meanQ*100)}%）</div>
