@@ -982,7 +982,13 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
   </div>
 </div>
 
-<script>
+<!-- ===========================================================================
+     計算コア（1〜7 章）。DOM にはいっさい触らないので、この <script> の中身を
+     そのまま Web Worker にも読み込ませて、重い計算を裏のスレッドで回している。
+     二重管理を避けるため、Worker 用の複製は持たず textContent を再利用する。
+     ここに DOM を使うコードを足すと Worker 側が動かなくなるので注意。
+     ======================================================================== -->
+<script id="calcCore">
 "use strict";
 /* =========================================================================
    Billiトレ — 取り切り＆セーフティーシミュレーター
@@ -1049,7 +1055,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 
 /* --- テーブルコンディション ---------------------------------------------
    ラシャの状態で「どこまで走るか」「回転がいつまで残るか」「スローの量」
@@ -1471,8 +1477,6 @@ function erf(x){
 function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
 /* cos から角度（度）へ。カット角・分離角の判定と表示で共用する */
 function angDeg(cos){ return Math.acos(clamp(cos,-1,1))*180/Math.PI; }
-/* 要素の取得は全てこれ経由（id は index.html 側と 1 対 1） */
-const $ = id => document.getElementById(id);
 function hitCircle(x,y,dx,dy,tmax,cx,cy,rad){
   const ox=x-cx, oy=y-cy;
   const c = ox*ox+oy*oy-rad*rad;
@@ -1841,7 +1845,6 @@ function breakFactor(lay, res, k){
    4. 盤面状態
    ========================================================================= */
 let mode = 3;
-let orient = (innerHeight > innerWidth*1.1) ? 'v' : 'h';
 let balls = [], cue = null;
 let BASE = null;           // いま台に並んでいる配置から作った盤面データ
 let LAY  = null;           // 探索・描画がいま見ている盤面データ（動いた球を反映）
@@ -3560,6 +3563,29 @@ function findSafeSpot(){
 }
 
 /* =========================================================================
+   7c. 重い計算のひとまとまり
+   -------------------------------------------------------------------------
+   価値マップの作り直しと推奨位置探索。ここだけで数百 ms〜2 秒かかるので、
+   Worker が使える環境では裏のスレッドで、使えない環境ではメインスレッドで
+   走らせる。どちらも呼ぶのはこの関数なので、処理内容は必ず一致する。
+     prep … 盤面データ（BASE / LAY）を作り直す
+     dp   … 価値マップと取り切りの推奨位置
+     safe … セーフティーの推奨位置
+   ========================================================================= */
+function heavyRun(n){
+  if(n.prep || !BASE) prepare();
+  if(n.dp){ computeDP(); findBestSpot(); }
+  if(n.safe){ safeSpot=null; if(gameMode==='safe') findSafeSpot(); }
+}
+</script>
+
+<script>
+"use strict";
+/* 要素の取得は全てこれ経由（id は HTML 側と 1 対 1） */
+const $ = id => document.getElementById(id);
+let orient = (innerHeight > innerWidth*1.1) ? 'v' : 'h';
+
+/* =========================================================================
    8. 再計算
    ========================================================================= */
 function busy(on){ $('busy').classList.toggle('on', on); }
@@ -3567,30 +3593,140 @@ function busy(on){ $('busy').classList.toggle('on', on); }
 /* いま有効なフリーボールの推奨位置（モードで切り替わる） */
 function currentSpot(){ return gameMode==='safe' ? safeSpot : bestSpot; }
 
-/* 価値マップの作り直しなど重い処理は「計算中…」を出してから次のフレームで走らせる。
-   同期で回すと画面が固まったまま数百 ms 待たされるため。
-   keepSel を渡すと、いま選んでいるシュートの番号を保つ。 */
-function heavy(job, keepSel){
-  animKill();
-  busy(true); draw();
-  setTimeout(()=>{ job(); busy(false); recalc(keepSel); }, 20);
+/* -------------------------------------------------------------------------
+   重い計算（価値マップの作り直し・推奨位置探索）のスケジューラ
+
+   端末によっては 1〜2 秒かかる処理なので、メインスレッドで回すと
+   その間ずっと画面が固まる（「計算中…」を出しても点滅すら止まる）。
+   計算コア（<script id="calcCore">）をそのまま読み込ませた Web Worker に
+   投げて、裏のスレッドで走らせる。
+   Worker を作れない環境（file:// の制限など）では、これまでどおり
+   「計算中…」を出してから 20ms 後にメインスレッドで走らせる。
+   ------------------------------------------------------------------------- */
+let hvWorker = null;      // null=未作成 ／ false=使えない ／ Worker
+let hvReady  = false;     // Worker のスクリプト読み込みが済んだか
+let hvSeq    = 0;
+let hvRun    = null;      // いま走らせている依頼
+let hvWait   = null;      // 待たせている依頼（連打は 1 件にまとめる）
+
+/* Worker 本体は「計算コア ＋ この受け口」。処理内容は heavyRun() なので
+   メインスレッドで走らせたときと必ず同じ結果になる。 */
+const HV_GLUE = `
+self.onmessage = function(ev){
+  var d = ev.data;
+  applyCondition(d.condKey);
+  balls = d.balls; cue = null;
+  gameMode = d.gameMode; safePref = d.safePref; noEnglish = d.noEnglish;
+  tipOverride = d.tipOverride; powOverride = d.powOverride;
+  /* Worker 側の balls は毎回そのつど届く複製なので、盤面データは必ず作り直す
+     （BASE を使い回すと、中の球と balls の球が別物になってしまう）。 */
+  heavyRun({prep:true, dp:d.dp, safe:d.safe});
+  var out = {id:d.id, prep:d.prep, dp:d.dp, safe:d.safe};
+  if(d.dp){
+    out.lv=[]; out.raw=[]; out.mx=[];
+    for(var k=0;k<Vb.length;k++){
+      out.lv.push([Vb[k][0],Vb[k][1],Vb[k][2],Vb[k][3]]);
+      out.raw.push(Vb[k].raw||null);
+      out.mx.push(Vb[k].max);
+    }
+    out.bestSpot = bestSpot ? {x:bestSpot.x,y:bestSpot.y} : null;
+    out.bestSpotVal = bestSpotVal;
+  }
+  if(d.safe) out.safeSpot = safeSpot ? {x:safeSpot.x,y:safeSpot.y} : null;
+  self.postMessage(out);
+};
+self.postMessage({ready:true});
+`;
+
+function hvBoot(){
+  if(hvWorker !== null) return;                 /* 一度だけ試す */
+  try{
+    /* 計算コアは innerWidth / matchMedia から SMALL（格子の粗さ）を決める。
+       ここがメイン側とずれると価値マップのマス数が食い違うので、
+       同じ判定になる値を Worker 側に用意してから読み込ませる。 */
+    const px  = SMALL ? 800 : 1400;
+    const pre = `self.innerWidth=${px};self.innerHeight=${px};`
+              + `self.matchMedia=function(){return {matches:false};};\n`;
+    const url = URL.createObjectURL(
+      new Blob([pre + $('calcCore').textContent + HV_GLUE], {type:'text/javascript'}));
+    const w = new Worker(url);
+    w.onmessage = ev=>{
+      if(ev.data && ev.data.ready){ hvReady=true; URL.revokeObjectURL(url); return; }
+      hvApply(ev.data);
+    };
+    w.onerror = ()=>{ URL.revokeObjectURL(url); hvGiveUp(); };
+    hvWorker = w;
+    /* 読み込みに失敗しても onerror が来ない環境があるので、時間でも見切る */
+    setTimeout(()=>{ if(!hvReady){ URL.revokeObjectURL(url); hvGiveUp(); } }, 3000);
+  }catch(_){ hvWorker = false; }                /* Worker が作れない環境 */
 }
+/* Worker が使えないと分かったら、以後はメインスレッドで回す */
+function hvGiveUp(){
+  if(!hvWorker) return;                         /* すでにあきらめている */
+  try{ hvWorker.terminate(); }catch(_){}
+  hvWorker = false;
+  if(hvRun){ const r = hvRun; setTimeout(()=>{ heavyRun(r); hvFinish(r); }, 0); }
+}
+/* Worker の計算結果をメインスレッドの状態に取り込む */
+function hvApply(d){
+  if(!hvRun || d.id !== hvRun.id) return;       /* 古い結果は捨てる */
+  if(hvRun.stale){ hvFinish(hvRun); return; }   /* 盤面が変わったので使わない */
+  if(d.prep) prepare();                         /* BASE / LAY は軽いので手元で作る */
+  if(d.dp){
+    Vb = d.lv.map((lv,k)=>{ lv.raw = d.raw[k] || undefined; lv.max = d.mx[k]; return lv; });
+    bestSpot = d.bestSpot; bestSpotVal = d.bestSpotVal;
+  }
+  if(d.safe) safeSpot = d.safeSpot;
+  hvFinish(hvRun);
+}
+function hvStart(req){
+  hvWait = null; hvRun = req;
+  hvBoot();
+  if(hvWorker){
+    req.id = ++hvSeq;
+    hvWorker.postMessage({id:req.id, prep:req.prep, dp:req.dp, safe:req.safe,
+      condKey, balls, gameMode, safePref, noEnglish, tipOverride, powOverride});
+  }else{
+    setTimeout(()=>{ heavyRun(req); hvFinish(req); }, 20);   /* スピナーを描いてから */
+  }
+}
+function hvFinish(req){
+  hvRun = null;
+  if(hvWait){ hvStart(hvWait); return; }        /* 待たせた分は続けて流す */
+  recalc(req.keepSel); busy(false);
+}
+/* 重い処理の予約。need = {prep, dp, safe}（計算コアの 7c. heavyRun() を参照）。
+   処理中に来た依頼は 1 件にまとめてから流す（＝連打を間引く）。
+   keepSel を渡すと、いま選んでいるシュートの番号を保つ。 */
+function heavy(need, keepSel){
+  animKill();
+  const req = {prep:!!need.prep, dp:!!need.dp, safe:!!need.safe, keepSel:!!keepSel};
+  if(hvWait){ req.prep=req.prep||hvWait.prep; req.dp=req.dp||hvWait.dp; req.safe=req.safe||hvWait.safe; }
+  /* 盤面そのものが変わる依頼なら、走らせている途中の結果はもう使えない */
+  if(hvRun && req.prep) hvRun.stale = true;
+  busy(true); draw();
+  if(hvRun) hvWait = req;
+  else hvStart(req);
+}
+/* いま重い計算の最中か（画面を触られても壊れないようにするための判定） */
+function computing(){ return !!hvRun; }
 
 function rebuildRack(){
   balls = makeRack();
   cue = null; plan = null; safety = null; selStep = 0;
   bestSpot = null; safeSpot = null; tipOverride = {}; powOverride = {};
-  heavy(()=>{
-    prepare(); computeDP(); findBestSpot();
-    if(gameMode==='safe') findSafeSpot();
-  });
+  Vb = [];                       // 前の配置の価値マップは捨てる（ヒートマップの残像よけ）
+  heavy({prep:true, dp:true, safe:true});
 }
 /* 手玉の位置が決まったときの再計算（モードに応じて）
    keepSel = true なら、いま選んでいるシュートの番号を保つ
-   （撞点や力加減をいじっている途中で 1 球目に戻ってしまわないように） */
+   （撞点や力加減をいじっている途中で 1 球目に戻ってしまわないように）
+   価値マップができていない間（＝重い計算の最中）は何も出さない。
+   計算が終わったところで hvFinish() がもう一度ここを呼ぶ。 */
 function recalc(keepSel){
   animKill();
-  if(!cue){ plan=null; safety=null; renderPanel(); draw(); return; }
+  if(!cue || !BASE || !Vb.length){ plan=null; safety=null; renderPanel(); draw(); return; }
+  const t0 = now();
   if(gameMode==='safe'){ plan=null; safety=findSafety(cue.x,cue.y); }
   else {
     const keep = keepSel ? selStep : 0;
@@ -3598,9 +3734,27 @@ function recalc(keepSel){
     const n = plan&&plan.steps.length ? plan.steps.length : 1;
     selStep = clamp(keep, 0, n-1);
   }
+  recalcMs = now() - t0;
   renderPanel(); draw();
 }
-function replan(){ recalc(true); }
+/* -------------------------------------------------------------------------
+   ルート探索（findPlan / findSafety）そのものは Worker に出していない。
+   結果に盤面データへの参照が入り組んでいて、そのまま行き来させられないため。
+   ただし端末では 0.1〜0.3 秒かかるので、手玉を離した瞬間に一拍固まって
+   「押したのに反応しない」ように見える。前回の実測が重かったときだけ、
+   「計算中…」を先に出してから走らせる。
+   （速い端末では今までどおり即座に計算するので、余計な点滅は出ない。
+     ドラッグ中の追従計算では出さない ― 画面がちらついて邪魔になるので、
+     そちらは待ち時間を延ばして発火回数のほうを減らしている。） */
+const RECALC_SLOW = 60;                 // これを超えたらスピナーを挟む [ms]
+const now = ()=> (window.performance && performance.now) ? performance.now() : Date.now();
+let recalcMs = SMALL ? 999 : 0;         // 初回は端末の素性で決め打ち（すぐ実測に入れ替わる）
+function recalcUI(keepSel){
+  if(recalcMs < RECALC_SLOW || computing()){ recalc(keepSel); return; }
+  busy(true); draw();
+  setTimeout(()=>{ recalc(keepSel); if(!computing()) busy(false); }, 20);
+}
+function replan(){ recalcUI(true); }
 
 /* =========================================================================
    9. 描画
@@ -4490,6 +4644,7 @@ function draw(){
 
   if(editable()) drawEditHint();
   flushLabels();
+  blinkKick();          /* 点滅するものがあれば次の 1 回を予約する */
 }
 /* 配置編集できることを示す（手玉を置く前だけ） */
 function drawEditHint(){
@@ -4502,11 +4657,26 @@ function drawEditHint(){
   }
   ctx.restore();
 }
-/* 点滅（推奨位置マーカー・配置編集リング）だけのための軽い再描画 */
-setInterval(()=>{
-  if(anim.on) return;
-  if(!cue && (bestSpot||safeSpot||balls.length) && !document.hidden) draw();
-}, 110);
+/* 点滅（推奨位置マーカー・配置編集リング）だけのための軽い再描画。
+   以前は setInterval で常時回していたが、点滅するものが何も無いときまで
+   キャンバス全体を描き続けるため、開きっぱなしにすると端末が温まっていた。
+   いまは draw() のたびに次の 1 回だけ予約する自走式にして、
+     ・点滅対象が無くなった時点で自然に止まる（手玉を置いた／再生中）
+     ・画面が隠れている間は requestAnimationFrame が来ないので止まる
+   ようにしている。draw() の末尾から blinkKick() を呼ぶのが入口。 */
+const BLINK_MS = 110;
+let blinkTimer = 0;
+function blinkOn(){ return !anim.on && !cue && (bestSpot||safeSpot||balls.length); }
+function blinkKick(){
+  if(blinkTimer || !blinkOn()) return;
+  blinkTimer = setTimeout(()=>{
+    blinkTimer = 0;
+    if(!blinkOn()) return;
+    /* 実際に描くのは rAF の中だけ。画面が隠れている間は呼ばれないので、
+       裏に回したまま描き続けることがない（復帰したらそこから再開する）。 */
+    requestAnimationFrame(()=>{ if(blinkOn()) draw(); });
+  }, BLINK_MS);
+}
 
 /* =========================================================================
    10. パネル
@@ -5249,24 +5419,25 @@ function validBall(i,p){
 /* 手玉を置くまでは的玉を動かせる */
 function editable(){ return cue===null; }
 
-let dragging=false, dragBall=-1, pendTimer=null, rackTimer=null;
+let dragging=false, dragBall=-1, pendTimer=null;
+/* 指を止めてからルート探索を始めるまでの待ち時間。
+   非力な端末では探索そのものに 0.2〜0.3 秒かかるので、間隔を広げて
+   「動かす→固まる→動かす」の回数を減らす。 */
+const CUE_WAIT = SMALL ? 200 : 110;
 /* live = ドラッグ中。動かしている間は描くだけにして、
    指を離してから（または少し止まってから）重い計算を走らせる。 */
 function setCue(p,live){
   if(!validCue(p)) return;
   cue=p;
-  if(live){ draw(); clearTimeout(pendTimer); pendTimer=setTimeout(recalc,110); }
-  else recalc();
+  /* 追従計算にスピナーは出さない（ドラッグ中に画面が明滅すると邪魔になる）。
+     指を離したときだけ recalcUI() を通す。 */
+  if(live){ draw(); clearTimeout(pendTimer); pendTimer=setTimeout(()=>recalc(), CUE_WAIT); }
+  else recalcUI();
 }
 function rackChanged(live){
   animKill();
-  clearTimeout(rackTimer);
   if(live){ draw(); return; }
-  busy(true);
-  rackTimer=setTimeout(()=>{
-    prepare(); computeDP(); findBestSpot(); if(gameMode==='safe') findSafeSpot();
-    busy(false); renderPanel(); draw();
-  },20);
+  heavy({prep:true, dp:true, safe:true});
 }
 cv.addEventListener('pointerdown',e=>{
   e.preventDefault();
@@ -5297,7 +5468,7 @@ cv.addEventListener('pointermove',e=>{
 cv.addEventListener('pointerup',()=>{
   if(dragBall>=0){ dragBall=-1; rackChanged(false); return; }
   if(!dragging) return;
-  dragging=false; clearTimeout(pendTimer); recalc();
+  dragging=false; clearTimeout(pendTimer); recalcUI();
 });
 cv.addEventListener('pointercancel',()=>{ dragging=false; if(dragBall>=0){ dragBall=-1; rackChanged(false); } });
 
@@ -5342,10 +5513,7 @@ $('conds').addEventListener('click',e=>{
   applyCondition(k);
   document.querySelectorAll('#conds .seg').forEach(x=>x.classList.toggle('on', x.dataset.c===k));
   $('condNote').textContent = CONDITIONS[k].note;
-  heavy(()=>{
-    prepare(); computeDP(); findBestSpot();
-    safeSpot=null; if(gameMode==='safe') findSafeSpot();
-  });
+  heavy({prep:true, dp:true, safe:true});
 });
 
 /* 取扱説明書 */
@@ -5421,17 +5589,20 @@ $('gmodes').addEventListener('click',e=>{
   document.querySelectorAll('#gmodes .seg').forEach(x=>x.classList.remove('on'));
   b.classList.add('on'); gameMode=b.dataset.g;
   updateSafeUI();
-  heavy(()=>{ if(gameMode==='safe' && !safeSpot) findSafeSpot(); });
+  /* セーフティーの推奨位置がまだ無いときだけ探す（取り切りへ戻すだけなら計算不要） */
+  if(gameMode==='safe' && !safeSpot) heavy({safe:true});
+  else { animKill(); recalcUI(); }
 });
 $('sprefs').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b || b.dataset.sp===safePref) return;
   safePref=b.dataset.sp; updateSafeUI();
-  heavy(()=>{ safeSpot=null; findSafeSpot(); });     // 方針で推奨位置も変わる
+  heavy({safe:true});                                // 方針で推奨位置も変わる
 });
 /* 手玉を推奨位置に置く */
 function placeAtSpot(){
+  if(computing()) return;                            // 計算中は推奨位置がまだ無い
   const sp=currentSpot();
-  if(sp){ cue={x:sp.x,y:sp.y}; recalc(); }
+  if(sp){ cue={x:sp.x,y:sp.y}; recalcUI(); }
 }
 $('bNew').onclick=()=>rebuildRack();
 $('bAuto').onclick=placeAtSpot;
@@ -5479,7 +5650,7 @@ $('cNoEng').addEventListener('change',e=>{
      チェックを外したときは、その一律指定を消して自動に戻す。 */
   tipOverride={};
   if(noEnglish) for(let k=0;k<balls.length;k++) tipOverride[k]={a:0,b:0};
-  heavy(()=>{ computeDP(); findBestSpot(); }, true);   // 価値マップから作り直し
+  heavy({dp:true}, true);                             // 価値マップから作り直し
 });
 
 const chk=(id,k)=>$(id).addEventListener('change',e=>{ show[k]=e.target.checked; draw(); });
