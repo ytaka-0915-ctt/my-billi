@@ -124,15 +124,18 @@ header .kbd b{
   border-radius:4px; padding:1px 5px; color:var(--fg); font-size:11px; font-weight:700; margin:0 1px;
 }
 /* ボタンの共通ベース。個別のルールは色と余白だけを上書きする */
-#bTheme,#bOrient,#bHelp,#hClose,button.seg,button.act,.stepnav button,.fine button{
+#bTheme,#bOrient,#bFull,#bHelp,#hClose,button.seg,button.act,.stepnav button,.fine button{
   background:var(--bg4); border:1px solid var(--line2); color:var(--btnfg);
   border-radius:7px; font-family:inherit; font-weight:700; cursor:pointer;
   transition:background .12s, color .12s;
 }
-#bTheme:hover,#bOrient:hover,#bHelp:hover,#hClose:hover,
+#bTheme:hover,#bOrient:hover,#bFull:hover,#bHelp:hover,#hClose:hover,
 button.seg:hover,button.act:hover,
 .stepnav button:hover:not(:disabled),.fine button:hover:not(:disabled){background:var(--btnh); color:var(--fg);}
-#bTheme,#bOrient,#bHelp{padding:8px 11px; font-size:12.5px; white-space:nowrap;}
+#bTheme,#bOrient,#bFull,#bHelp{padding:8px 11px; font-size:12.5px; white-space:nowrap;}
+/* 全画面ボタンはアイコンだけ。ヘッダーを広げないよう常に最小幅で置く */
+#bFull{padding:8px 10px; font-size:15px; line-height:1;}
+#bFull.on{background:var(--pri); border-color:var(--pribd); color:var(--prifg);}
 #bHelp{background:var(--pri); border-color:var(--pribd); color:var(--prifg);}
 
 /* -------------------------------------------------------------------------
@@ -362,6 +365,10 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
    ======================================================================= */
 @media (max-width: 1180px){ aside{flex-basis:336px; width:336px;} }
 
+/* 全画面ボタンが増えたぶんヘッダーが混むので、キー説明は少し早めに畳む
+   （タブレット横持ちでボタンが見切れないようにするため） */
+@media (max-width: 1080px){ header .kbd{display:none;} }
+
 @media (max-width: 899px), (orientation: portrait) and (max-width: 1100px){
   main{flex-direction:column;}
   #stage{flex:1 1 auto; min-height:0;}
@@ -392,6 +399,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
   header .tagline{display:none;}
   #bHelp,#bTheme,#bOrient{padding:10px 11px;}
   #bTheme,#bOrient{padding:10px 9px;}
+  #bFull{padding:10px 9px;}
   .sec{padding:10px 11px;}
   button.seg,button.act{font-size:12.5px; padding:11px 3px;}   /* タップしやすい高さ */
   .chk{font-size:13px; padding:6px 0;}
@@ -433,6 +441,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
     <div class="kbd"><b>R</b>新配置 <b>A</b>自動配置 <b>V</b>縦横 <b>Space</b>再生 <b>T</b>テーマ</div>
     <button id="bTheme" title="テーマを切り替え（T）">◐<span id="bThemeLbl"> テーマ</span></button>
     <button id="bOrient" title="テーブルの向きを切り替え（V）">⇔<span id="bOrientLbl"> 横向き</span></button>
+    <button id="bFull" title="全画面表示">⛶</button>
     <button id="bHelp" title="使い方">? 使い方</button>
   </header>
   <main>
@@ -501,7 +510,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
         <h2>再生 — 実際の球の動き</h2>
         <div class="row">
           <button class="act tone t-play" id="bPlay">▶ 再生</button>
-          <button class="act tone t-step" id="bStep1">▶ この一手だけ</button>
+          <button class="act tone t-step" id="bStep1">▶ 一手再生</button>
           <button class="act tone t-danger" id="bStop">■ 停止</button>
         </div>
         <div class="row" style="margin-top:6px" id="spds">
@@ -654,7 +663,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
         <tr><th><span style="color:var(--play-line)">■</span> 緑</th>
             <td><b>▶ 再生</b>。再生中は<b>⏸ 再生中…</b>に変わり、ゆるく明滅します。</td></tr>
         <tr><th><span style="color:var(--step-line)">■</span> 黄</th>
-            <td><b>▶ この一手だけ</b>。いま選んでいるカードの一手だけを再生します。</td></tr>
+            <td><b>▶ 一手再生</b>。いま選んでいるカードの一手だけを再生します。</td></tr>
         <tr><th><span style="color:var(--danger-line)">■</span> 赤</th>
             <td><b>■ 停止</b>（塗り）と<b>手玉を外す</b>（線）。
                 いまの状態をやめる・戻す方向の操作です。</td></tr>
@@ -719,7 +728,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       <ul>
         <li>球の速さは<b>等減速（転がり抵抗）</b>で計算しています。強く撞いた球は速く、
             出しの終わりではゆっくり止まります</li>
-        <li><b>▶ この一手だけ</b>（黄）＝いま選んでいるカードの一手だけを再生します</li>
+        <li><b>▶ 一手再生</b>（黄）＝いま選んでいるカードの一手だけを再生します</li>
         <li><b>遅い / 普通 / 早い</b> で速度を変えられます。いずれも見やすさ優先で実物のおよそ 3〜4 倍速です</li>
         <li><b>最後まで再生し終わったあと、もう一度「再生」を押すと 1 球目から流し直します</b>。
             途中のカードを選んでから押せば、その一手から最後までを再生します</li>
@@ -1055,7 +1064,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 
 /* --- テーブルコンディション ---------------------------------------------
    ラシャの状態で「どこまで走るか」「回転がいつまで残るか」「スローの量」
@@ -4595,7 +4604,7 @@ function updateAnimUI(){
   const play=$('bPlay');
   if(!play) return;
   play.textContent = anim.on ? '⏸ 再生中…'
-                   : (anim.atEnd ? '▶ 最初から再生' : '▶ 再生');
+                   : (anim.atEnd ? '▶ 先頭再生' : '▶ 再生');
   play.classList.toggle('live', anim.on);
   const ok = !!cue && (gameMode==='safe' ? !!safety : !!(plan&&plan.steps.length));
   play.disabled=!ok;
@@ -5555,6 +5564,44 @@ function nextTheme(){
   setTheme(THEMES[(i+1)%THEMES.length].k);
 }
 $('bTheme').onclick=nextTheme;
+
+/* =========================================================================
+   全画面（フルスクリーン）
+   -------------------------------------------------------------------------
+   タブレットでブラウザの UI を消して盤面を大きく使うためのもの。
+   iOS Safari は Element.requestFullscreen を持たないので、
+   使えるときだけボタンを出す（押せないボタンを置かない）。
+   ========================================================================= */
+(function(){
+  const btn=$('bFull');
+  if(!btn) return;
+  const el=document.documentElement;
+  const canFull = !!(el.requestFullscreen || el.webkitRequestFullscreen);
+  if(!canFull){ btn.hidden=true; return; }
+  const isFull=()=>!!(document.fullscreenElement || document.webkitFullscreenElement);
+  /* アイコンは ⛶ のまま。端末によっては「解除」用の字形が出ないので、
+     いま全画面かどうかは色（.on）とツールチップで示す。 */
+  function syncBtn(){
+    const f=isFull();
+    btn.classList.toggle('on', f);
+    btn.title = f ? '全画面を終了' : '全画面表示';
+  }
+  btn.onclick=function(){
+    const d=document;
+    try{
+      const p = isFull()
+        ? (d.exitFullscreen || d.webkitExitFullscreen).call(d)
+        : (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      /* 新しいブラウザは Promise を返す。断られたときに握りつぶす */
+      if(p && p.catch) p.catch(()=>{});
+    }catch(_){}   /* ユーザー操作以外や権限なしで弾かれることがある */
+  };
+  /* 全画面の出入りで表示領域が変わるので、盤面を測り直す */
+  ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>{
+    document.addEventListener(ev,()=>{ syncBtn(); setTimeout(resize,60); });
+  });
+  syncBtn();
+})();
 
 /* =========================================================================
    再生（アニメーション）の操作
