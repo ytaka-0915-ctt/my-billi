@@ -767,15 +767,21 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       <p><b>どのシュートの撞点か</b>は、撞点欄いちばん上の <b>◀ ▶</b> で切り替えます
       （右の手順カードをタップしても切り替わります）。設定中に他の球へ勝手に移ることはありません。</p>
       <p class="note"><b>力加減</b>は「自動 / そっと / 中 / 強 / 最大」から選べます。
-      この 5 段階は<b>「その球に必要な最小の力の何倍か」という相対指定</b>です
-      （そっと 1.2倍 ／ 中 1.8倍 ／ 強 2.8倍 ／ 最大 4.5倍）。
-      実戦の「そっと」は絶対的な強さではなく“その球に要る力の少し上”という感覚なので、
-      近い球でも遠い球でも同じ体感で選べます。手順カードには
-      <b>「必要最小の ○.○倍」</b>と実際の倍率が出ます。<br>
+      この 5 段階は<b>ストロークの速さそのもの（絶対値）</b>です
+      ―― キューを振る速さは球の配置で変わらないので、そのほうが体感と一致します。
+      <b>そっと ≒ 0.8 m/s ／ 中 ≒ 1.4 m/s ／ 強 ≒ 2.2 m/s ／ 最大 ≒ 3.1 m/s</b>
+      （最大は実戦で使う最大ストローク）。手順カードには
+      <b>「最大の ○○%・約 ○.○ m/s」</b>と実際の強さが出るので、
+      選んだラベルと手玉の速さ・移動距離がそのまま対応します。
+      その球を入れるのに要る力が選んだ強さを上回るときだけ、
+      成立する最小の強さまで持ち上がります（＝そっとは「成立する中でいちばん柔らかく」）。<br>
       <b>引きは強く撞かないと、的玉に届く前に引き回転が抜けてしまいます</b>（＝ストップや押しになる）。
-      力加減が「自動」のときは、指定した引きが<b>的玉まで残る強さ</b>を自動で選びます。
-      それでも残らない距離では「この距離では引き回転が途中で抜けます」と表示するので、
-      「強」「最大」にしてみてください。</p>
+      撞点で引きを指定したときは、力加減の指定より先に
+      <b>引きが的玉まで残る最小の強さ</b>が確保されます
+      ―― 撞点図が引きなのに手玉のラインが前へ出る、という食い違いを起こさないためです。
+      そのために選んだ力加減より強くなったときは撞点欄にその旨を表示し、
+      距離が長すぎてどう撞いても残らないときは
+      「この距離では引き回転が途中で抜けます」と警告します。</p>
       <p><b>到達時の回転</b>は、的玉に当たる瞬間に手玉に残っている縦回転です。
       マイナスなら引き、0 付近ならストップ、1.0 前後なら自然なころがし（30度ルール）、
       1.0 超なら押しが残っている状態です。ここを見れば、撞点が実際に効いているか確認できます。
@@ -789,9 +795,13 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       「見た目の走行距離」から想像するよりも<b>実際の球速はかなり速い</b>状態です。
       滑走の運動方程式を解いて<b>衝突する瞬間の球速をそのまま使う</b>ので、
       引きも押しも力加減に見合っただけしっかり手玉が動きます。
-      <b>2 ポイント先の的玉を最大の力加減・最大の引きで真っすぐ入れると手玉は約 115″（台 1 枚）戻り、
-      同じ配置の最大の押しでは約 209″ 出ます。</b>
-      逆に<b>そっと</b>撞いた最大の引きは、同じ距離でもストップになります。</p>
+      <b>2 ポイント先の的玉を最大の力加減で真っすぐ入れると、最大の引きで手玉は約 77″ 戻り、
+      最大の押しでは約 115″ 出ます</b>（どちらも 1 クッション入り）。
+      同じ配置を<b>そっと</b>（0.8 m/s）撞いた最大の押しでは約 12″、<b>中</b>（1.4 m/s）で約 40″ です。<br>
+      なお<b>真っすぐの球を最大で撞くと、かえって手玉が止まります</b>。
+      強く撞くほど滑走が長引き、的玉に当たる瞬間にまだ無回転（スタン）のままだからです
+      ―― ストップショットを強めに撞くのと同じ理屈で、
+      「到達時の回転」が 0 付近になっているかで確かめられます。</p>
       <p class="note"><b>押しが距離に強く、引きが距離に弱いのはなぜか。</b>
       手玉の回転はどちらも<b>自然順回転（ころがし）へ向かって</b>変わっていきます。
       押しにとってそこは<b>ゴール</b>なので、いったん落ち着けばあとは何インチ転がっても効果は消えません。
@@ -811,6 +821,11 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       </ul>
       <p class="note"><b>捻りは基本、使わない方がシュート率が上がります。</b>
       このアプリも、クッションを使う出しで<b>どうしても有利なときだけ</b>捻りを選びます。<br>
+      捻りが<b>生きたままクッションへ入る</b>と、反射角は順ヒネリで開き逆ヒネリで立ちます。
+      手玉の走りはこの反射をそのまま計算していますが、
+      <b>クッション反射はいちばん読みにくい</b>ところ（撞点・力加減・ラシャの当たりで角度が動く）なので、
+      捻りを残して回す出しは<b>止めたい場所への精度を割り引いて</b>評価します。
+      捻りは並進よりずっと長生きするので、<b>弱く撞くほど反射角は大きく動きます</b>。<br>
       <b>「捻りを一切使わない（ノーイングリッシュ）」</b>にチェックを入れると、
       ルート探索・セーフティー・再生のすべてで左右の撞点が<b>芯に固定</b>されます。
       なお、クッションに擦れて手玉が拾う横回転は物理現象なので止まりません
@@ -1084,7 +1099,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.2.2';
+const VERSION = '1.2.3';
 
 /* =========================================================================
    物理定数 —— 「ビリヤード物理学ハンドブック」§00 に準拠
@@ -1186,27 +1201,88 @@ const TIPMAX = 0.50;   // ミスキュー限界（半径比）
 const SQUIRT_K = 0.11;
 
 /* --- 手動の力加減 -------------------------------------------------------
-   「PMAX に対する割合」ではなく「その球に必要な最小の力の何倍か」
-   で指定する。実戦の『そっと』は絶対的な強さではなく、
-   “その球に要る力の少し上” という相対的な感覚だから。 */
-const POWLV = {soft:1.20, mid:1.80, hard:2.80, max:4.50};
+   ストロークの速さは「絶対的な量」で決める。キューを振る速さは球の配置で
+   変わらないので、『そっと』『最大』は本来 v の絶対値で決まっている。
+
+   旧版は「その球に必要な最小の力の何倍か」という相対指定だけだった。
+   これだと同じラベルでもまったく違う速さになってしまう（実測）:
+     近い直球（必要最小 33）  … 最大 = 34 in/s（VMAX の 28%。実際には「そっと」）
+     端から端の 45°（同 296） … そっと = 52 in/s（VMAX の 43%。実際には「中」）
+   選んだラベルと手玉の速さ・移動距離が対応しないので、
+   POWV（VMAX に対する初速比）そのものをストロークの速さとして使う。
+     そっと 0.26·VMAX ≒ 31 in/s ≒ 0.8 m/s
+     中     0.45·VMAX ≒ 54 in/s ≒ 1.4 m/s
+     強     0.70·VMAX ≒ 85 in/s ≒ 2.2 m/s
+     最大   1.00·VMAX  = 121 in/s ≒ 3.1 m/s
+   下限は「その球が成立する最小の力」だけにする。自動探索が使っているのと
+   同じ p0min·1.02 で、ここを下回ると的玉がポケットまで届かない。
+
+   旧版はここに POWLV（必要最小の 1.05／1.30／1.75／2.60 倍）という相対の
+   下限をもう 1 本持っていた。薄い球・長い球は p0min が大きくなるので、
+   この相対下限が絶対値を追い越してしまい、
+     手玉 30″・的玉 40″・カット 66°（p0min = 612）
+       そっと 0.58·VMAX ／ 中 0.65 ／ 強 0.75 ／ 最大 1.00
+   のように『そっと』を選んでも「強」で撞くことになっていた。しかも
+   4 段が同じ帯に潰れるので、力加減を変えても手がほとんど変わらなかった。
+   下限を成立条件だけにすれば、
+     ・撞ける球では選んだラベルどおりの速さ（そっと = 0.26·VMAX）
+     ・撞けない球では「成立する中でいちばん柔らかい」＝必要最小
+   になり、4 段の大小関係も必ず保たれる。
+   必要最小が選んだラベルを上回ったときは、パネルの注意書きで知らせる。 */
+const POWV  = {soft:0.26, mid:0.45, hard:0.70, max:1.00};   // VMAX に対する初速比
+const POWUP = {soft:'mid', mid:'hard', hard:'max', max:null};  // 1 段だけ強くする
 const POWLBL= {auto:'自動', soft:'そっと', mid:'中', hard:'強', max:'最大'};
+/* 選んだ力加減のポテンシャル。成立する最小を下回らない範囲で、絶対値どおりに。 */
+function powerPot(key, p0min){
+  const need = Math.min(p0min*1.02, PMAX);      // その球が成立する最小
+  return clamp(Math.max(vPot(VMAX*POWV[key]), need), need, PMAX);
+}
 /* 手動で「引き」を指定したときは、的玉に届く前に引き回転が抜けてしまわない
    だけの力加減が必要。到達時に初期回転の SPIN_KEEP 割を残すのに要する
    ポテンシャルを返す（押し・芯は自然順回転そのものが押しなので不要）。
    滑走の解析解（slideTau と同じ式）を逆に解いている。 */
 const SPIN_KEEP = 0.45;
-function tipIntentPot(b, d1){
+/* 力加減を手で指定しているときは、この下限を「引きが残っていると分かる」
+   ところまで緩める。0.45 のままだと、そっと＋最大引き が実質フルショットに
+   なってしまい、今度は力加減のラベルが合わなくなる。
+   撞点図と手玉ラインが食い違わない（f が負のままである）ことが目的なので、
+   残す割合はこれで足りる。 */
+const SPIN_MIN  = 0.15;
+function tipIntentPot(b, d1, keep){
   const f0 = SPIN_K*b;
   if(f0 > -0.20) return 0;
   const w = 1 - f0, k = (2/7)*w;
-  const g = 1 - SPIN_KEEP*f0;              // 1 - f_target
+  const g = 1 - (keep===undefined ? SPIN_KEEP : keep)*f0;   // 1 - f_target
   const den = w - g*k;
   if(den <= 1e-6) return 0;
   const tau = clamp((w - g)/den, 0, 1);    // 許される滑走の進み具合
   const s   = tau - k*tau*tau/2;           // 滑走距離 ÷ (SLIDE_K·w·P0)
   if(s <= 1e-4) return 0;
   return d1/(s*SLIDE_K*w);
+}
+/* --- 撞点を決め打ちしたときの「必要最小の力」------------------------------
+   ふつうの必要最小 p0min は「転がりで d1 進む」前提で見積もっている。
+   ところが強い引きは滑走中に激しく減速するので、衝突時に残る勢いは
+   芯撞きの 1/8 ほどしかない（最大引きでは vEnd = 1 − (2/7)(1−f0) = 0.357、
+   ポテンシャルはその 2 乗で 0.127 倍）。撞点を手で指定していると候補は
+   その 1 本だけなので、見積りが甘いと「その力では的玉がポケットに届かない」
+   で丸ごと弾かれ、力加減の縛りが外れて別の強さに化けていた
+   （実測: 短い球で そっと 76% ＞ 中 48% ＞ 強 59% という逆転が出ていた）。
+
+   impactState は P0 について単調増加なので、衝突時のポテンシャルが
+   qNeed に達する P0 を二分法で解いておく。 */
+function potForImpact(b, d1, qNeed){
+  if(!(qNeed > 0)) return 0;
+  let hi = Math.max(qNeed*2, 64);
+  while(hi < PMAX && impactState(b, hi, d1).Q < qNeed) hi *= 1.7;
+  if(hi > PMAX) hi = PMAX;
+  if(impactState(b, hi, d1).Q < qNeed) return PMAX;      // PMAX でも届かない
+  let lo = 0;
+  for(let i=0; i<30; i++){
+    const m = (lo+hi)/2;
+    if(impactState(b, m, d1).Q >= qNeed) hi = m; else lo = m;
+  }
+  return hi;
 }
 const CUTMAX = 0.20;   // cos(cut) 下限 ≒ 78°
 
@@ -1294,13 +1370,31 @@ function pocketProb(margin, err){ return clamp(erf(margin/(err*1.41421356)), 0, 
    クッションを使うこと自体はミスの原因ではない。悪いのは「長く走らせる」ほうで、
    短い 2 クッションは長い 1 クッションよりむしろ正確（角度が決まっているぶん
    止まる位置が読みやすい）。クッションの割り増しは 0.35 → 0.18 に下げ、
-   同時にルート好みの側にあった「1 クッションごとに 3.5% 減点」も外した。 */
+   同時にルート好みの側にあった「1 クッションごとに 3.5% 減点」も外した。
+
+   ただし「角度が決まっている」のは捻りが抜けているときの話。捻りを残したまま
+   クッションへ入ると、反射角は順ヒネリで開き逆ヒネリで立つ（§09 の railBounce が
+   そのまま解いている）。そして §09 が明言するとおり、クッション反射は
+   モデル化がいちばん難しく 5〜10°の残差が出る領域で、その残差は捻りが
+   生きているほど大きい ―― 撞点のわずかな差・力加減・ラシャの当たりで
+   反射角そのものが動くからで、実戦でも「捻って回した出しは薄い」と言われる。
+   旧版は捻り無しの 1 クッションと、限界まで捻った 2 クッションを
+   同じ精度で扱っていたので、探索が捻りを使う長い出しを過大評価していた。
+   POS_SPIN で、生きている捻りぶんだけクッションの割り増しを重くする。 */
 const POS_L = 226, POS_P = 1.457;
 const POS_RAIL = 0.18;   // クッション 1 つで実効距離が 18% 増える扱い
-function posFactor(dist, rails){
+const POS_SPIN = 0.22;   // そのうち捻り由来ぶん（spin = 1 でミスキュー限界の捻り）
+function posFactor(dist, rails, spin){
   if(!(dist>0.5)) return 1;
-  const eff = dist * (1 + POS_RAIL*(rails||0)) * ERR_K;
+  const eff = dist * (1 + (POS_RAIL + POS_SPIN*(spin||0))*(rails||0)) * ERR_K;
   return 1/(1 + Math.pow(eff/POS_L, POS_P));
+}
+/* クッションに入る時点で生きている捻りの強さ 0〜1。
+   R·ωz を手玉の速さで割り、ミスキュー限界（SPIN_K·TIPMAX = 1.25）で正規化する。
+   捻りは並進よりずっと遅く減衰する（§08）ので、弱く撞くほどこの比は上がる。 */
+function spinLive(wz, v){
+  if(!(v > 1e-6) || !wz) return 0;
+  return clamp(Math.abs(wz)/(v*SPIN_K*TIPMAX), 0, 1);
 }
 
 /* --- 取り切りの最後の一発は「フリ 30°未満」に組み立てる -----------------
@@ -1759,7 +1853,20 @@ function ballCollide(a, b){
    2) 接線摩擦。レール接触点のすべり vt − R·ωz が順ヒネリ・逆ヒネリを決める。
    3) 接触高さ h = 1.27R（重心より上）を叩かれるので縦回転が一部反転する。
    反射角が入射角より広くなるのも、転がっている球ほど長く出るのも、
-   順ヒネリで走り逆ヒネリで角が立つのも、すべてここから自動的に出る。 */
+   順ヒネリで走り逆ヒネリで角が立つのも、すべてここから自動的に出る。
+
+   ※ 反射角は「到達時に残っている捻り」で決まる。simulate は wz を
+      SPINDEC で減らしながら運んでいて（§08：ωz は 3〜4 秒生きるので
+      3 クッション目でも効く）、ここに入ってくるのはその残量。
+      弱く撞くほど v に対する R·ωz の比が大きくなるので、
+      同じ撞点でも柔らかい球のほうが反射角は大きく動く。
+
+   ※ すべりの符号（§08 の指摘）。接触点はクッション側＝ −n̂ 側にあるので
+      s = vt − R·ωz。球どうしの衝突（接触点が +n̂ 側）とは符号が逆で、
+      ここを + にすると順ヒネリと逆ヒネリが入れ替わる。
+      受け入れテスト：クッションに垂直に入れて右捻り（a > 0 → wz < 0）。
+        vt = 0 → slip = −wz > 0 → 摩擦は手玉を右へ逃がす。
+      現行の実装はこれを満たしている。触るときは必ず再確認すること。 */
 function railBounce(b, nx, ny){
   const tx=-ny, ty=nx;
   const vn=b.vx*nx+b.vy*ny;
@@ -1844,10 +1951,21 @@ function simulate(st, balls, rec, resolve){
   outer:
   while(guard++ < 400){
     const sp0 = Math.hypot(b.vx,b.vy);
-    if(sp0 < STOP_V) break;
     const uxs=b.vx-b.wvx, uys=b.vy-b.wvy;
     const us=Math.hypot(uxs,uys);
     const sliding = us > SLIP_EPS;
+    /* 止まったと見なすのは「並進も回転も消えたとき」だけ。
+       並進だけを見て打ち切ってはいけない —— 分離直後の手玉は
+       「接線方向へ動きながら元の回転を保持している」状態（§03 (d)）で、
+       フルヒットに近い押しでは芯線成分をほぼ全部的玉に渡すので
+       v ≈ 0.025·v になる。ここで break していたため、
+       残った前進回転が摩擦で並進に変わる前に打ち切られ、
+       押し撞点なのに手玉がその場に止まる＝撞点と手玉ラインが
+       食い違う結果になっていた（実測: 2 ポイントの真っすぐを
+       最大の押しで撞いても、球速 40 in/s 未満では走行 0″）。
+       摩擦が回転を並進へ変える (2/7)·w のぶんは、
+       この後の すべり相がそのまま出してくれる。 */
+    if(sp0 < STOP_V && !sliding) break;
     let hx=0, hy=0, dtSeg=0, n=1;
     if(sliding){ hx=uxs/us; hy=uys/us; dtSeg=us/(3.5*A_SLIDE)/nSeg; n=nSeg; }
     else       { dtSeg=sp0/A_ROLL; n=1; }
@@ -2452,13 +2570,23 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
     if(p0min > PMAX) continue;
     /* 撞点を手動指定しているときは、その回転が的玉に届くまで残る力加減にする
        （引きを指定したのにストップ／押しになってしまうのを防ぐ） */
-    if(honorSpin) p0min = Math.min(PMAX, Math.max(p0min, tipIntentPot(bset[0], d1)));
+    /* 撞点を手動指定しているとき。候補がその 1 本しかないので、
+       必要最小をその撞点で撞いたときの実際の減速まで含めて引き直す。
+         ・potForImpact … その撞点で的玉がポケットまで届く最小の力
+         ・tipIntentPot … 指定した回転が的玉に届くまで残る最小の力
+       力加減も手で選んでいるときは、後者を「引きが残っていると分かる」
+       ぶんだけに緩める（そちらのラベルも守るため。→ SPIN_MIN） */
+    if(honorSpin){
+      p0min = Math.min(PMAX, Math.max(p0min,
+                potForImpact(bset[0], d1, 1.18*pd.d2/(OBJ_REACH*c2)),
+                tipIntentPot(bset[0], d1, powKey ? SPIN_MIN : undefined)));
+    }
 
     /* ポテンシャル候補。力加減を手で指定しているときは
-       「必要最小の何倍か」で 1 本だけ作る（＝球ごとに強さが変わる相対指定）。 */
+       絶対的なストローク速度（POWV）で 1 本だけ作る。 */
     let np=0;
     if(powKey){
-      POTBUF[np++] = clamp(p0min*POWLV[powKey], p0min*1.02, PMAX);
+      POTBUF[np++] = powerPot(powKey, p0min);
     } else {
       for(let i=0;i<pset.length;i++){
         let P = pset[i] < p0min ? p0min*1.02 : pset[i];
@@ -2486,7 +2614,10 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
       const P0 = POTBUF[ip];
       /* 厚み 9 割・力 1 割 ― 素直な力加減の手を優先する */
       const powPref = powerPref(P0, p0min);
-      const pw  = P0/Math.max(p0min,8);         // 必要最小の何倍か（表示用）
+      /* 表示用の力加減。実際のストローク速度を VMAX 比で持つ（＝絶対値）。
+         「必要最小の何倍」で持っていた旧版は、近い球のそっとが 5 本バーの
+         「最大」として出てしまい、選んだラベルと表示が食い違っていた。 */
+      const pw  = potV(P0)/VMAX;
       const spd = potV(P0)/SPD_V;               // 精度に効く「速さ」(1 = ひと通りの強打)
 
       /* 通常の球速までは無罰。強打するほど精度が落ちる */
@@ -2508,10 +2639,15 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
         const over  = obPot*OBJ_RUN/Math.max(pd.d2,3);
         const overPen = over>6 ? Math.max(0.80, 1-0.030*(over-6)) : 1;
         const bPen = 1 - 0.30*b*b*(b<0?1.5:1);
-        /* 引き撞点なのに到達時が押し（f ≥ 0）になる手は、撞点図と実際の動きが
-           食い違う（＝「引きと出ているのに手玉が前へ出る」）。同じ力加減の
-           芯撞きは必ず候補にあるので、そちらへ寄せるための好みの減点をかける。
-           表示するシュート率は汚さないので pref 側だけに効かせる。 */
+        /* 引き撞点なのに到達時が押し（f ≥ 0）になる手は、撞点図と実際の手玉の
+           ラインが食い違う（＝「引きと出ているのに手玉が前へ出る」）。
+           旧版は 0.80 の好み減点だけだったので、わずかな利得でこの手が
+           勝ってしまい、撞点とラインが合わない提示が残っていた。
+           自動で選ぶときは候補から外す —— 同じ力加減の芯撞きは必ず候補に
+           あり、到達時の状態も f = 1 で同じなので、ルートは途切れない。
+           撞点を手で指定しているときは、本人の指定を消さずにそのまま出す
+           （§07 の「撞点の寿命」として警告メッセージで知らせる）。 */
+        if(!honorSpin && b < -0.06 && f > -0.06) continue;
         const tipPref = (b < -0.05 && f > -0.05) ? 0.80 : 1;
 
         for(let ia=0; ia<aset.length; ia++){
@@ -2531,7 +2667,12 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
           solveImpact(pd.gx, pd.gy, ax, ay, pd.lx, pd.ly, Q1, f, E0);
           const m = CUE.m, fx = CUE.fx, fy = CUE.fy;
           const cuePot0 = Q1*m*m;
-          if(cuePot0 > CUEMAX) continue;        // 現実の出しでこれ以上は転がさない
+          /* 自動で選ぶときは現実の出しの範囲に収める。
+             ただし力加減を手で指定しているときは外す —— ここで弾いていたため
+             「最大」を選んでも手が 1 本も成立せず、力加減の縛りが外れて
+             弱い手に落ちていた（実測: 端から端の 45°で cuePot 326 > 280 で却下）。
+             撞いた本人が強打を選んでいるのだから、走るのは当然の結果である。 */
+          if(!powKey && cuePot0 > CUEMAX) continue;
           const still = (cuePot0 < 0.5 || m < 0.02);   // 手玉はその場に残る
           let ex, ey, rails=0, scr=false, hitb=false, cuePot = still?0:cuePot0;
           let brk = 1, hitRes = null;
@@ -2560,8 +2701,10 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
 
           const imm = q0*powPen*overPen*bPen*aPen*brk*(scr?0.03:1);
           /* 出し（ポジション）の成功率。手玉を走らせるほど落ちる。
+             クッションを使うときは、そこへ持ち込む捻りぶんだけ反射角がぶれる。
              最後の一発は出しが要らないので 1。 */
-          const pos = isLast ? 1 : posFactor(cuePot, rails);
+          const spinL = rails>0 ? spinLive(E0, potV(Q1)) : 0;
+          const pos = isLast ? 1 : posFactor(cuePot, rails, spinL);
           /* 同じ確率なら手玉の移動が短いルートを選ぶ（軽い好みだけ）。
              クッションそのものへの減点は 外してある。 */
           const distPen = 1 - 0.03*Math.min(cuePot/150,1);
@@ -2640,7 +2783,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
 
     let np=0;
     if(powKey){
-      POTBUF[np++] = clamp(p0min*POWLV[powKey], p0min*1.02, PMAX);
+      POTBUF[np++] = powerPot(powKey, p0min);
     } else {
       for(let i=0;i<pset.length;i++){
         let P = pset[i] < p0min ? p0min*1.02 : pset[i];
@@ -2657,7 +2800,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
     for(let ip=0; ip<np; ip++){
       const P0 = POTBUF[ip];
       const powPref = powerPref(P0, p0min);
-      const pw  = P0/Math.max(p0min,8);
+      const pw  = potV(P0)/VMAX;                // 表示用（VMAX 比の絶対値）
       const spd = potV(P0)/SPD_V;
       const sOver = Math.max(0, spd-0.35)/0.65;
       const baseErr = errCore*(1 + 0.55*sOver*sOver);
@@ -2732,20 +2875,44 @@ function enumShots(k, cx, cy, fine, cb, useOv){
   const pw  = man ? powOverride[k] : null;
   const pset = fine ? PABS_FS : PABS_DP;
   if(ov){
-    /* 指定した回転が残る力加減で探す。それで一手も成立しないときだけ、
-       力加減の縛りを外して再挑戦する（ルートが途切れるのを防ぐ） */
-    let n=0;
-    forEachShot(k, cx, cy, [ov.b], pset, [ov.a], v=>{ n++; cb(v); }, !pw, pw, fine);
-    if(fine) forEachCombo(k, cx, cy, [ov.b], pset, [ov.a], v=>{ n++; cb(v); }, pw);
-    if(!n && pw) forEachShot(k, cx, cy, [ov.b], pset, [ov.a], cb, false, null, fine);
+    /* 指定した回転が残る力加減で探す。それで一手も成立しないときは、
+       力加減を 1 段ずつ強くして「指定を最小限だけ超える」ところで止める。
+
+       honorSpin は力加減を手で指定しているときも効かせる。旧版は `!pw` で、
+       力加減を指定した瞬間に「引きが的玉まで残る最小の力」の下限が外れていた。
+       その結果、引き撞点＋そっと を選ぶと到達時には f > 0（押し）になり、
+       撞点図は引き・手玉のラインは前へ出るという食い違いが出ていた。
+       この下限は好みではなく「その撞点が意味を持つ最小の力」＝成立条件なので、
+       力加減の指定より先に効かせるのが正しい（§07 撞点の寿命）。
+
+       段階的に上げるのも同じ理由。旧版は成立しないと縛りを丸ごと外して
+       ポテンシャル候補（0〜PMAX）を全部試していたので、『そっと』を選んだのに
+       powerPref が好む 1.55·p0min あたりの一本が勝ち残り、
+       力加減のラベルと実際の強さが無関係になっていた。 */
+    let n=0, pk=pw;
+    forEachShot(k, cx, cy, [ov.b], pset, [ov.a], v=>{ n++; cb(v); }, true, pk, fine);
+    if(fine) forEachCombo(k, cx, cy, [ov.b], pset, [ov.a], v=>{ n++; cb(v); }, pk);
+    while(!n && pk && (pk = POWUP[pk])){
+      forEachShot(k, cx, cy, [ov.b], pset, [ov.a], v=>{ n++; cb(v); }, true, pk, fine);
+      if(fine) forEachCombo(k, cx, cy, [ov.b], pset, [ov.a], v=>{ n++; cb(v); }, pk);
+    }
+    if(!n && pw) forEachShot(k, cx, cy, [ov.b], pset, [ov.a], cb, true, null, fine);
     return;
   }
   const bset = fine ? B_FS : B_DP;
-  let anyRail = false;
-  forEachShot(k, cx, cy, bset, pset, [0], v=>{ if(SI.needRail) anyRail=true; cb(v); }, false, pw, fine);
-  if(anyRail && !noEnglish)
-    forEachShot(k, cx, cy, bset, pset, fine?A_RAIL_FS:A_RAIL_DP, cb, false, pw, fine);
-  if(fine) forEachCombo(k, cx, cy, bset, pset, [0], cb, pw);
+  /* 撞点は自動。力加減だけ手で指定しているときも、成立しなければ
+     1 段ずつ強くする（縛りを丸ごと外さない）。 */
+  let n = 0, pk = pw;
+  for(;;){
+    let anyRail = false;
+    forEachShot(k, cx, cy, bset, pset, [0],
+                v=>{ n++; if(SI.needRail) anyRail=true; cb(v); }, false, pk, fine);
+    if(anyRail && !noEnglish)
+      forEachShot(k, cx, cy, bset, pset, fine?A_RAIL_FS:A_RAIL_DP,
+                  v=>{ n++; cb(v); }, false, pk, fine);
+    if(fine) forEachCombo(k, cx, cy, bset, pset, [0], v=>{ n++; cb(v); }, pk);
+    if(n || !pk || !(pk = POWUP[pk])) break;
+  }
 }
 
 /* =========================================================================
@@ -3260,8 +3427,9 @@ function returnSafety(cEnd, oEnd, n, others){
 function safetyCueVec(b,a,P0,t,gx,gy,dx,dy,lx,ly){
   impactState(b,P0,t);
   const f=IMP.f, Q1=IMP.Q;                    // Q1 = 衝突時のポテンシャル
-  solveImpact(gx,gy,dx,dy,lx,ly,Q1,f,spinAt(a,P0,IMP.T));
-  return {f, Q1, fx:CUE.fx, fy:CUE.fy, m:CUE.m,
+  const wz=spinAt(a,P0,IMP.T);                // 衝突時に残っている捻り（クッションで効く）
+  solveImpact(gx,gy,dx,dy,lx,ly,Q1,f,wz);
+  return {f, Q1, wz, fx:CUE.fx, fy:CUE.fy, m:CUE.m,
           cue:copySt(CUE.st), ob:copySt(CUE.ob)};
 }
 
@@ -3346,7 +3514,9 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
   const good = op.snookered || (op.maxQ<=SAFE_OK_Q && op.bankQ<=SAFE_BANK_Q);
   /* 手玉・的玉を長く走らせるセーフティーは、狙ったところに置けない。
      実効移動距離から「置きたい所に置ける確率」を出して評価に掛ける。 */
-  const ctrl = posFactor(cuePot*(1+POS_RAIL*cRails) + objPot*(1+POS_RAIL*oRails)*0.75, 0);
+  const cSpin = cRails>0 ? spinLive(cvec.wz, potV(cvec.Q1)) : 0;
+  const ctrl = posFactor(cuePot*(1+(POS_RAIL+POS_SPIN*cSpin)*cRails)
+                       + objPot*(1+POS_RAIL*oRails)*0.75, 0);
   /* ロングセーフティー優先 ― 手玉と的玉を離すほど、相手はシュートも出しも難しくなる。
      嫌なのは「遠い」か「密着」で、中途半端な距離がいちばん撞きやすい。
      密着は「転がした距離ぶんばらつく」ので、当てにできるぶんだけ数える。 */
@@ -3382,7 +3552,7 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
   SF.score=sc; SF.scoreOpp=scOpp;
   SF.good=good; SF.cuePot=cuePot; SF.objPot=objPot; SF.ctrl=ctrl;
   SF.spd=potV(P0)/SPD_V;
-  SF.pw =P0/Math.max(t+10, 14);           // 必要最小のおおよそ何倍か（表示用）
+  SF.pw =potV(P0)/VMAX;                   // 表示用（VMAX 比の絶対値）
   return true;
 }
 function snapSafety(cx,cy,target){
@@ -4828,17 +4998,28 @@ function blinkKick(){
    ========================================================================= */
 /* 確率を色分けする（良い→緑／普通→黄／悪い→赤） */
 function pctColor(v, good, mid){ return v>good?'#4ade80' : (v>mid?'#ffd166' : '#f87171'); }
-/* 力加減の 5 段階バー。「必要最小の何倍か」で決める
-   （＝近い球の『そっと』が強打として出てしまうのを直した）。 */
-const PW_STEP = [1.35, 2.00, 3.00, 4.20];
-function powerBars(pw){
-  let n=1;
+/* 力加減の 5 段階バーと言葉。実際のストローク速度（VMAX 比）で決める。
+   「必要最小の何倍か」という相対量で持っていた旧版は、近い球の『そっと』が
+   5 本バーになり、長い球の『そっと』が 1 本になっていた。
+   しきい値は POWV（そっと 0.26 / 中 0.45 / 強 0.70 / 最大 1.00）の中間に置く。
+   旧版は下端を 0.20 にしていたので、ちょうど『そっと』で撞いた 0.26 が
+   1 つ上の帯に落ちて「そっと〜中」と出ていた（＝選んだ段と表示が食い違う）。
+   境目を隣り合う POWV の中点にすれば、4 段はそれぞれ自分の名前で出る。 */
+const PW_STEP = [0.16, 0.355, 0.575, 0.85];
+const PW_NAME = ['ごく軽く', 'そっと', '中', '強', '最大'];
+function powerStep(pw){
+  let n=0;
   for(const v of PW_STEP) if(pw>=v) n++;
+  return n;                                  // 0〜4（PW_NAME の添字・バーは +1 本）
+}
+function powerBars(pw){
+  const n = powerStep(pw)+1;
   return Array.from({length:5},(_,k)=>`<i class="${k<n?'on':''}"></i>`).join('');
 }
-/* 必要最小の何倍かを文字にする（力加減が体感できるように） */
+/* 力加減を体感できる言葉にする。速さ（VMAX 比）を主に、目安の m/s を添える。 */
+function powerName(pw){ return PW_NAME[powerStep(pw)]; }
 function powerText(pw){
-  return `必要最小の <b>${pw.toFixed(1)}倍</b>`;
+  return `<b>${powerName(pw)}</b>（最大の ${Math.round(pw*100)}%・約 ${(VMAX*pw/IN_M).toFixed(1)} m/s）`;
 }
 /* 上級者はカット角（度）ではなく「厚み」で球を見る。度数と併記する。
    厚み = 1 − sin(カット角)。1 = 真っ芯 / 0 = エッジ。 */
@@ -5083,7 +5264,9 @@ function renderTipPanel(){
   const [vl]=vertLabel(an.b), sl=sideLabel(an.a);
   $('tipB').textContent=`${an.b>=0?'+':''}${an.b.toFixed(2)}　${vl}`;
   $('tipA').textContent=`${an.a>=0?'+':''}${an.a.toFixed(2)}　${sl||'捻り無し'}`;
-  $('tipP').textContent = an.pw ? `必要最小の ${an.pw.toFixed(1)}倍` : '—';
+  $('tipP').textContent = an.pw
+    ? `${powerName(an.pw)}・最大の ${Math.round(an.pw*100)}%（約 ${(VMAX*an.pw/IN_M).toFixed(1)} m/s）`
+    : '—';
   $('tipF').textContent=spinLabel(an.f);
   fB.textContent=`${an.b>=0?'+':''}${an.b.toFixed(2)}`;
   fA.textContent=`${an.a>=0?'+':''}${an.a.toFixed(2)}`;
@@ -5094,6 +5277,21 @@ function renderTipPanel(){
     t='ノーイングリッシュ中：左右は芯に固定です。全ステップの撞点を中心に揃えました。上下も自動で選ばせたいときは「全て自動に」。';
   else if(an.b<-0.08 && an.f!==null && an.f>0.15){
     t=`この距離（手玉${Math.round(an.d1)}″）では引き回転が途中で抜けます。力加減を「強」「最大」にすると残ります。`;
+    warn=true;
+  }
+  /* 選んだ力加減より強く撞くことになったとき。理由は 2 通りある。
+       ・薄い／長い球で、そもそもその強さでは的玉がポケットまで届かない
+       ・指定した引きが的玉まで残る最小の力を下回れない（§07 撞点の寿命）
+     どちらも「成立する中でいちばん柔らかい」まで持ち上げているだけだが、
+     黙って強くすると力加減の表示と食い違うので、理由をここで出す。 */
+  else if(manP && an.pw!==null && an.pw > POWV[powOverride[an.k]] + 0.04){
+    const drawShort = an.b < -0.08;
+    t=`この球は「${POWLBL[powOverride[an.k]]}」では`
+     +(drawShort ? `この距離（手玉${Math.round(an.d1)}″）まで引きが残らないので、`
+                 : `的玉をポケットまで運べないので、`)
+     +`成立する最小の強さ（最大の ${Math.round(an.pw*100)}%＝${powerName(an.pw)}）で計算しています。`
+     +(drawShort ? `柔らかく撞きたいときは撞点を芯へ近づけてください。`
+                 : `柔らかく撞きたいときは、もっと厚い／近い球を狙ってください。`);
     warn=true;
   }
   else if(L.lim<0.999){ t='手玉が土手際です。引き・捻りは撞ける範囲が狭くなります（暗い部分は不可）。'; warn=true; }
