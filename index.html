@@ -1085,6 +1085,54 @@ const R = 1.125, BD = 2.25;
 const W = 100, HT = 50, RAIL = 6;
 
 const SQ = Math.SQRT1_2;
+
+/* --- ポケットの実寸（WPA 公式規格／9ft）----------------------------------
+   実際の台のポケットは「丸い穴」ではなく、クッションの端を斜めに切り落とした
+   2 枚のジョー面が作る口である（→ テーブル.png）。この形が
+   「どの向きから来た球なら落ちるか」を決めているので、寸法から持たせる。
+
+     マウス幅（両ジョー先端の間隔）   コーナー 4.50″ ／ サイド 5.00″
+     ジョーの開き角（2 面のなす角）   コーナー 142°  ／ サイド 104°
+     シェルフ（鼻先より奥の棚）       コーナー 1.75″ ／ サイド ほぼ 0
+
+   ジョー面がマウス線となす角は α = (180° − 開き角)/2。
+     コーナー α = 19°  … ほぼマウス線に沿う＝浅い角度でも受ける
+     サイド   α = 38°  … 大きく開いている＝浅い角度は奥のジョーが弾き返す
+   コーナーはマウス線が長クッションと 45° をなすので、
+   鼻先に沿ったジョー先端の位置は 4.50/√2 = 3.182″。サイドは 5.00/2 = 2.50″。 */
+const CORNER_MOUTH = 4.50, SIDE_MOUTH = 5.00;
+const CORNER_JAW   = 142,  SIDE_JAW   = 104;      // ジョーの開き角 [度]
+const CORNER_SHELF = 1.75, SIDE_SHELF = 0.19;     // シェルフ（描画に使う）[inch]
+const CJ_A = (180-CORNER_JAW)/2*Math.PI/180;      // = 19° [rad]
+const SJ_A = (180-SIDE_JAW)/2*Math.PI/180;        // = 38° [rad]
+const CJT  = CORNER_MOUTH*SQ;                     // = 3.182″（鼻先に沿った先端位置）
+const SJT  = SIDE_MOUTH/2;                        // = 2.50″
+
+/* --- 落ちる向きの上限 φmax（ポケット軸から測る）--------------------------
+   ① 奥のジョー面が受ける向きか
+      奥のジョー面の内向き法線を n̂ とすると、球が「より奥へ」進んでいるのは
+      d̂·n̂ > 0 のときだけ。これを解くと φ < 90° − α になる。
+      φ がこれを超えると、球は奥のジョー面に外側から当たって台へ弾き返される。
+        コーナー 90 − 19 = 71°   ／   サイド 90 − 38 = 52°
+   ② そもそも球がマウスを通れるか
+      角度 φ で入る球の中心は、手前のジョー先端から マウス線に沿って
+      R/cos φ 以上離れていなければならない。両先端ぶんで 2R/cos φ ≤ マウス幅、
+      すなわち cos φ ≥ 2R/マウス幅（= 球径/マウス幅）。
+        コーナー acos(2.25/4.50) = 60.0°   ／   サイド acos(2.25/5.00) = 63.3°
+   厳しいほうが実際の限界になる。
+        コーナー φmax = 60°（長クッションから 30° 以上）
+        サイド   φmax = 52°（長クッションから 38° 以上）
+   ＝サイドポケットは「土手に沿って走る球」も「浅く流し込む球」も落ちない。
+     これを持っていなかったため、土手ぎわを走る球までサイドが吸い込んでいた。 */
+function potAccMax(mouth, alpha){
+  return Math.min(Math.PI/2 - alpha, Math.acos(Math.min(1, BD/mouth)));
+}
+
+/* half / acc は確率モデルと候補列挙のための較正値で、上の物理上限より
+   ひとまわり内側に置いてある（限界ぎりぎりの角度は狙って撞ける球ではない）。
+     acc コーナー 0.80 rad = 45.8°（物理上限 60.0°）
+     acc サイド   0.62 rad = 35.5°（物理上限 52.0°）
+   したがって「ルートとして提示する角度」はすべて実際に落ちる角度の中に入る。 */
 const POCKETS = [
   {x:0,   y:0,  ax:-SQ, ay:-SQ, half:1.28, acc:0.80, corner:true },
   {x:50,  y:0,  ax:0,   ay:-1,  half:1.48, acc:0.62, corner:false},
@@ -1093,13 +1141,25 @@ const POCKETS = [
   {x:50,  y:50, ax:0,   ay:1,   half:1.48, acc:0.62, corner:false},
   {x:100, y:50, ax:SQ,  ay:SQ,  half:1.28, acc:0.80, corner:true }
 ];
-POCKETS.forEach(p=>p.cosAcc = Math.cos(p.acc));
-
+POCKETS.forEach(p=>{
+  p.cosAcc = Math.cos(p.acc);
+  p.mouth  = p.corner ? CORNER_MOUTH : SIDE_MOUTH;
+  p.mhalf  = p.mouth/2;
+  /* マウス線（両ジョー先端を結ぶ線）。サイドは鼻先の上にあるが、
+     コーナーは 45° に張られるので、ポケット点より マウス半幅ぶん台の内側。 */
+  const mo = p.corner ? -p.mhalf : 0;
+  p.mx = p.x + p.ax*mo;  p.my = p.y + p.ay*mo;
+  p.tgx = -p.ay;         p.tgy = p.ax;          // マウス線に沿った向き
+  p.jawA = p.corner ? CJ_A : SJ_A;              // ジョー面がマウス線となす角
+  p.shelf= p.corner ? CORNER_SHELF : SIDE_SHELF;
+  p.accPot = potAccMax(p.mouth, p.jawA);        // 落ちる向きの上限 [rad]
+  p.cosPot = Math.cos(p.accPot);
+});
 const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.2.3';
+const VERSION = '1.2.4';
 
 /* =========================================================================
    物理定数 —— 「ビリヤード物理学ハンドブック」§00 に準拠
@@ -1640,6 +1700,31 @@ function hitCircle(x,y,dx,dy,tmax,cx,cy,rad){
   const t = -b-Math.sqrt(disc);
   return (t<0||t>tmax)?Infinity:t;
 }
+
+/* --- ポケットに落ちるか（実寸のジョー幾何。→ POCKETS の φmax）------------
+   球の中心が「マウス線（両ジョー先端を結ぶ線）」を越えたら落ちる。
+   ただし越えられるのは、進行方向がポケット軸から φmax 以内のときだけ。
+     ・軸方向の速度成分 c = d̂·â が cos φmax 未満なら、奥のジョー面に
+       外側から当たる向きなので落ちない（土手に沿って走る球はここで弾かれる）。
+     ・マウス線を横切る位置がマウス幅の中に無ければ、ジョーの外側＝クッション。
+   旧版は「ポケット点から半径 2.45″ の円に入ったら落ちる」だけを見ていたので、
+   長クッションに沿って走る球（軸と 90°＝絶対に落ちない向き）まで
+   サイドポケットが吸い込んでいた。 */
+function potHit(x,y,dx,dy,tmax,pk){
+  const c = dx*pk.ax + dy*pk.ay;                       // cos φ
+  if(c < pk.cosPot) return Infinity;                   // 落ちる向きではない
+  const s0 = (x-pk.mx)*pk.ax + (y-pk.my)*pk.ay;        // マウス線までの符号つき距離
+  if(s0 >= 0) return Infinity;                         // もう越えている／外側
+  const t = -s0/c;
+  if(t > tmax) return Infinity;                        // この弦では届かない
+  const q = (x+dx*t-pk.mx)*pk.tgx + (y+dy*t-pk.my)*pk.tgy;
+  return Math.abs(q) <= pk.mhalf ? t : Infinity;       // マウスの中を通ったか
+}
+/* 鼻先に沿った座標が「ポケットの口＝クッションが無い区間」に入っているか。
+   落ちる球はここを素通りしてマウス線まで進み、落ちない球はジョーに当たって
+   戻る（ジョー面はマウス線の外側にあるので、鼻先の面で近似する）。 */
+function mouthGapX(x){ return x<CJT || x>W-CJT || (x>W/2-SJT && x<W/2+SJT); }
+function mouthGapY(y){ return y<CJT || y>HT-CJT; }
 function segClearM(ax,ay,bx,by,balls,rad){
   const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy, r2=rad*rad;
   if(L2<1e-9) return true;
@@ -1987,22 +2072,29 @@ function simulate(st, balls, rec, resolve){
         continue;
       }
       const dx=mx/L, dy=my/L;
-      /* この弦の上で最初に起きること（クッション／球／ポケット） */
+      /* この弦の上で最初に起きること（ポケット／クッション／球）--------------
+         ポケットを先に見る。実際の台ではポケットの口にクッションが無いので、
+         落ちる向きで口に入った球は鼻先の面を素通りしてマウス線まで進む。
+         落ちない向き（浅すぎる球・土手に沿って走る球）は口の位置でも
+         ジョーに当たって台へ戻るので、鼻先の面をそのまま残す。 */
       let t=L, kind=0, nx=0, ny=0, bi=-1;
-      if(dx>1e-9){ const tt=(W-R-b.x)/dx;  if(tt<t){t=tt;kind=1;nx=-1;ny=0;} }
-      else if(dx<-1e-9){ const tt=(R-b.x)/dx; if(tt<t){t=tt;kind=1;nx=1;ny=0;} }
-      if(dy>1e-9){ const tt=(HT-R-b.y)/dy; if(tt<t){t=tt;kind=1;nx=0;ny=-1;} }
-      else if(dy<-1e-9){ const tt=(R-b.y)/dy; if(tt<t){t=tt;kind=1;nx=0;ny=1;} }
+      let tPot=Infinity;
+      for(let j=0;j<6;j++){
+        const tt=potHit(b.x,b.y,dx,dy,L,POCKETS[j]);
+        if(tt<tPot) tPot=tt;
+      }
+      const gate = tPot<Infinity;                      // この弦で落ちる＝口は素通り
+      if(dx>1e-9){ const tt=(W-R-b.x)/dx;  if(tt<t && !(gate&&mouthGapY(b.y+dy*tt))){t=tt;kind=1;nx=-1;ny=0;} }
+      else if(dx<-1e-9){ const tt=(R-b.x)/dx; if(tt<t && !(gate&&mouthGapY(b.y+dy*tt))){t=tt;kind=1;nx=1;ny=0;} }
+      if(dy>1e-9){ const tt=(HT-R-b.y)/dy; if(tt<t && !(gate&&mouthGapX(b.x+dx*tt))){t=tt;kind=1;nx=0;ny=-1;} }
+      else if(dy<-1e-9){ const tt=(R-b.y)/dy; if(tt<t && !(gate&&mouthGapX(b.x+dx*tt))){t=tt;kind=1;nx=0;ny=1;} }
       if(t<0) t=0;
       for(let j=0;j<balls.length;j++){
         if(hits && struckIdx(hits,j)) continue;        // 弾いた球はもうそこに居ない
         const o=balls[j], tt=hitCircle(b.x,b.y,dx,dy,t,o.x,o.y,BD);
         if(tt<t){ t=tt; kind=2; bi=j; }
       }
-      for(let j=0;j<6;j++){
-        const p=POCKETS[j], tt=hitCircle(b.x,b.y,dx,dy,t,p.x,p.y,p.corner?2.25:2.45);
-        if(tt<t){ t=tt; kind=3; bi=-1; }
-      }
+      if(tPot<t){ t=tPot; kind=3; bi=-1; }
       T += advanceBall(b,dx,dy,t,sliding,hx,hy,dtSeg,L);
       run += t;
       if(rec) pts.push([b.x,b.y,T]);
@@ -2675,6 +2767,12 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
           if(!powKey && cuePot0 > CUEMAX) continue;
           const still = (cuePot0 < 0.5 || m < 0.02);   // 手玉はその場に残る
           let ex, ey, rails=0, scr=false, hitb=false, cuePot = still?0:cuePot0;
+          /* 画面に出す「手玉移動」は、この見積り（cuePot＝転がりに乗ったあと
+             止まるまでの距離）ではなく simulate が実際に走らせた道のりを使う。
+             cuePot はクッションでの減衰も滑走ぶんも含んでいないので、
+             クッションを使う手・強い手ほど表示と再生が食い違っていた
+             （実測: 最大＋押しの一発で 表示 199″ / 実際 115″）。 */
+          let run = 0;
           let brk = 1, hitRes = null;
           if(still){ ex=pd.gx; ey=pd.gy; }
           else{
@@ -2684,6 +2782,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
                仕上げのルート探索でだけブレイクアウトの価値を測る。 */
             simulate(CUE.st,others,false,true);
             ex=SIM.x; ey=SIM.y; rails=SIM.rails; scr=SIM.scratch; hitb=SIM.hit;
+            run=SIM.run;                      // resolveHits が SIM を上書きする前に取る
             if(hitb && fine && SIM.hits.length){
               const hs=SIM.hits.slice();        // SIM は使い回しなので先に複製
               hitRes = resolveHits(hs, others, false);
@@ -2726,7 +2825,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
           if(val<=0) continue;
 
           SI.pd=pd; SI.b=b; SI.a=a; SI.P0=P0; SI.f=f; SI.combo=null;
-          SI.dist=cuePot; SI.ex=ex; SI.ey=ey; SI.rails=rails;
+          SI.dist=cuePot; SI.run=run; SI.ex=ex; SI.ey=ey; SI.rails=rails;
           SI.scr=scr; SI.hit=hitb; SI.q0=q0; SI.imm=imm; SI.pos=pos; SI.gap=gap;
           SI.spd=spd; SI.pw=pw; SI.hitRes=hitRes; SI.close=(d1 < BD+DHIT_GAP);
           SI.cosT=cosT; SI.sinT=sinT; SI.d1=d1;
@@ -2830,17 +2929,17 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
           solveImpact(cd.gx, cd.gy, ax, ay, cd.wx, cd.wy, Q1, f, E0);
           const m=CUE.m, fx=CUE.fx, fy=CUE.fy;
           const cuePot=Q1*m*m;
-          let scr=false, ex=cd.gx, ey=cd.gy;
+          let scr=false, ex=cd.gx, ey=cd.gy, run=0;
           if(cuePot>0.5 && m>0.02){
             simulate(CUE.st,others,false,false);
-            ex=SIM.x; ey=SIM.y; scr=SIM.scratch;
+            ex=SIM.x; ey=SIM.y; scr=SIM.scratch; run=SIM.run;
           }
           const imm=q0*powPen*bPen*aPen*(scr?0.03:1);
           const pref=imm*powPref*COMBO_PREF;
           if(pref<=0) continue;
 
           SI.pd=cd; SI.combo=cd; SI.b=b; SI.a=a; SI.P0=P0; SI.f=f;
-          SI.dist=cuePot; SI.ex=ex; SI.ey=ey; SI.rails=0;
+          SI.dist=cuePot; SI.run=run; SI.ex=ex; SI.ey=ey; SI.rails=0;
           SI.scr=scr; SI.hit=false; SI.q0=q0; SI.imm=imm; SI.pos=1; SI.gap=gap;
           SI.spd=spd; SI.pw=pw; SI.hitRes=null; SI.close=(d1 < BD+DHIT_GAP);
           SI.cosT=cosT; SI.sinT=sinT; SI.d1=d1;
@@ -3022,7 +3121,7 @@ function snapStep(k,cx,cy){
     lay, mv, hard:lay.hard[k]||0, moved:(SI.pd.B !== balls[k]),
     bx:SI.pd.B.x, by:SI.pd.B.y, n:SI.pd.B.n, d1:SI.d1, d2:SI.pd.d2,
     b:SI.b, a:SI.a, P0:SI.P0, f:SI.f, spd:SI.spd, pw:SI.pw, close:SI.close,
-    dist:SI.dist, ex:SI.ex, ey:SI.ey, rails:SI.rails, gap:SI.gap,
+    dist:SI.dist, run:SI.run, ex:SI.ex, ey:SI.ey, rails:SI.rails, gap:SI.gap,
     scr:SI.scr, hitb:SI.hit, hitRes:SI.hitRes, q:SI.imm, q0:SI.q0, pos:SI.pos,
     sidePick:SI.sidePick,
     cosT:SI.cosT, sinT:SI.sinT, ux:SI.ux, uy:SI.uy,
@@ -4126,32 +4225,203 @@ function rrect(x,y,w,h,r){
   ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
   ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
 }
+/* =========================================================================
+   テーブルの描画 —— 実物（→ テーブル.png）と同じ構造で描く
+   -------------------------------------------------------------------------
+     ① 外枠      クリーム色の縁
+     ② レール    濃い茶の木部 ＋ 丸いポイント（ダイヤ）
+     ③ ライナー  ポケットまわりのクリームの部品
+     ④ ラシャ    中央が明るい緑
+     ⑤ 落ち口    ジョー面とマウス線で囲まれた黒い口（丸い穴では描かない）
+     ⑥ クッション 緑。両端はジョー面で斜めに切り落とす
+   ⑤⑥ の形は POCKETS の実寸（マウス幅・ジョーの開き角）からそのまま作って
+   いるので、画面に見えている口の形と potHit() の「落ちる／落ちない」は
+   必ず一致する。＝浅い角度でサイドへ流し込む筋が絵の上でも成立しない。
+   ========================================================================= */
+const CUSH_W  = 1.70;   // クッションの幅（鼻先から外側へ）[inch]
+const FRAME_W = 1.05;   // 外枠（クリーム）の幅 [inch]
+const SIGHT_D = 3.35;   // ポイントの中心（鼻先からの距離）[inch]
+
+/* ジョー面の向き。sg = マウス線のどちら側の先端か（+1 / −1）。
+   面がマウス線となす角が jawA なので、マウス線方向 tg と軸方向 a の合成になる。 */
+function jawDir(pk, sg){
+  const ca=Math.cos(pk.jawA), sa=Math.sin(pk.jawA);
+  return [sg*ca*pk.tgx + sa*pk.ax, sg*ca*pk.tgy + sa*pk.ay];
+}
+/* ジョー先端（マウス線の両端）*/
+function jawTip(pk, sg){
+  return [pk.mx + sg*pk.tgx*pk.mhalf, pk.my + sg*pk.tgy*pk.mhalf];
+}
+/* テーブル座標の折れ線を canvas のパスにする（縦向きでもそのまま通る）*/
+function polyPath(pts){
+  ctx.beginPath();
+  for(let i=0;i<pts.length;i++){
+    const q=P(pts[i][0],pts[i][1]);
+    if(i) ctx.lineTo(q[0],q[1]); else ctx.moveTo(q[0],q[1]);
+  }
+  ctx.closePath();
+}
+/* クッション 1 区間の外形。(x1,y1)-(x2,y2) が鼻先の線、(nx,ny) が台の外向き。
+   両端は、その端にあるポケットのジョー面で斜めに切る。 */
+function cushPoly(x1,y1,x2,y2,nx,ny,pk1,pk2){
+  const s1 = ((x1-pk1.mx)*pk1.tgx + (y1-pk1.my)*pk1.tgy) >= 0 ? 1 : -1;
+  const s2 = ((x2-pk2.mx)*pk2.tgx + (y2-pk2.my)*pk2.tgy) >= 0 ? 1 : -1;
+  const f1=jawDir(pk1,s1), f2=jawDir(pk2,s2);
+  const l1=CUSH_W/Math.max(f1[0]*nx+f1[1]*ny, 0.25);
+  const l2=CUSH_W/Math.max(f2[0]*nx+f2[1]*ny, 0.25);
+  return [[x1,y1],[x2,y2],[x2+f2[0]*l2, y2+f2[1]*l2],[x1+f1[0]*l1, y1+f1[1]*l1]];
+}
+/* 鼻先の 6 区間（両端のポケット番号つき）*/
+function cushSegs(){
+  const K=POCKETS, h=W/2;
+  return [
+    [CJT,0,   h-SJT,0,   0,-1, K[0],K[1]],
+    [h+SJT,0, W-CJT,0,   0,-1, K[1],K[2]],
+    [CJT,HT,  h-SJT,HT,  0, 1, K[3],K[4]],
+    [h+SJT,HT,W-CJT,HT,  0, 1, K[4],K[5]],
+    [0,CJT,   0,HT-CJT, -1, 0, K[0],K[3]],
+    [W,CJT,   W,HT-CJT,  1, 0, K[2],K[5]]
+  ];
+}
+/* 落ち口のパス（マウス線 → ジョー面 → 奥のふくらみ → ジョー面 → 戻る）*/
+/* 落ち口（黒）。マウス線より外側だけを切り抜いて円を置く。
+   ＝ ラシャ側の境界はマウス線そのもの、奥は丸く落ちて見える。
+   実物と同じで「マウス線より内側に黒はみ出さない」ので、
+   絵の上でも浅い角度でサイドへ流し込める筋には見えない。 */
+function pocketClip(pk){
+  const t1=jawTip(pk,-1), t2=jawTip(pk,1), F=15;
+  return [[t1[0]-pk.tgx*F,           t1[1]-pk.tgy*F],
+          [t1[0]-pk.tgx*F+pk.ax*F,   t1[1]-pk.tgy*F+pk.ay*F],
+          [t2[0]+pk.tgx*F+pk.ax*F,   t2[1]+pk.tgy*F+pk.ay*F],
+          [t2[0]+pk.tgx*F,           t2[1]+pk.tgy*F]];
+}
+/* ポケットまわりのクリームの部品（レールの上に見える白っぽい板）*/
+function linerPoly(pk){
+  const b = RAIL-FRAME_W;                      // レールの外端まで
+  const ey = pk.y===0 ? 1 : -1;                // 台の内側へ向かう y
+  if(!pk.corner){
+    const w = pk.mhalf + 1.05;
+    return [[pk.x-w, pk.y],[pk.x-w, pk.y-ey*b],[pk.x+w, pk.y-ey*b],[pk.x+w, pk.y]];
+  }
+  const ex = pk.x===0 ? 1 : -1, a = CJT+1.05;
+  return [[pk.x+ex*a, pk.y],[pk.x+ex*a, pk.y-ey*b],[pk.x-ex*b, pk.y-ey*b],
+          [pk.x-ex*b, pk.y+ey*a],[pk.x, pk.y+ey*a]];
+}
+
 function drawTable(){
   const BW=bw(), BH=bh();
   ctx.clearRect(0,0,cv.width,cv.height);
-  const g=ctx.createLinearGradient(0,0,0,(BH+2*RAIL)*S);
-  g.addColorStop(0,'#5a3720'); g.addColorStop(.5,'#42281580'); g.addColorStop(1,'#2e1c0f');
-  ctx.fillStyle='#3d2513'; rrect(0,0,(BW+2*RAIL)*S,(BH+2*RAIL)*S,10); ctx.fill();
-  ctx.fillStyle=g; ctx.fill();
-  ctx.strokeStyle='#1a0f07'; ctx.lineWidth=2; ctx.stroke();
-  ctx.fillStyle='#146b48';
-  rrect(OX-(RAIL-1.4)*S, OY-(RAIL-1.4)*S, (BW+2*(RAIL-1.4))*S, (BH+2*(RAIL-1.4))*S, 5); ctx.fill();
-  const pg=ctx.createRadialGradient(OX+BW*S/2,OY+BH*S/2,BH*S*0.1,OX+BW*S/2,OY+BH*S/2,BW*S*0.75);
-  pg.addColorStop(0,'#1a8b5c'); pg.addColorStop(1,'#0f6440');
-  ctx.fillStyle=pg; ctx.fillRect(OX,OY,BW*S,BH*S);
-  ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=1.5; ctx.strokeRect(OX,OY,BW*S,BH*S);
-  ctx.fillStyle='rgba(240,235,215,.85)';
-  const dia=(u,v)=>{ const s=2.0*S/6; ctx.beginPath();
-    ctx.moveTo(u,v-s); ctx.lineTo(u+s,v); ctx.lineTo(u,v+s); ctx.lineTo(u-s,v); ctx.closePath(); ctx.fill(); };
-  for(let i=1;i<=Math.round(BW/12.5)-1;i++){ const u=OX+i*12.5*S; dia(u,OY-3*S); dia(u,OY+BH*S+3*S); }
-  for(let i=1;i<=Math.round(BH/12.5)-1;i++){ const v=OY+i*12.5*S; dia(OX-3*S,v); dia(OX+BW*S+3*S,v); }
+  const TW=(BW+2*RAIL)*S, TH=(BH+2*RAIL)*S, fw=FRAME_W*S;
+
+  /* ① 外枠（クリーム）*/
+  const fg=ctx.createLinearGradient(0,0,0,TH);
+  fg.addColorStop(0,'#f6f1e3'); fg.addColorStop(.42,'#e4ddc8');
+  fg.addColorStop(.80,'#d3cbb2'); fg.addColorStop(1,'#bdb59c');
+  ctx.fillStyle=fg; rrect(0,0,TW,TH,Math.min(3.0*S, TW*0.06)); ctx.fill();
+  ctx.strokeStyle='rgba(56,40,22,.55)'; ctx.lineWidth=Math.max(1,0.10*S); ctx.stroke();
+
+  /* ② レール（木部）*/
+  const wg=ctx.createLinearGradient(0,fw,0,TH-fw);
+  wg.addColorStop(0,'#6d4322'); wg.addColorStop(.10,'#5a3517');
+  wg.addColorStop(.50,'#4e2d13'); wg.addColorStop(.90,'#5a3517'); wg.addColorStop(1,'#41260f');
+  ctx.fillStyle=wg; rrect(fw,fw,TW-2*fw,TH-2*fw,Math.min(2.0*S, TW*0.04)); ctx.fill();
+  ctx.strokeStyle='rgba(22,11,4,.75)'; ctx.lineWidth=Math.max(1,0.09*S); ctx.stroke();
+  /* 木部の内側の面取り（光を拾う細い線）*/
+  ctx.save(); ctx.globalAlpha=.30; ctx.strokeStyle='#c79a63';
+  ctx.lineWidth=Math.max(.8,0.09*S);
+  rrect(fw+0.5, fw+0.5, TW-2*fw-1, TH-2*fw-1, Math.min(2.0*S, TW*0.04)); ctx.stroke(); ctx.restore();
+
+  /* ③ ポケットまわりのクリームの部品 */
+  for(const pk of POCKETS){
+    polyPath(linerPoly(pk));
+    const lp=P(pk.x,pk.y), lg=ctx.createLinearGradient(lp[0],lp[1]-2.4*S,lp[0],lp[1]+2.4*S);
+    lg.addColorStop(0,'#f3eddd'); lg.addColorStop(1,'#cdc5ac');
+    ctx.fillStyle=lg; ctx.fill();
+    ctx.strokeStyle='rgba(70,52,30,.35)'; ctx.lineWidth=Math.max(.7,0.06*S); ctx.stroke();
+  }
+
+  /* ④ ポイント（ダイヤ）。サイドポケットの位置には無い */
+  const sight=(u,v)=>{
+    const r=Math.max(1.4, 0.30*S);
+    ctx.beginPath(); ctx.arc(u,v+r*0.22,r,0,7);
+    ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(u,v,r,0,7);
+    const g=ctx.createRadialGradient(u-r*.35,v-r*.35,r*.1,u,v,r);
+    g.addColorStop(0,'#fffdf4'); g.addColorStop(1,'#ddd4b8');
+    ctx.fillStyle=g; ctx.fill();
+  };
+  for(let i=1;i<=7;i++){
+    if(i===4) continue;                         // サイドポケット
+    const x=i*12.5;
+    let q=P(x, -SIGHT_D);      sight(q[0],q[1]);
+    q=P(x, HT+SIGHT_D);        sight(q[0],q[1]);
+  }
+  for(let i=1;i<=3;i++){
+    const y=i*12.5;
+    let q=P(-SIGHT_D, y);      sight(q[0],q[1]);
+    q=P(W+SIGHT_D, y);         sight(q[0],q[1]);
+  }
+
+  /* ⑤ ラシャ（中央が明るい）*/
+  const c0=P(0,0), c1=P(W,HT), px0=Math.min(c0[0],c1[0]), py0=Math.min(c0[1],c1[1]);
+  const pw=Math.abs(c1[0]-c0[0]), ph=Math.abs(c1[1]-c0[1]);
+  const pg=ctx.createRadialGradient(px0+pw/2,py0+ph/2,Math.min(pw,ph)*0.08,
+                                    px0+pw/2,py0+ph/2,Math.max(pw,ph)*0.72);
+  pg.addColorStop(0,'#1fb45f'); pg.addColorStop(.52,'#12a052'); pg.addColorStop(1,'#0a7c3e');
+  ctx.fillStyle=pg; ctx.fillRect(px0,py0,pw,ph);
+  /* 鼻先ぎわの落ち込み（クッションの影）*/
+  ctx.save(); ctx.beginPath(); ctx.rect(px0,py0,pw,ph); ctx.clip();
+  ctx.shadowColor='rgba(0,0,0,.40)'; ctx.shadowBlur=Math.max(3,2.4*S);
+  const lw=Math.max(2,1.2*S);
+  ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=lw;
+  ctx.strokeRect(px0-lw,py0-lw,pw+2*lw,ph+2*lw);
+  ctx.restore();
+
+  /* フットスポット */
   const fs=P(75,25);
-  ctx.fillStyle='rgba(0,0,0,.28)'; ctx.beginPath(); ctx.arc(fs[0],fs[1],0.35*S,0,7); ctx.fill();
-  for(const p of POCKETS){
-    const [px,py]=P(p.x,p.y), rr=(p.corner?2.55:2.75)*S;
-    ctx.fillStyle='#0a0d0b'; ctx.beginPath(); ctx.arc(px,py,rr,0,7); ctx.fill();
-    ctx.strokeStyle='rgba(215,205,175,.5)'; ctx.lineWidth=Math.max(1.2,0.22*S);
-    ctx.beginPath(); ctx.arc(px,py,rr,0,7); ctx.stroke();
+  ctx.fillStyle='rgba(20,40,30,.34)';
+  ctx.beginPath(); ctx.arc(fs[0],fs[1],0.34*S,0,7); ctx.fill();
+
+  /* ⑥ 落ち口（黒）。マウス線の外側だけを切り抜いて丸く落とす */
+  for(const pk of POCKETS){
+    const off = pk.corner ? 1.05 : 1.00;        // マウス線から円の中心まで
+    const rad = pk.corner ? 3.30 : 3.05;        // 落ち口の半径（見た目）
+    const c=P(pk.mx+pk.ax*off, pk.my+pk.ay*off);
+    ctx.save();
+    polyPath(pocketClip(pk)); ctx.clip();
+    ctx.beginPath(); ctx.arc(c[0],c[1],rad*S,0,7);
+    ctx.fillStyle='#080e0b'; ctx.fill();
+    /* 奥のかすかな照り返し（穴が抜けて見えるように）*/
+    const q=P(pk.mx+pk.ax*(off+1.0), pk.my+pk.ay*(off+1.0));
+    const hg=ctx.createRadialGradient(q[0],q[1],0.15*S,q[0],q[1],rad*S);
+    hg.addColorStop(0,'rgba(52,72,62,.50)'); hg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(c[0],c[1],rad*S,0,7); ctx.fill();
+    ctx.restore();
+    /* 口のふち（クリームのライナーとの境目）*/
+    ctx.save();
+    polyPath(pocketClip(pk)); ctx.clip();
+    ctx.beginPath(); ctx.arc(c[0],c[1],rad*S,0,7);
+    ctx.strokeStyle='rgba(120,105,72,.55)'; ctx.lineWidth=Math.max(1,0.20*S); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ⑦ クッション（両端はジョー面で斜めに切る）*/
+  for(const sg of cushSegs()){
+    const poly=cushPoly(sg[0],sg[1],sg[2],sg[3],sg[4],sg[5],sg[6],sg[7]);
+    const n0=P((sg[0]+sg[2])/2, (sg[1]+sg[3])/2);
+    const n1=P((sg[0]+sg[2])/2 + sg[4]*CUSH_W, (sg[1]+sg[3])/2 + sg[5]*CUSH_W);
+    const cg=ctx.createLinearGradient(n0[0],n0[1],n1[0],n1[1]);
+    cg.addColorStop(0,'#12a052'); cg.addColorStop(.34,'#1cb862');
+    cg.addColorStop(.80,'#22c46b'); cg.addColorStop(1,'#0f7a41');
+    polyPath(poly); ctx.fillStyle=cg; ctx.fill();
+    ctx.strokeStyle='rgba(8,52,28,.45)'; ctx.lineWidth=Math.max(.8,0.06*S); ctx.stroke();
+    /* 鼻先（球が当たる面）の縁 */
+    const a=P(sg[0],sg[1]), b=P(sg[2],sg[3]);
+    ctx.save();
+    ctx.globalAlpha=.34; ctx.strokeStyle='#0a5c33';
+    ctx.lineWidth=Math.max(1,0.14*S);
+    ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke();
+    ctx.restore();
   }
 }
 function drawHeat(){
@@ -4659,11 +4929,15 @@ function aimPath(cx,cy,gx,gy,a,b,P0){
    そこで 1 手ごとに時間の尺度を掛けて、手と手の速さの差を圧縮する。
      ・同じ手の中の「的玉は速い／手玉はゆっくり出ていく」という差は物理のまま
      ・強く撞いた手がやや速い、という感じだけは残す
-   PACE_B = 0 で完全に物理どおり、1 で完全に等速。 */
+   PACE_B = 0 で完全に物理どおり、1 で完全に等速。
+   ただし圧縮しすぎると『そっと』と『最大』の再生がほとんど同じ速さに見え、
+   選んだ力加減が画面に出てこない（実測: 0.65 では 最大／そっと の見た目の
+   速さの比が 3.85 倍 → 1.8 倍まで潰れていた）。0.30 にすると 2.6 倍残るので、
+   強く撞いた手はちゃんと速く・遠くまで走るのが分かる。 */
 const PACE_REF = 210;    // 基準ポテンシャル（ふつうの力加減はこのあたり）
-const PACE_B   = 0.65;
+const PACE_B   = 0.30;
 function shotPace(P0){
-  return clamp(Math.pow(PACE_REF/Math.max(P0,1), PACE_B/2), 0.55, 1.8);
+  return clamp(Math.pow(PACE_REF/Math.max(P0,1), PACE_B/2), 0.50, 1.9);
 }
 function shotTimes(sh){
   sh.pace = shotPace(sh.aimPot);
@@ -4997,6 +5271,9 @@ function blinkKick(){
    renderPanel() が入口で、セーフティー中は renderSafetyPanel() に流す。
    ========================================================================= */
 /* 確率を色分けする（良い→緑／普通→黄／悪い→赤） */
+/* カードや内訳に出す「手玉移動」。simulate が実際に走らせた道のりを使う。
+   run が入っていない場合（保存データの読み戻しなど）は見積りの dist で代用する。 */
+function cueRun(s){ return (s && s.run!==undefined && s.run!==null) ? s.run : (s?s.dist:0); }
 function pctColor(v, good, mid){ return v>good?'#4ade80' : (v>mid?'#ffd166' : '#f87171'); }
 /* 力加減の 5 段階バーと言葉。実際のストローク速度（VMAX 比）で決める。
    「必要最小の何倍か」という相対量で持っていた旧版は、近い球の『そっと』が
@@ -5284,7 +5561,7 @@ function renderTipPanel(){
        ・指定した引きが的玉まで残る最小の力を下回れない（§07 撞点の寿命）
      どちらも「成立する中でいちばん柔らかい」まで持ち上げているだけだが、
      黙って強くすると力加減の表示と食い違うので、理由をここで出す。 */
-  else if(manP && an.pw!==null && an.pw > POWV[powOverride[an.k]] + 0.04){
+  else if(manP && an.pw!==null && an.pw > POWV[powOverride[an.k]] + 0.02){
     const drawShort = an.b < -0.08;
     t=`この球は「${POWLBL[powOverride[an.k]]}」では`
      +(drawShort ? `この距離（手玉${Math.round(an.d1)}″）まで引きが残らないので、`
@@ -5546,7 +5823,7 @@ function renderPanel(){
 
   let tot=0,rails=0,hard=1,hardN=0,posAll=1;
   for(const s of plan.steps){
-    tot+=s.dist; rails+=s.rails;
+    tot+=cueRun(s); rails+=s.rails;
     if(s.q0<hard){hard=s.q0;hardN=s.n;}
     posAll*=s.pos;
   }
@@ -5613,7 +5890,7 @@ function renderPanel(){
     if(s.b < -0.05 && s.f > -0.05)      drawGone.push(`${s.n}番`);
     else if(s.b > 0.05 && s.f >= ROLL_F) rollOnly.push(`${s.n}番`);
     if(!s.combo && s.pos<0.86)
-      ws.push(`⚠ ${s.n}番の出しが ${Math.round(s.dist)}″${s.rails?`／${s.rails}クッション`:''}と長く、ポジションミスの確率が上がります（出し成功率 ${Math.round(s.pos*100)}%）。`);
+      ws.push(`⚠ ${s.n}番の出しが ${Math.round(cueRun(s))}″${s.rails?`／${s.rails}クッション`:''}と長く、ポジションミスの確率が上がります（出し成功率 ${Math.round(s.pos*100)}%）。`);
     /* 逃げ道の確保 — 土手に張り付く出しは次の入り筋が 1 本になりやすい */
     if(!s.combo && s.k < balls.length-1 && railNear(s.ex,s.ey) > 0.5)
       ws.push(`⚠ ${s.n}番の後、手玉が土手ぎわに止まります。撞点が制限され、次の入り筋も細くなります。`);
@@ -5658,7 +5935,7 @@ function renderPanel(){
         <div class="meta">
           <div>カット <b>${cut}°</b>（<b>${thickLabel(s.cosT)}</b>）${cb?'':` → 分離 <b>${s.dist>0.5?sep+'°':'—'}</b>`} ・ 手玉${Math.round(s.d1)}″(${(s.d1/12.5).toFixed(1)}P)/${cb?`球間${Math.round(cb.dk)}″`:`的玉${Math.round(s.d2)}″`}</div>
           <div>力加減 <span class="pw">${bars}</span> ${powerText(s.pw)}${
-            cb?'':` ・ 手玉移動 <b>${Math.round(s.dist)}″</b>${s.rails?` (${s.rails}クッション)`:''}`}${
+            cb?'':` ・ 手玉移動 <b>${Math.round(cueRun(s))}″</b>${s.rails?` (${s.rails}クッション)`:''}`}${
             last||cb?'':` ・ 出し <b>${Math.round(s.pos*100)}%</b>`}</div>
           <div>${cb?`9番まで <b>${Math.round(cb.dL)}″</b> ・ 1球目→9番のカット <b>${Math.round(angDeg(cb.cos2))}°</b>`
                   :`スロー <b>${Math.abs(th).toFixed(1)}°</b>${Math.abs(th)>0.35?'（狙いを逆へ補正）':''}${
