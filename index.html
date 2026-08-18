@@ -117,6 +117,14 @@ header{
 header h1{font-size:17px; font-weight:800; letter-spacing:.04em; white-space:nowrap;}
 header h1 span{color:var(--accent); font-weight:900;}
 header .tagline{color:var(--sub); font-size:12px; font-weight:600; white-space:nowrap;}
+/* バージョン表記の丸バッジ。ヘッダーと取扱説明書の見出しで共用する。
+   どんな画面幅でも消さない（スマホでも版が判るようにする）ので、
+   縮まない・折り返さない指定を付けて必ず残す。 */
+.ver{
+  flex:0 0 auto; white-space:nowrap;
+  font-size:10.5px; font-weight:700; color:var(--sub); background:var(--bg4);
+  border:1px solid var(--line); padding:2px 7px; border-radius:999px; letter-spacing:.03em;
+}
 header .spacer{flex:1;}
 header .kbd{color:var(--sub); font-size:11.5px; font-weight:600; white-space:nowrap;}
 header .kbd b{
@@ -170,10 +178,6 @@ button.act.tone:disabled{filter:none; opacity:.34;}
 @keyframes tonePulse{0%,100%{opacity:1;} 50%{opacity:.62;}}
 button.act.tone.live{animation:tonePulse 1.15s ease-in-out infinite;}
 @media (prefers-reduced-motion: reduce){button.act.tone.live{animation:none;}}
-header .ver{
-  font-size:10.5px; font-weight:700; color:var(--sub); background:var(--bg4);
-  border:1px solid var(--line); padding:2px 7px; border-radius:999px; letter-spacing:.03em;
-}
 
 /* ---------- 取扱説明書 ---------- */
 #help{
@@ -388,7 +392,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
         border-left:1px solid var(--line); border-top:none;}
   #stage{flex:1 1 auto;}
   header{height:44px; flex:0 0 44px;}
-  header .tagline,header .ver{display:none;}
+  header .tagline{display:none;}
 }
 
 @media (max-width: 640px){
@@ -426,8 +430,16 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
   #conds button.seg,
   #spds  button.seg{flex:1 1 calc(50% - 3px); min-width:calc(50% - 3px);}
   .chk{width:100%;}
+  header{gap:6px;}
   header h1{font-size:15px;}
-  header .ver{display:none;}
+  /* 版は消さず、枠を細くして場所を詰める */
+  header .ver{font-size:9.5px; padding:1px 5px;}
+}
+/* ここまで狭いと「使い方」の文字までは入らないので、ボタンは ? だけにする。
+   （版を残すぶんの幅をここで作る） */
+@media (max-width: 360px){
+  #bHelpLbl{display:none;}
+  #bHelp{font-size:15px; padding:10px 12px;}
 }
 </style>
 </head>
@@ -442,7 +454,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
     <button id="bTheme" title="テーマを切り替え（T）">◐<span id="bThemeLbl"> テーマ</span></button>
     <button id="bOrient" title="テーブルの向きを切り替え（V）">⇔<span id="bOrientLbl"> 横向き</span></button>
     <button id="bFull" title="全画面表示">⛶</button>
-    <button id="bHelp" title="使い方">? 使い方</button>
+    <button id="bHelp" title="使い方">?<span id="bHelpLbl"> 使い方</span></button>
   </header>
   <main>
     <div id="stage">
@@ -618,6 +630,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
   <div class="hbox">
     <div class="hhead">
       <b>Billiトレ — 使い方</b>
+      <span class="ver" id="hVer"></span>
       <button id="hClose">閉じる ✕</button>
     </div>
     <div class="hbody">
@@ -1176,7 +1189,6 @@ const VERSION = '1.2.4';
    単一の減衰係数で済ませるのが最も多い失敗（§00）。 */
 const G_IN   = 386.22;          // 重力加速度 [inch/s²]
 const E_BALL = 0.95;            // 球同士の反発係数
-const RAIL_H = 1.27*R;          // クッション接触高さ
 const IN_M   = 39.3701;         // inch → m（ハンドブックの実験式は m/s で書かれている）
 let MU_S    = 0.20;             // 布とのすべり摩擦
 let MU_R    = 0.010;            // 転がり抵抗
@@ -1879,8 +1891,6 @@ function ballSt(x,y,vx,vy,wvx,wvy,wz){ return {x,y,vx,vy,wvx,wvy,wz:wz||0}; }
 function copySt(s){ return {x:s.x,y:s.y,vx:s.vx,vy:s.vy,wvx:s.wvx,wvy:s.wvy,wz:s.wz}; }
 /* 自然転がりで走り出す球（キックの走査など） */
 function rollSt(x,y,ux,uy,pot){ const v=potV(pot); return ballSt(x,y,ux*v,uy*v,ux*v,uy*v,0); }
-/* 無回転で滑り出す球（＝衝突直後の的玉。§08「的玉は必ず滑って出る」） */
-function stunSt(x,y,ux,uy,pot,wz){ const v=potV(pot); return ballSt(x,y,ux*v,uy*v,0,0,wz); }
 
 /* 無回転で滑り出した球が距離 d に届くまでの秒数（§08 の二相）。
    すべり相で (5/7) まで落ちてから転がりに入るので、ポケット手前で減速が
@@ -1974,7 +1984,7 @@ function railBounce(b, nx, ny){
 
 /* -------------------------------------------------------------------------
    球の走行シミュレーション（手玉・的玉で共用）
-     st      = 走らせる球の状態（ballSt / rollSt / stunSt / solveImpact で作る）
+     st      = 走らせる球の状態（ballSt / rollSt / solveImpact で作る）
      rec     = true で軌跡 pts（[x, y, 経過秒]）とクッション接点 railIdx も記録
      resolve = true で「他の球に当たったら 2 球衝突を解いて走り続ける」
 
@@ -2605,6 +2615,36 @@ function bridgeLim(cx,cy){
   return clamp(0.20 + 0.80*(m-R)/(5.0-R), 0.18, 1);
 }
 
+/* 土手際の手玉で撞ける範囲。下撞き(引き)と捻りが特に制限され、押しは比較的残る。
+   列挙のたびに作らないよう、使い回しの BLIM に書いて返す
+   （呼び側は分割代入でローカルに落として内側のループで使う）。 */
+const BLIM = {lim:1, cbRail:1, bMaxUp:0, bMaxDn:0, aMax:0};
+function bridgeCaps(cx,cy){
+  const lim = bridgeLim(cx,cy);
+  BLIM.lim    = lim;
+  BLIM.cbRail = 1 + CBRAIL_K*(1-lim);
+  BLIM.bMaxUp = TIPMAX*Math.min(1, lim+0.40);
+  BLIM.bMaxDn = TIPMAX*lim;
+  BLIM.aMax   = TIPMAX*lim;
+  return BLIM;
+}
+
+/* ポテンシャル（力加減）の候補を POTBUF に詰めて本数を返す。
+   力加減を手で指定しているときは、絶対的なストローク速度（POWV）で 1 本だけ。
+   自動のときは pset を必要最小 p0min で持ち上げ、近すぎる候補（8″ 未満差）を間引く。 */
+function fillPots(pset, p0min, powKey){
+  if(powKey){ POTBUF[0] = powerPot(powKey, p0min); return 1; }
+  let np=0;
+  for(let i=0;i<pset.length;i++){
+    let P = pset[i] < p0min ? p0min*1.02 : pset[i];
+    if(P > PMAX) P = PMAX;
+    if(np && P - POTBUF[np-1] < 8) continue;
+    POTBUF[np++] = P;
+    if(P >= PMAX) break;
+  }
+  return np;
+}
+
 const A_NONE = [0];        // ノーイングリッシュ用の左右撞点（芯だけ）
 function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
   const list = LAY.pdata[k], others = LAY.others[k], nextV = Vb[k+1];
@@ -2615,12 +2655,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
      呼び出し側（手動の撞点指定を含む）が何を渡しても左右は必ず芯になる。 */
   if(noEnglish) aset = A_NONE;
 
-  /* 土手際の手玉：下撞き(引き)と捻りが特に制限され、押しは比較的残る */
-  const lim    = bridgeLim(cx,cy);
-  const cbRail = 1 + CBRAIL_K*(1-lim);
-  const bMaxUp = TIPMAX*Math.min(1, lim+0.40);
-  const bMaxDn = TIPMAX*lim;
-  const aMax   = TIPMAX*lim;
+  const {lim, cbRail, bMaxUp, bMaxDn, aMax} = bridgeCaps(cx,cy);
   /* 「近いサイドを使う」は仕上げのルート探索でだけ効かせる。
      価値マップ（DP）に混ぜると地図そのものがサイド狙いに引っ張られ、
      手前の球の出しまで組み替わって取り切り率が落ちる
@@ -2674,20 +2709,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
                 tipIntentPot(bset[0], d1, powKey ? SPIN_MIN : undefined)));
     }
 
-    /* ポテンシャル候補。力加減を手で指定しているときは
-       絶対的なストローク速度（POWV）で 1 本だけ作る。 */
-    let np=0;
-    if(powKey){
-      POTBUF[np++] = powerPot(powKey, p0min);
-    } else {
-      for(let i=0;i<pset.length;i++){
-        let P = pset[i] < p0min ? p0min*1.02 : pset[i];
-        if(P > PMAX) P = PMAX;
-        if(np && P - POTBUF[np-1] < 8) continue;
-        POTBUF[np++] = P;
-        if(P >= PMAX) break;
-      }
-    }
+    const np = fillPots(pset, p0min, powKey);
     if(!np) continue;
 
     /* シュート誤差（力加減と捻りの分はこの後で足す） */
@@ -2853,11 +2875,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
   const list = LAY.combo[k], others = LAY.others[k];
   if(!list || !list.length) return;
   if(noEnglish) aset = A_NONE;
-  const lim    = bridgeLim(cx,cy);
-  const cbRail = 1 + CBRAIL_K*(1-lim);
-  const bMaxUp = TIPMAX*Math.min(1, lim+0.40);
-  const bMaxDn = TIPMAX*lim;
-  const aMax   = TIPMAX*lim;
+  const {lim, cbRail, bMaxUp, bMaxDn, aMax} = bridgeCaps(cx,cy);
 
   for(let ci=0; ci<list.length; ci++){
     const cd = list[ci];
@@ -2880,18 +2898,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
     let p0min = d1 + need/(E_XFER*c2) + 3;
     if(p0min > PMAX) continue;
 
-    let np=0;
-    if(powKey){
-      POTBUF[np++] = powerPot(powKey, p0min);
-    } else {
-      for(let i=0;i<pset.length;i++){
-        let P = pset[i] < p0min ? p0min*1.02 : pset[i];
-        if(P > PMAX) P = PMAX;
-        if(np && P - POTBUF[np-1] < 8) continue;
-        POTBUF[np++] = P;
-        if(P >= PMAX) break;
-      }
-    }
+    const np = fillPots(pset, p0min, powKey);
     if(!np) continue;
 
     const errCore = comboError(d1, cd.dk, cd.dL, cosT, sinT, cd.cos2, cd.sin2, cbRail, cd.railL, gap);
@@ -4396,10 +4403,7 @@ function drawTable(){
     const hg=ctx.createRadialGradient(q[0],q[1],0.15*S,q[0],q[1],rad*S);
     hg.addColorStop(0,'rgba(52,72,62,.50)'); hg.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(c[0],c[1],rad*S,0,7); ctx.fill();
-    ctx.restore();
-    /* 口のふち（クリームのライナーとの境目）*/
-    ctx.save();
-    polyPath(pocketClip(pk)); ctx.clip();
+    /* 口のふち（クリームのライナーとの境目）。切り抜きは落ち口と同じなので使い回す */
     ctx.beginPath(); ctx.arc(c[0],c[1],rad*S,0,7);
     ctx.strokeStyle='rgba(120,105,72,.55)'; ctx.lineWidth=Math.max(1,0.20*S); ctx.stroke();
     ctx.restore();
@@ -4780,18 +4784,23 @@ function safetyCuePath(sf){
   return {pts:cs.pts.map(p=>[p[0],p[1],p[2]]), railIdx:(cs.railIdx||[]).slice(),
           hits:cs.hits.length?cs.hits.slice():null, dur:cs.T};
 }
-/* セーフティーで手玉・的玉に弾かれた球の道すじ。
-   others = balls.slice(1) と添字が一致する（trySafety と同じ並び）。 */
-function safetyStruck(hits){
-  const others=balls.slice(1), out=[];
+/* 手玉・的玉に弾かれた球（クラスター）の道すじ。
+     others = 衝突判定に渡した並び（h.i がこの添字）
+     stage  = 再生中の静止球リスト（bi はこの添字で返す）
+   ※ resolveHits は SIM を上書きするので、手玉・的玉の道すじを
+     複製し終えてから呼ぶこと。 */
+function struckPaths(hits, others, stage){
+  const out=[];
   if(!hits || !hits.length) return out;
   for(const h of resolveHits(hits, others, true)){
     const bn=others[h.i];
     if(!bn) continue;
-    out.push({n:bn.n, bi:balls.indexOf(bn), pts:h.pts, potted:h.potted, t0:h.t0});
+    out.push({n:bn.n, bi:stage.indexOf(bn), pts:h.pts, potted:h.potted, t0:h.t0});
   }
   return out;
 }
+/* セーフティー版。others = balls.slice(1) と添字が一致する（trySafety と同じ並び） */
+function safetyStruck(hits){ return struckPaths(hits, balls.slice(1), balls); }
 
 function drawSafety(sf){
   const C=P(sf.cx,sf.cy), G=P(sf.gx,sf.gy);
@@ -4997,15 +5006,8 @@ function buildShots(fromStep, single){
       cue=cs.pts.map(p=>[p[0],p[1],p[2]]);
       hits=cs.hits.slice();
     }
-    /* 手玉に弾かれた球（クラスター処理）。resolveHits は SIM を上書きするので、
-       手玉の道すじを複製し終えてから呼ぶ。 */
-    if(hits.length){
-      for(const h of resolveHits(hits, others, true)){
-        const bn=others[h.i];
-        if(!bn) continue;
-        sec.push({n:bn.n, bi:remain.indexOf(bn), pts:h.pts, potted:h.potted, t0:h.t0});
-      }
-    }
+    /* 手玉に弾かれた球（クラスター処理）。手玉の道すじを複製し終えてから呼ぶ。 */
+    for(const s of struckPaths(hits, others, remain)) sec.push(s);
     if(cb){
       /* コンビ: 1 球目は 9 番の手前まで、そこから 9 番がポケットへ */
       const L9=remain.find(b=>b.n===cb.Ln);
@@ -5524,10 +5526,7 @@ function renderTipPanel(){
           .forEach(x=>{ x.disabled = noEnglish; });
   if(!an){
     lbl.textContent='—'; md.textContent='—'; md.className='tipmode auto';
-    $('tipB').textContent='—';
-    $('tipA').textContent='—';
-    $('tipP').textContent='—';
-    $('tipF').textContent='—';
+    for(const id of ['tipB','tipA','tipP','tipF']) $(id).textContent='—';
     fB.textContent='—'; fA.textContent='—';
     note.textContent='手玉を置くと設定できます。'; note.className='tipnote';
     drawTipCtl(); return;
@@ -6338,7 +6337,10 @@ if(window.visualViewport) visualViewport.addEventListener('resize',onResize);
 /* =========================================================================
    起動
    ========================================================================= */
-$('verNum').textContent=VERSION;
+/* 版はヘッダーと取扱説明書の 2 か所に出す。
+   ヘッダーは幅が足りない端末でも消さないが、念のため説明書からも読めるようにしておく。 */
+$('verNum').textContent = VERSION;
+$('hVer').textContent   = 'v'+VERSION;
 $('condNote').textContent=CONDITIONS[condKey].note;
 updateRackUI();
 setOrient(orient,false);
