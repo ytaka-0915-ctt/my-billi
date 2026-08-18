@@ -789,9 +789,16 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       「見た目の走行距離」から想像するよりも<b>実際の球速はかなり速い</b>状態です。
       滑走の運動方程式を解いて<b>衝突する瞬間の球速をそのまま使う</b>ので、
       引きも押しも力加減に見合っただけしっかり手玉が動きます。
-      <b>2 ポイント先の的玉を最大の力加減・最大の引きで真っすぐ入れると手玉は約 126″（台 1 枚）戻り、
-      同じ配置の最大の押しでは約 115″ 出ます。</b>
+      <b>2 ポイント先の的玉を最大の力加減・最大の引きで真っすぐ入れると手玉は約 115″（台 1 枚）戻り、
+      同じ配置の最大の押しでは約 209″ 出ます。</b>
       逆に<b>そっと</b>撞いた最大の引きは、同じ距離でもストップになります。</p>
+      <p class="note"><b>押しが距離に強く、引きが距離に弱いのはなぜか。</b>
+      手玉の回転はどちらも<b>自然順回転（ころがし）へ向かって</b>変わっていきます。
+      押しにとってそこは<b>ゴール</b>なので、いったん落ち着けばあとは何インチ転がっても効果は消えません。
+      引きにとっては<b>真逆の状態</b>なので、走った距離のぶんだけ効果が抜けていきます。
+      さらに滑走中、押しは回転が前進に変わって<b>加速</b>し、引きは強く<b>減速</b>するので、
+      同じ力加減でも的玉に届いたときの勢いが押しのほうが大きくなります。
+      「遠い球を引くには強く撞く」必要があるのはこのためです。</p>
       <ul>
         <li>赤い破線は<b>ミスキュー限界</b>。それより外は撞けません（自動で内側に丸めます）</li>
         <li>手玉が土手（クッション際）にあるときは<b>撞ける範囲が狭くなり</b>、暗い部分は指定できません。
@@ -806,7 +813,8 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       このアプリも、クッションを使う出しで<b>どうしても有利なときだけ</b>捻りを選びます。<br>
       <b>「捻りを一切使わない（ノーイングリッシュ）」</b>にチェックを入れると、
       ルート探索・セーフティー・再生のすべてで左右の撞点が<b>芯に固定</b>されます。
-      クッションが手玉に与える順捻りも止まるので<b>クッションは素直に反射</b>します。
+      なお、クッションに擦れて手玉が拾う横回転は物理現象なので止まりません
+      （撞いて入れた捻りだけを封じます）。
       チェックした時点で<b>全ステップの撞点はまとめて中心（芯）にリセット</b>され、
       上下の微調整ボタンだけが使えます。上下も自動で選ばせたいときは
       <b>「全て自動に」</b>を押してください。</p>
@@ -934,7 +942,9 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
             <b>1/2 厚・1/4 厚</b>のように度数と併記します（厚み ＝ 1 − sin(カット角)）</li>
         <li><b>カット角（フリ）</b> — 手玉の進行方向と的玉の進む方向の角度差</li>
         <li><b>分離角</b> — 当たった後、的玉の進行方向に対して手玉が出ていく角度。
-            ストップなら必ず90°、ころがし（順回転）なら「30度ルール」通りになります</li>
+            ストップならほぼ90°、ころがし（順回転）なら「30度ルール」通りになります。
+            厳密には、球どうしの摩擦（スロー）と反発係数が 1 でないぶん、
+            ストップでも 90°より数度小さく出ます</li>
         <li><b>スロー</b> — 摩擦で的玉が押し出される角度。表示されている分だけ狙いを逆へ補正します</li>
         <li><b>手玉と的玉の距離（ポイント）</b> — 出しは<b>的玉から 2 ポイント（25″）以内</b>を
             目指します。1 ポイント = 12.5″＝ダイヤ 1 個ぶんです</li>
@@ -1003,9 +1013,10 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
    Billiトレ — 取り切り＆セーフティーシミュレーター
 
    ■ 構成
-     1. 定数        単位・テーブル寸法・物理パラメータ・確率モデルの較正値
+     1. 定数        単位・テーブル寸法・物理定数（§00）・確率モデルの較正値
      2. ユーティリティ
-     3. 物理モデル   撞点→回転、衝突後の分離角、球の走行（simulate）
+     3. 物理モデル   ハンドブック準拠。撞点→回転、すべり／転がりの二相、
+                    球どうしの衝突（法線衝撃＋接線摩擦衝撃）、クッション、走行
      4. 盤面状態     配置と、各球から狙えるポケットの下ごしらえ（lay として持ち回す）
      5. ショット列挙 1 球について「撞点 × 力加減 × 捻り」を総当たりする中核
      6. DP           「ここに手玉があれば残りを取り切れる確率」の価値マップ
@@ -1017,13 +1028,22 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
     11. 入力         盤面のドラッグ、各ボタン、キーボード
 
    ■ 単位と「ポテンシャル」
-     長さはすべてインチ。9ft 台のプレー面は 100 × 50。1 ポイント = 12.5″。
+     長さはすべてインチ、時間は秒。9ft 台のプレー面は 100 × 50。1 ポイント = 12.5″。
      球の速さは「そのまま転がったら止まるまでに進む距離 P」で表す。
-     P = v²/(2a) なので、P は距離と同じ単位でまっすぐ減っていき、
+     P = v²/(2·μr·g) なので、P は距離と同じ単位でまっすぐ減っていき、
      「あと何インチ走れるか」をそのまま足し引きできる。
      ただしこれが成り立つのは自然順回転で転がっている球だけ。
-     強い引き・押しで滑走している手玉は減速がずっと大きいので、
-     同じ P でも実際は速い＝衝突後によく走る（impactState を参照）。
+     滑走している球（撞いた直後の手玉・衝突直後の的玉）は減速が 20 倍大きいので、
+     同じ P でも走る距離はまったく違う（impactState / simulate を参照）。
+
+   ■ 物理の出どころ
+     すべて「ビリヤード物理学ハンドブック」に準拠している。節番号は
+     §00 定数 ／ §01 衝突の幾何 ／ §02 90度ルール ／ §03 分離角マスター式 ／
+     §04 速度とライン変化 ／ §05 トビ・カーブ・スロウ ／ §06 スロウの定量 ／
+     §07 ショット辞典 ／ §08 的玉の挙動 ／ §09 クッション ／ §11 実装
+     を指す。コード中のコメントはこの番号で参照している。
+     マスター式（§03）は探索とアシスト線の高速な見積りに、
+     実際の球の運動は解析解による積分（simulate）に、と使い分けている。
 
    ■ 確率の考え方
      ・狙い通りなら … Π（各球のシュート率 q0）    ＝手順カードの％をそのまま掛けた値
@@ -1064,71 +1084,111 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.2.1';
+const VERSION = '1.2.2';
+
+/* =========================================================================
+   物理定数 —— 「ビリヤード物理学ハンドブック」§00 に準拠
+   -------------------------------------------------------------------------
+   長さは inch、時間は秒で持つ（球径 2.25″ ＝ R 1.125″、9ft の面 100 × 50″）。
+     g      9.81 m/s² = 386.22 inch/s²
+     μs     布とのすべり摩擦 0.20   … 滑走中の減速
+     μr     転がり抵抗       0.010  … 転がりに入ってからの減速
+     μsp    垂直軸スピン摩擦 0.022  … 捻りの減衰（並進よりずっと遅い）
+     e_ball 球同士の反発     0.95   … 的玉に渡る速さ = 0.975·v·cosφ の元
+     μrail  クッション摩擦   0.20   ／ 接触高さ h = 1.27R（重心より上）
+   μs : μr が 20 : 1 あることが挙動の要。滑っている間は急速に減速し、
+   転がりに入ると驚くほど止まらない。この二相性が「ビリヤードらしさ」で、
+   単一の減衰係数で済ませるのが最も多い失敗（§00）。 */
+const G_IN   = 386.22;          // 重力加速度 [inch/s²]
+const E_BALL = 0.95;            // 球同士の反発係数
+const RAIL_H = 1.27*R;          // クッション接触高さ
+const IN_M   = 39.3701;         // inch → m（ハンドブックの実験式は m/s で書かれている）
+let MU_S    = 0.20;             // 布とのすべり摩擦
+let MU_R    = 0.010;            // 転がり抵抗
+let MU_SP   = 0.022;            // 垂直軸スピン摩擦
+let MU_RAIL = 0.425;            // クッション摩擦（§09 の指示どおり実測合わせで外出し）
+let A_SLIDE = MU_S*G_IN;        // 滑走中の減速 [inch/s²]
+let A_ROLL  = MU_R*G_IN;        // 転がりの減速 [inch/s²]
+let SPINDEC = 2.5*MU_SP*G_IN;   // R·ωz の減衰率 [inch/s²]（§08：3 秒近く生き残る）
+let E_RAIL_K= 1.00;             // クッション反発の倍率（コンディション）
+
+/* ポテンシャル P ＝「いま転がりに入っていれば、あと何インチで止まるか」＝ v²/(2·μr·g)。
+   力加減・走行距離・的玉に渡る勢いを、すべてこの 1 つの量で持ち回す。 */
+function potV(P){ return P>0 ? Math.sqrt(2*A_ROLL*P) : 0; }
+function vPot(v){ return v*v/(2*A_ROLL); }
+
+/* 的玉は「ほぼ無回転で滑って出る」ので、転がりに移るまでに速度の 2/7 を失う（§08）。
+     滑走距離 = (12/49)·vo²/(μs·g)   転がり距離 = ((5/7)·vo)²/(2·μr·g)
+   合わせると、初期ポテンシャル P に対する実際の走行距離は OBJ_RUN·P。
+   標準ラシャで 0.535 ―― 転がりだけで見積もると倍近く走らせすぎる。 */
+let OBJ_RUN = 25/49 + (24/49)*(MU_R/MU_S);
+/* 衝突で的玉に渡るポテンシャルの比。vo = ((1+e)/2)·v·cosφ なので二乗で効く（§01）*/
+const E_XFER = 0.25*(1+E_BALL)*(1+E_BALL);      // = 0.9506
+/* 手玉→的玉→ポケットに必要な最小ポテンシャルを出すための合成係数 */
+let OBJ_REACH = OBJ_RUN*E_XFER;
 
 /* --- テーブルコンディション ---------------------------------------------
-   ラシャの状態で「どこまで走るか」「回転がいつまで残るか」「スローの量」
-   「クッションの走り」「転がりの素直さ」が変わる。すべて物理パラメータに反映。
-   railT/railN の比は「クッションが鏡像よりどれだけ長く出るか」。
-
-   再較正の経緯 ―― 旧版は比 1.147 だったが、速度で接線を
-   殺す項（RAIL_TS × hard）が伸びをほぼ全部食っていて、実効の伸びが 1.045 まで
-   落ちていた（入射 30°→ 出射 31.2°、最大の力では 29.9°で鏡像より短い）。
-   転がっている球は強く入れても鏡像より短くはならないので、
-   ・速度の効きの基準を実際に出る球の勢いに合わせて上げる（simulate の hard）
-   ・土台の伸びをコンディションごとに持たせる
-   の 2 点で直した。入射 30°の出射は 新ラシャ 34.8°／標準 33.4°／重い台 31.6°で、
-   実測レンジ（33〜36°）に入り、コンディション差も 3.2°開く。 */
+   ハンドブック §12「チューニングの順序」に従って、
+     μr  … どこまで走るか（いちばんの基準）
+     μs  … 撞点の効きがどこまで生き残るか（引きが効く距離・ストップの距離）
+     e_rail / μrail … クッションの出し
+     μbb … スロウ量（throwK として掛ける）
+   の順に振っている。数値そのものは §00 の実測レンジの中に収めてある。 */
 const CONDITIONS = {
-  std : {pmax:1.00, slide:1.00, throwK:1.00, railN:0.75, railT:0.90, errK:1.00,
+  std : {muS:0.200, muR:0.0100, muRail:0.425, eRail:1.00, throwK:1.00, errK:1.00,
          note:'基準のコンディション。'},
-  neo : {pmax:1.16, slide:1.10, throwK:1.20, railN:0.79, railT:1.00, errK:0.97,
+  neo : {muS:0.165, muR:0.0086, muRail:0.400, eRail:1.06, throwK:1.20, errK:0.97,
          note:'よく走りクッションも生きる。回転が長く残るので引き・押しがよく効く。出しは長めに出る。'},
-  slow: {pmax:0.74, slide:0.78, throwK:1.12, railN:0.68, railT:0.76, errK:1.02,
+  slow: {muS:0.270, muR:0.0138, muRail:0.460, eRail:0.92, throwK:1.12, errK:1.02,
          note:'球が走らずクッションも死ぬ。引きがすぐ抜けるので、押し中心・強めの力加減になる。'}
 };
 let condKey = 'std';
 
-/* PMAX は「自然順回転のまま転がったら何インチ進むか」で測った最大ストローク。
-   460 → 1000 に再較正してある。旧版は引きだけに 2.5 倍の割り増しを
-   掛けて距離を稼いでいたが（impactState 参照）、その割り増しを廃したので
-   ストロークそのものを実際の強さにした。この 1000 は
-   「2 ポイントの真っすぐを最大の力・最大の引きで撞くと台 1 枚戻る」
-   （＝ 126″）を満たす値で、同じとき最大の押しは 115″ 出る。 */
-let PMAX   = 1000;     // 最大ポテンシャル（フルストローク）
-let SLIDE_K= 0.111;    // 滑走距離係数（回転が「ころがり」に落ち着くまで）
-let THROW_K= 1.00;     // スロー量
+/* VMAX は実戦で使う最大ストローク＝ 121 inch/s（≒ 3.1 m/s）。
+   ラシャが変わってもキューを振る速さは変わらないので、最大は「速さ」で持ち、
+   ポテンシャル上限 PMAX はそこから μr に応じて計算する。
+   この 121 inch/s は「2 ポイントの真っすぐを最大の力・最大の引きで撞くと
+   台 2 枚ぶん戻る」に相当する（分離後 vf,n = 0.357·v で 254″）。 */
+const VMAX = 121;
+let PMAX   = 1900;     // 最大ポテンシャル（= vPot(VMAX)。applyCondition で入れ直す）
+let SLIDE_K= 0.0286;   // 滑走距離係数 (2/3.5)·(μr/μs)（§04 機構2）
+let THROW_K= 1.00;     // スロー量（μbb への倍率）
 let ERR_K  = 1.00;     // 転がりの素直さ（シュート誤差への倍率）
 let CUEMAX = 280;      // 手玉の走行上限（現実的な出しの範囲）[inch]
-/* 精度が落ちはじめる力加減の目安。PMAX を上げても「この強さから球が暴れる」
-   という絶対的な感覚は変えたくないので、PMAX とは別に持つ。 */
-let SPD_REF= 460;
+/* 精度が落ちはじめる力加減の目安。ここは「速さ」で持つ（ラシャに依らない）。
+   spd = v/SPD_V が 1 でひと通りの強打。 */
+const SPD_V = VMAX/1.474;
 function applyCondition(k){
   condKey = k;
   const c = CONDITIONS[k];
-  PMAX    = Math.round(1000*c.pmax);
-  SPD_REF = Math.round(460*c.pmax);
-  SLIDE_K = 0.111*c.slide;
+  MU_S    = c.muS;
+  MU_R    = c.muR;
+  MU_RAIL = c.muRail;
+  E_RAIL_K= c.eRail;
+  A_SLIDE = MU_S*G_IN;
+  A_ROLL  = MU_R*G_IN;
+  SPINDEC = 2.5*MU_SP*G_IN;
+  PMAX    = Math.round(vPot(VMAX));
+  SLIDE_K = (2/3.5)*(MU_R/MU_S);
+  OBJ_RUN = 25/49 + (24/49)*(MU_R/MU_S);
+  OBJ_REACH = OBJ_RUN*E_XFER;
   THROW_K = c.throwK;
   ERR_K   = c.errK;
-  RAIL_N  = c.railN;
-  RAIL_T  = c.railT;
-  CUEMAX  = Math.round(280*c.pmax);
-  /* 横回転（捻り）の持続と曲がりやすさ。
-     新ラシャ = 摩擦が小さい → 回転は長く残るが横滑りの曲がりは小さい。
-     重い台   = 摩擦が大きい → 回転はすぐ抜けるが、残っている間はよく曲がる。 */
-  SPIN_DK = 0.0072/c.slide;
-  CURVE_K = 0.085*Math.pow(c.slide, -0.65);
+  CUEMAX  = Math.round(280*0.010/MU_R);
 }
 
-const SPIN_K = 2.6;    // 撞点比 → 回転比 （撞点0.385R で自然順回転 f=1）
-const TIPMAX = 0.52;   // ミスキュー限界（半径比）
+/* 撞点 b（半径比）→ 等価転がり速度 w = (5b/2R)·v （§00）。
+   ミスキュー限界が |b| = 0.5R なので、作れる回転は |w| ≤ 1.25·v に収まる。 */
+const SPIN_K = 2.5;
+const TIPMAX = 0.50;   // ミスキュー限界（半径比）
+/* トビ（スカート）。撞いた瞬間に照準線から捻った側と逆へ外れる（§05）。
+   θ ≈ k·(bh/R)、k ≈ 0.09〜0.13。 */
+const SQUIRT_K = 0.11;
 
 /* --- 手動の力加減 -------------------------------------------------------
    「PMAX に対する割合」ではなく「その球に必要な最小の力の何倍か」
    で指定する。実戦の『そっと』は絶対的な強さではなく、
-   “その球に要る力の少し上” という相対的な感覚だから。
-   （旧版は近い球だと「そっと」でも必要最小の 4.6 倍という強打になっていた） */
+   “その球に要る力の少し上” という相対的な感覚だから。 */
 const POWLV = {soft:1.20, mid:1.80, hard:2.80, max:4.50};
 const POWLBL= {auto:'自動', soft:'そっと', mid:'中', hard:'強', max:'最大'};
 /* 手動で「引き」を指定したときは、的玉に届く前に引き回転が抜けてしまわない
@@ -1144,7 +1204,7 @@ function tipIntentPot(b, d1){
   const den = w - g*k;
   if(den <= 1e-6) return 0;
   const tau = clamp((w - g)/den, 0, 1);    // 許される滑走の進み具合
-  const s   = (tau - k*tau*tau/2)/(1 - k/2);
+  const s   = tau - k*tau*tau/2;           // 滑走距離 ÷ (SLIDE_K·w·P0)
   if(s <= 1e-4) return 0;
   return d1/(s*SLIDE_K*w);
 }
@@ -1425,44 +1485,33 @@ function closeLim(d1){
 const ESC_K = 0.13;
 function escapeFactor(opts){ return 1 - ESC_K*(1 - clamp(opts-1,0,2)/2); }
 
-/* クッション特性（法線反発・接線保持はコンディションで変わる）
-   ・速度で角度が「短く」なる。反射角は tan(出) = |vt2/vn2| なので、
-     法線成分を落とすと角度は逆に長くなってしまう（旧版はコメントの意図と逆で、
-     強く撞くほど 35.9°→39.1°と長く出ていた）。落とすべきは接線側。
-   ・捻りの効き（RAIL_E）は、フルタップの中速で 5〜15°動く実測レンジに合わせる。
-   RAIL_TS は 0.13 → 0.12 に見直してある（速度の効きの基準は simulate 側で 18 → 30）。 */
-let   RAIL_N = 0.75;   // 法線方向の反発
-let   RAIL_T = 0.90;   // 接線方向の保持
-const RAIL_E = 0.15;   // 横回転 → 接線速度への変換率（＝捻りで反射角が変わる量）
-const RAIL_ED= 0.68;   // クッション通過後に残る横回転（縦回転ほどは失われない）
-const RAIL_TS= 0.12;   // 強く入れるほど接線が殺される（＝角度が短くなる）
-const RAIL_VREF=30;    // 「強く入れた」とみなす法線速度の基準（実際に出る球の勢い）
-const RAIL_GEN=0.16;   // クッションが手玉に与える横回転（順捻り化）
+/* --- クッションの実測合わせパラメータ（§09）------------------------------
+   クッション反射はハンドブック中で最もモデル化が難しく、ゴムの粘弾性・球の
+   浮き上がり・レール布の張力が絡むため、単純な衝突則では 5〜10°の誤差が残る。
+   §09 の指示どおり、式の骨格は物理のまま持ち、ec・μrail・回転の扱いだけを
+   実測に合わせる外出しパラメータにしてある。ハードコードしない。
 
-/* --- 捻りによる「緩やかな曲線」 -----------------------------------------
-   横回転が残っている手玉はラシャと横滑りしていて、進行方向がじわじわ変わる。
-   曲率 κ = a⊥/v² で v² ∝ 残りポテンシャル P なので
-       κ ≒ CURVE_K · (E/v) / P     [rad/inch]
-   ＝速いうちはほぼ直線、球が死んでくるほど強く曲がる（クッション後に顕著）。
-   フルの捻り（E/v ≒ 1）で 100″ 走って 10°前後になるよう合わせてある。 */
-let   CURVE_K  = 0.085;   // 曲率係数（コンディションで変化）
-let   SPIN_DK  = 0.0072;  // 横回転の減衰率 [1/inch]
-const CURVE_P0 = 25;      // これ以下の残距離では曲率を頭打ちに（死に際の暴走を防ぐ）
-const CURVE_W  = 1.3;     // 回転／速度比の上限
-const CURVE_MAX= 0.012;   // 曲率上限 [rad/inch]
-const CURVE_MIN= 2.0e-4;  // これ以下は直線として扱う（＝高速パス）
-const CURVE_DA = 0.045;   // 1 ステップで曲げる角度 [rad] ≒ 2.6°
+   合わせた実測点（入射 45°／自然転がり・v = 2 m/s を基準）:
+     自然転がり 54°／スタン 45°／順ヒネリ 62°／逆ヒネリ 38°／入射 30° は 35°
+   現行値での再現は 52 / 45 / 62 / 38 / 37°（残差 1.2°）。
+   反射角が入射角より広くなるのも、順ヒネリで走り逆ヒネリで角が立つのも、
+   角度テーブルを持たずにこの 3 つの効果から自動的に出る。 */
+const RAIL_E0   = 0.790;  // 反発係数の基準値。ec = RAIL_E0 − 0.055·|vn| [m/s]
+const RAIL_WREV = 0.38;   // 接触高さ h = 1.27R（重心より上）で反転する縦回転の割合
+/* バンク（1 クッションで的玉を入れる筋）の狙い点を出すための実効的な「伸び」。
+   上のモデルを入射 20〜60°で走らせた tan(出)/tan(入) の代表値。 */
+const RAIL_BANK_K = 1.28;
 
 /* --- 探索で試す撞点と力加減の候補 ---------------------------------------
    DP（価値マップ・全マスぶん回すので粗く）と
    FS（最終ルート・仕上げなので細かく）で解像度を分けている。
    B_* = 上下撞点 ／ PABS_* = ポテンシャル ／ A_RAIL_* = 左右撞点（捻り）。
    捻りはクッションを使う出しがあるときだけ候補に加える。
-   PABS_* は PMAX の再較正（460 → 1000）に合わせて同じ倍率で振り直してある。 */
+   PABS_* はポテンシャルの絶対値。PMAX（標準ラシャで約 1900）に合わせてある。 */
 const B_DP  = [-0.5,-0.32,-0.16,0,0.16,0.32,0.5];
-const B_FS  = [-0.52,-0.42,-0.32,-0.22,-0.11,0,0.11,0.22,0.32,0.42,0.52];
-const PABS_DP = [0,65,150,285,480,760];
-const PABS_FS = [0,50,100,175,270,400,575,800,1000];
+const B_FS  = [-0.50,-0.40,-0.30,-0.20,-0.10,0,0.10,0.20,0.30,0.40,0.50];
+const PABS_DP = [0,125,285,540,910,1445];
+const PABS_FS = [0,95,190,330,510,760,1090,1520,1900];
 const A_RAIL_DP = [-0.42,0.42];
 const A_RAIL_FS = [-0.46,-0.26,0.26,0.46];
 
@@ -1553,36 +1602,41 @@ function blurGrid(src,r){
 }
 
 /* =========================================================================
-   3. 物理モデル
+   3. 物理モデル —— 「ビリヤード物理学ハンドブック」準拠
    -------------------------------------------------------------------------
-   (a) 撞点 b（上下、半径比）→ 初期縦回転比 f0 = 2.6b
-       f = 1 が自然順回転（ころがり）、f = 0 がストップ、f < 0 が引き。
-       手玉が的玉まで走る間に f は 1 へ近づく。滑走距離 ≒ 0.111|1-f0|P0 で、
-       その途中経過は (1) の解析解で求める。
-   (b) 衝突：的玉は中心線方向に cosθ、手玉は接線方向に sinθ。
-       その後クロスの摩擦で「ころがり」に落ち着くまでに向きが変わる：
-         v_after = (5/7)·sinθ·t̂ + (2/7)·f·d̂        ← これが正確な分離角
-       f=0（ストップ）なら純粋なタンジェント方向＝分離角 90°、
-       f=1（ころがし）なら「30度ルール」を自動的に再現する。
-   (c) 撞点 a（左右）→ 縦軸回転（捻り）。ラシャ上では曲がらないが、
-       クッションでの跳ね返り角と、的玉へのスローに効く。
-   (d) 滑走（スライド）中の手玉は、見た目の走行距離から想像するより
-       ずっと速い。ここを無視すると「引いても押しても手玉が動かない」
-       非現実的なモデルになるので、(1)(2) の 2 か所で補正する。
+   球の状態は §11 と同じ 3 つ組で持つ。
+     v   … 並進速度 [inch/s]
+     w⃗   … 等価転がり速度 R·ω を速度と同じ単位にしたもの。v と一致＝自然転がり
+     wz  … 垂直軸スピン（捻り）を接地面の速さで表したもの R·ωz [inch/s]
+   接地点のすべりは u = v − w⃗。u が生きている間は「すべり相」で μs（大）、
+   u が消えたら「転がり相」で μr（小）。この二相分離が全挙動の土台になる。
+
+   (a) 撞点 b（上下・半径比）→ 初期の縦回転 w = (5b/2R)·v = 2.5·b·v （§00）
+       f = w/v が 1 で自然順回転、0 でスタン、負で引き、1 超でオーバースピン。
+       ミスキュー限界 |b| ≤ 0.5R から |f| ≤ 1.25 に収まる。
+   (b) 手玉が的玉まで走る間に f は 1 へ向かう。滑走の運動方程式は解析的に解ける
+       ので、到達時の f・勢い・経過時間を impactState() が sqrt 1 回で出す（§04）。
+   (c) 衝突は「法線衝撃 → 接線摩擦衝撃」の 2 段で解く（§11）。法線は芯線方向
+       だけに効くので縦回転は素通りし、接線摩擦がスロウ（的玉が芯線から外れる）と
+       スピン移動（ギア効果で逆回転が移る）を同時に生む。特別処理は要らない。
+   (d) 衝突直後の手玉は「接線方向へ動きながら元の回転を保持している」という
+       すべり状態にあり、そこから布の摩擦で進路が曲がって
+       v_f = (5u + 2w)/7 の向きへ乗る（§03 マスター式）。
+       曲がりきるまでの距離は速度の 2 乗で伸びるので、同じ撞点・同じ厚みでも
+       強さで通る場所が変わる（§04 機構1）。
+   (e) 垂直軸スピン（捻り）は水平な布の上では進路を曲げない（§05）。効くのは
+       クッションの反射角とスロウで、並進よりずっと遅く減衰する（§08）。
    ========================================================================= */
 
-/* --- (1) 滑走の解析解 ----------------------------------------------------
-   相対すべり u は「時間」に対して直線的に落ちるが、球は走り出しがいちばん
-   速いので、「距離」に対して f が直線的に戻ると置くと引きが早く抜けすぎる
-   （＝手前 1/4 の距離で引きが半分以上死んでしまい、実際より全然引けない）。
-   そこで滑走の運動方程式をそのまま解く。
-
-     w = 1 - f0                  初期のすべり（速度比）
-     k = (2/7)·w                 滑走で失う速度の割合（押しでは負＝加速する）
-     x(τ)/x_slide = (τ - kτ²/2)/(1 - k/2)     … τ は滑走の進み具合 0→1
-     v(τ)/v0      = 1 - kτ
-     f(τ)         = 1 - w(1-τ)/(1-kτ)
-
+/* --- 滑走の解析解（§04）--------------------------------------------------
+   すべり u は「時間」に対して一定率 3.5·μs·g で減る。球は走り出しがいちばん
+   速いので、「距離」に対して f が直線的に戻ると置くと引きが早く抜けすぎる。
+   運動方程式をそのまま解くと
+     w = 1 − f0                              初期のすべり（速度比）
+     k = (2/7)·w                             滑走で失う速度の割合（押しでは負＝加速）
+     x(τ) = SLIDE_K·|w|·P0·(τ − kτ²/2)       τ は滑走の進み具合 0→1
+     v(τ)/v0 = 1 − kτ
+     f(τ)    = 1 − w(1−τ)/(1−kτ)
    距離比 s から τ を求めるのは 2 次方程式なので sqrt 1 回で済む。 */
 function slideTau(s, k){
   if(Math.abs(k) < 1e-6) return s;
@@ -1590,193 +1644,323 @@ function slideTau(s, k){
   return (1 - Math.sqrt(disc > 0 ? disc : 0))/k;
 }
 
-/* --- (2) 衝突時に手玉が実際に持っている速さ ------------------------------
-   ポテンシャル P は「自然順回転のまま転がったら何インチ進むか」＝ v²/(2a) なので、
-   滑走の解析解が出す速度比 vr = v/v0 をそのまま使えば
-       衝突時のポテンシャル = P0 · vr²
-   で求まる。滑走中は摩擦が大きく削られ（引き）、逆に押しでは回転が
-   前進に変わって加速する（vr > 1）ぶんが、これだけで自然に入る。
-
-   以前はここを (P0 − d1) × spinGain(f) としていた。
-   spinGain = 1 + 0.30(1−f)² は自然順回転 f=1 を基準にしているので、
-   引き（f ≒ −1.25）だけに 2.5 倍の割り増しが乗り、
-   押し（f ≒ 1.10）は 1.00 倍のまま ― つまり
-   「最大の押しでも 1 ポイントから 44″ しか走らないのに、引きは 158″ 走る」
-   という、実戦とは逆の非対称になっていた。
-   物理どおりに解いた現行では 引/押 が近距離 1.1・遠距離 0.3 になる。
-
-   滑走が終わったあと（d1 ≥ slide）は自然順回転なので、
-   滑走終了時のポテンシャル P0·(1−k)² から、そこから先に転がった分を引く。
-   ここを (P0 − d1) と書くと滑走の切れ目で値が飛ぶので必ずこの形で通す。 */
-
-/* 的玉に届いた時点の状態。使い回しの IMP に入れて返す。
-     IMP.f … 縦回転比（分離角・押し引きの向きを決める）
-     IMP.Q … 衝突時の手玉のポテンシャル
-             （的玉に渡る勢いと、衝突後に手玉が走れる距離の両方の元になる） */
-const IMP = {f:1, Q:0};
+/* 的玉に届いた時点の手玉の状態。使い回しの IMP に入れて返す。
+     IMP.f … 縦回転比 w/v（分離角と押し引きの向きを決める）
+     IMP.Q … 衝突時のポテンシャル（的玉に渡る勢いと手玉の走る距離の元）
+     IMP.T … 撞いてから的玉に届くまでの秒数（捻りの減衰に使う）
+   滑走中は摩擦で強く削られ（引き）、押しでは回転が前進に変わって加速する（vr > 1）。
+   その非対称がこの 1 本の式から自然に出る。 */
+const IMP = {f:1, Q:0, T:0};
 function impactState(b, P0, d1){
-  const f0 = SPIN_K*b, w = 1 - f0;
-  const slide = SLIDE_K*Math.abs(w)*P0;
-  const k = (2/7)*w;
-  if(d1 >= slide || slide < 1e-6){         // もう自然順回転で転がっている
-    const vEnd = 1 - k;                    // 滑走を終えた時点の速度比
+  const f0 = SPIN_K*b, w = 1 - f0, k = (2/7)*w;
+  const v0 = potV(P0);
+  const slide = SLIDE_K*Math.abs(w)*P0*(1 - k/2);      // 滑走しきる距離
+  const ts    = v0 > 1e-6 ? Math.abs(w)*v0/(3.5*A_SLIDE) : 0;   // 滑走しきる時間
+  if(d1 >= slide || slide < 1e-6){                     // もう自然転がりで転がっている
+    const vEnd = 1 - k;                                // 滑走を終えた時点の速度比
     const Q = P0*vEnd*vEnd - (d1 - slide);
     IMP.f = 1; IMP.Q = Q > 0 ? Q : 0;
+    const v1 = v0*vEnd, v2 = potV(IMP.Q);
+    IMP.T = ts + (v1 > 1e-6 ? (v1 - v2)/A_ROLL : 0);
     return IMP;
   }
   const tau = slideTau(d1/slide, k);
-  const vr  = 1 - k*tau;                   // v/v0
+  const vr  = 1 - k*tau;                               // v/v0
   IMP.f = 1 - w*(1-tau)/(vr > 1e-4 ? vr : 1e-4);
   IMP.Q = P0*vr*vr;
+  IMP.T = ts*tau;
   return IMP;
+}
+/* 撞いてから T 秒後に残っている捻り R·ωz（§08：並進よりずっと遅く減る）。
+   撞点 a が正（右撞き）のとき力線は球心の右を通るので ωz は負になる。 */
+function spinAt(a, P0, T){
+  const w0 = -SPIN_K*a*potV(P0);
+  const dec = SPINDEC*T;
+  return Math.abs(w0) <= dec ? 0 : w0 - (w0 > 0 ? dec : -dec);
+}
+
+/* --- 時刻つき折れ線（[x, y, 経過秒]）のユーティリティ ---------------------
+   simulate は軌跡の各点に「走り出してからの経過秒」を入れて返す。
+   キスの判定も再生も、この時刻を引くだけで済む。 */
+function pathDur(pts){ return (pts && pts.length) ? (pts[pts.length-1][2]||0) : 0; }
+function ptAtTime(pts, t){
+  const n=pts.length;
+  if(n<2 || t<=0) return [pts[0][0], pts[0][1]];
+  const last=pts[n-1];
+  if(t>=last[2]) return [last[0], last[1]];
+  let lo=0, hi=n-1;
+  while(hi-lo>1){ const m=(lo+hi)>>1; if(pts[m][2]<=t) lo=m; else hi=m; }
+  const A=pts[lo], B=pts[hi], dt=B[2]-A[2];
+  const u=dt>1e-9?(t-A[2])/dt:0;
+  return [A[0]+(B[0]-A[0])*u, A[1]+(B[1]-A[1])*u];
+}
+
+/* --- 走らせる球の状態 ---------------------------------------------------- */
+function ballSt(x,y,vx,vy,wvx,wvy,wz){ return {x,y,vx,vy,wvx,wvy,wz:wz||0}; }
+function copySt(s){ return {x:s.x,y:s.y,vx:s.vx,vy:s.vy,wvx:s.wvx,wvy:s.wvy,wz:s.wz}; }
+/* 自然転がりで走り出す球（キックの走査など） */
+function rollSt(x,y,ux,uy,pot){ const v=potV(pot); return ballSt(x,y,ux*v,uy*v,ux*v,uy*v,0); }
+/* 無回転で滑り出す球（＝衝突直後の的玉。§08「的玉は必ず滑って出る」） */
+function stunSt(x,y,ux,uy,pot,wz){ const v=potV(pot); return ballSt(x,y,ux*v,uy*v,0,0,wz); }
+
+/* 無回転で滑り出した球が距離 d に届くまでの秒数（§08 の二相）。
+   すべり相で (5/7) まで落ちてから転がりに入るので、ポケット手前で減速が
+   急に緩む＝「入りそうで止まる」の再現にはこの二相性が要る。 */
+function stunTime(pot, d){
+  const v0 = potV(pot);
+  if(v0 < 1e-6) return 0;
+  const ts = v0/(3.5*A_SLIDE);
+  const ds = v0*ts - 0.5*A_SLIDE*ts*ts;
+  if(d <= ds){
+    const disc = v0*v0 - 2*A_SLIDE*d;
+    return (v0 - Math.sqrt(disc > 0 ? disc : 0))/A_SLIDE;
+  }
+  const v1 = (5/7)*v0, disc = v1*v1 - 2*A_ROLL*(d - ds);
+  return ts + (v1 - Math.sqrt(disc > 0 ? disc : 0))/A_ROLL;
+}
+
+/* --- 球同士の摩擦（§06 Dr. Dave の実験フィット）--------------------------
+   すべり速度が上がるほど下がる。だから強打すると的玉は芯線に近い方向へ
+   素直に出て、柔らかく撞くほどスロウが大きくなる。式は m/s で書かれている。 */
+function muBallBall(slipIn){
+  return (0.01 + 0.108*Math.exp(-1.088*Math.abs(slipIn)/IN_M))*THROW_K;
+}
+
+/* --- 球どうしの衝突（§11 ball_collide）-----------------------------------
+   1) 法線（芯線）方向：等質量・反発 e の衝突。的玉はここで 0.975·v·cosφ を受け取る。
+      力が働けるのは芯線方向だけなので、的玉の向きは手玉の入射方向に依らない。
+   2) 接線方向：クーロン摩擦の上限 μbb·jn と「すべりが止まる（ギア状態）」の
+      |slip|/7 の、小さいほうが効く。これがスロウとスピン移動の正体で、
+      衝撃を入れるだけで正しい向きと大きさが出る。ハードコードしてはいけない。 */
+function ballCollide(a, b){
+  let nx=b.x-a.x, ny=b.y-a.y;
+  const d=Math.hypot(nx,ny);
+  if(d<1e-9) return;
+  nx/=d; ny/=d;
+  const tx=-ny, ty=nx;
+  const vrn=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
+  if(vrn<=0) return;                                   // 離れつつある
+  const dvn=0.5*(1+E_BALL)*vrn;                        // 質量で割った法線衝撃
+  a.vx-=dvn*nx; a.vy-=dvn*ny;
+  b.vx+=dvn*nx; b.vy+=dvn*ny;
+  /* 接触点の相対すべり。切り角ぶん（CIT）と捻りぶん（SIT）がここで合わさる */
+  const slip=((a.vx*tx+a.vy*ty)+a.wz)-((b.vx*tx+b.vy*ty)-b.wz);
+  if(Math.abs(slip)<1e-9) return;
+  const jt=Math.min(muBallBall(slip)*dvn, Math.abs(slip)/7);
+  const sg=slip>0?1:-1;
+  a.vx-=jt*sg*tx; a.vy-=jt*sg*ty;
+  b.vx+=jt*sg*tx; b.vy+=jt*sg*ty;                      // ← これがスロウ
+  a.wz-=2.5*jt*sg; b.wz-=2.5*jt*sg;                    // 噛み合う歯車＝逆回転が移る
+}
+
+/* --- クッション（§09・§11 rail_bounce）-----------------------------------
+   n̂ はクッションの内向き法線。3 つが同時に働く。
+   1) 法線反発。ec は速度依存で、強打ほどクッションに食われる。
+   2) 接線摩擦。レール接触点のすべり vt − R·ωz が順ヒネリ・逆ヒネリを決める。
+   3) 接触高さ h = 1.27R（重心より上）を叩かれるので縦回転が一部反転する。
+   反射角が入射角より広くなるのも、転がっている球ほど長く出るのも、
+   順ヒネリで走り逆ヒネリで角が立つのも、すべてここから自動的に出る。 */
+function railBounce(b, nx, ny){
+  const tx=-ny, ty=nx;
+  const vn=b.vx*nx+b.vy*ny;
+  if(vn>=0) return;                                    // レールから離れつつある
+  let vt=b.vx*tx+b.vy*ty;
+  const e=clamp(RAIL_E0*E_RAIL_K - 0.055*Math.abs(vn)/IN_M, 0.55*E_RAIL_K, 0.92*E_RAIL_K);
+  const vn2=-e*vn, dvn=vn2-vn;
+  const slip=vt-b.wz;
+  const jt=Math.min(MU_RAIL*dvn, Math.abs(slip)/3.5);
+  const sg=slip>0?1:-1;
+  vt-=jt*sg;
+  b.wz+=2.5*jt*sg;
+  b.vx=vn2*nx+vt*tx;  b.vy=vn2*ny+vt*ty;
+  /* 縦回転（押し引き）の法線成分は接触高さで一部反転する。
+     転がったままクッションへ入ると、この残りが離れぎわに効いて球が長く出る。 */
+  const wn=b.wvx*nx+b.wvy*ny, wt=b.wvx*tx+b.wvy*ty;
+  const wn2=-RAIL_WREV*wn;
+  b.wvx=wn2*nx+wt*tx;  b.wvy=wn2*ny+wt*ty;
 }
 
 /* -------------------------------------------------------------------------
    球の走行シミュレーション（手玉・的玉で共用）
-     E       = 残っている横回転（速度と同じ単位。0 なら捻り無し）
-     rec     = true で軌跡 pts / クッション接点 railIdx も記録する（描画・再生用）
+     st      = 走らせる球の状態（ballSt / rollSt / stunSt / solveImpact で作る）
+     rec     = true で軌跡 pts（[x, y, 経過秒]）とクッション接点 railIdx も記録
      resolve = true で「他の球に当たったら 2 球衝突を解いて走り続ける」
-               （false なら従来どおり接触した時点で止まる）
-   捻りがあると反射角が変わり、進みながらゆるやかに曲がる。
-   E=0 のときは 1 レッグ 1 直線で済むので、ルート探索は速いまま。
 
-   ノーイングリッシュ（捻りを一切使わない）のときは、入力の E を落とすだけで
-   なく、クッションが生む「順捻り化」も止める。これをしないと 1 つ目の
-   クッションで手玉が横回転を持ち、そこから先が曲がってしまい、
-   捻っていないはずなのに捻ったような走りになる。
+   すべり相は接地点のすべり u の向きが変わらないので放物線として厳密に解ける。
+   転がり相は等減速の直線。どちらも解析解なので固定タイムステップは要らず、
+   衝突判定のためだけに、すべり相を数本の弦に割る（描画時は細かく刻む）。
+   ハンドブック §11 が固定 2000Hz の積分を勧めているのは貫通を防ぐためだが、
+   ここは解析解＋弦ごとの区間判定なので貫通しない。
 
    ※ 戻り値 SIM は使い回しの共有オブジェクト。次に simulate() を呼ぶと
      pts などが差し替わるので、続けて別の球を計算するときは
      必要な値を先に複製しておくこと。SIM.hits も同様。
    ------------------------------------------------------------------------- */
-const SIM = {x:0,y:0,rails:0,scratch:false,hit:false,pts:null,railIdx:null,hits:null,run:0};
-const NOHITS = [];
+const SIM = {x:0,y:0,rails:0,scratch:false,hit:false,pts:null,railIdx:null,hits:null,run:0,T:0};
+const NOHITS  = [];
 const MAX_COL = 2;        // 1 手で解く球どうしの衝突はここまで（暴走防止）
+const STOP_V  = 1.0;      // これ以下は止まったとみなす [inch/s]
+const SLIP_EPS= 0.5;      // これ以下のすべりは転がりとみなす [inch/s]
+const SEG_REC = 14;       // 描画・再生：すべり相を刻む弦の数
+/* 探索用。刻みを粗くしても すべり相の終端の位置・速度・回転は解析解のままなので
+   落ち着き先はまったく変わらない。粗くなるのは弧の途中での当たり判定だけ。 */
+const SEG_FAST= 2;
 function struckIdx(hits,i){
   for(let h=0;h<hits.length;h++) if(hits[h].i===i) return true;
   return false;
 }
-function simulate(sx,sy,ux,uy,pot,E,balls,rec,resolve){
-  let x=sx,y=sy,rails=0,scratch=false,hit=false;
-  let run=0;                       /* 実際に転がった道のり（クッション込み） */
-  const railGen = noEnglish ? 0 : RAIL_GEN;
-  if(noEnglish) E = 0;
-  const pts = rec?[[x,y]]:null;
-  const railIdx = rec?[]:null;
-  let hits = null, nCol = 0;
-  let guard=0, legStep=0;
-  while(pot>0.4 && guard++<600){
-    /* 現在の速さと「回転／速度」比 → 曲率 */
-    const s = Math.sqrt(pot);
-    let kap = 0;
-    if(s>1e-6){
-      kap = CURVE_K*clamp(E/s,-CURVE_W,CURVE_W)/Math.max(pot,CURVE_P0);
-      kap = clamp(kap,-CURVE_MAX,CURVE_MAX);
-    }
-    /* 描画時は細かく、探索時は粗く刻む（結果はほぼ同じで速い） */
-    const dA = rec ? CURVE_DA : CURVE_DA*3.2;
-    const curving = Math.abs(kap) > (rec ? CURVE_MIN : CURVE_MIN*2.5);
-
-    /* このレッグでクッションに届くまでの距離 */
-    let t=pot, axis=0, nx=0, ny=0;
-    if(ux>1e-9){ const tt=(W-R-x)/ux;  if(tt<t){t=tt;axis=1;nx=-1;ny=0;} }
-    else if(ux<-1e-9){ const tt=(R-x)/ux; if(tt<t){t=tt;axis=1;nx=1;ny=0;} }
-    if(uy>1e-9){ const tt=(HT-R-y)/uy; if(tt<t){t=tt;axis=2;nx=0;ny=-1;} }
-    else if(uy<-1e-9){ const tt=(R-y)/uy; if(tt<t){t=tt;axis=2;nx=0;ny=1;} }
-    if(t<0) t=0;
-
-    /* 曲がるときは弧を細かく刻む。刻み幅はレッグの頭で決めて固定する
-       （毎回 t を割ると刻みがどんどん細かくなって収束しないため）。
-       クッションまでが短いレッグでも必ず何回かに割ることで、
-       わずかな曲がりを取りこぼさないようにする。 */
-    let step=t, arc=false;
-    if(curving){
-      if(legStep<=0) legStep = Math.max(t/(rec?10:4), 0.4);
-      const smax = Math.min(legStep, dA/Math.abs(kap));
-      if(t > smax+1e-9){ step=smax; arc=true; }
-    }
-
-    /* 球・ポケットとの当たり（この刻み幅の中で）。
-       一度弾いた球はもうそこに居ないので、当たり判定から外す。 */
-    let bt=Infinity, bi=-1;
-    for(let i=0;i<balls.length;i++){
-      if(hits && hits.length && struckIdx(hits,i)) continue;
-      const b=balls[i], tt=hitCircle(x,y,ux,uy,step,b.x,b.y,BD);
-      if(tt<bt){ bt=tt; bi=i; }
-    }
-    let st=Infinity;
-    for(let i=0;i<6;i++){
-      const p=POCKETS[i], tt=hitCircle(x,y,ux,uy,step,p.x,p.y,p.corner?2.25:2.45);
-      if(tt<st) st=tt;
-    }
-    if(st<=bt && st<Infinity){ scratch=true; x+=ux*st; y+=uy*st; run+=st; if(rec)pts.push([x,y]); break; }
-    if(bt<Infinity){
-      hit=true; x+=ux*bt; y+=uy*bt; pot-=bt; run+=bt; if(rec)pts.push([x,y]);
-      if(!resolve || nCol>=MAX_COL || pot<=0.4) break;
-      /* --- 2 球衝突 -------------------------------------------------------
-         中心線 n̂ 方向にだけ力が伝わる。当たられた球は n̂ へ、
-         走っていた球は分離角の式（このとき自然順回転）で抜けていく。 */
-      const ob=balls[bi];
-      let nx2=(ob.x-x)/BD, ny2=(ob.y-y)/BD;
-      const cN=ux*nx2+uy*ny2;                       // = cosθ
-      if(cN<=1e-4) break;
-      let tx2=ux-nx2*cN, ty2=uy-ny2*cN;
-      const sN=Math.hypot(tx2,ty2);                 // = sinθ
-      if(sN>1e-6){ tx2/=sN; ty2/=sN; }
-      (hits || (hits=[])).push({i:bi, x:ob.x, y:ob.y, ux:nx2, uy:ny2, pot:pot*cN*cN});
-      /* 抜けていく向きは v = (5/7)·sinθ·t̂ + (2/7)·f·d̂。
-         バグ修正の経緯 ―― 第 2 項に「進行方向 d̂」ではなく「中心線 n̂」を
-         入れていたので、薄く当たるほど分離角が足りず、さらに
-         かすっただけでも速さが 0.77 倍に落ちていた（実際はほぼ素通り）。
-         d̂ = (ux,uy) に直すと 30 度ルールも自然に出る。 */
-      const fx2=(5/7)*sN*tx2+(2/7)*ux, fy2=(5/7)*sN*ty2+(2/7)*uy;
-      const m2=Math.hypot(fx2,fy2);
-      pot *= m2*m2;
-      if(m2<0.02 || pot<=0.4){ pot=0; break; }
-      ux=fx2/m2; uy=fy2/m2;
-      nCol++; legStep=0;
-      continue;
-    }
-
-    x+=ux*step; y+=uy*step; pot-=step; run+=step;
-    E *= Math.exp(-SPIN_DK*step);                 /* 横回転は走るほど抜ける */
-    if(rec) pts.push([x,y]);
-    if(pot<=0.4) break;
-
-    if(arc){
-      /* 曲がりながら継続（まだクッションには届いていない） */
-      const th=kap*step, cs=Math.cos(th), sn=Math.sin(th);
-      const nu = ux*cs - uy*sn;
-      uy = ux*sn + uy*cs; ux = nu;
-      continue;
-    }
-    if(!axis) break;
-    if(rails>=5) break;                           /* 現実的な範囲は 5 クッション */
-
-    /* --- クッション：法線 n̂ / 接線 t̂ = (-ny, nx) に分解 --------------
-       接線速度に横回転を足し込むことで、捻りの分だけ反射角が変わる。
-       法線反発は強く入れるほど落ちる（＝厚く入れると角度が短くなる）。 */
-    const s1 = Math.sqrt(pot);
-    const tx=-ny, ty=nx;
-    const vn = s1*(ux*nx+uy*ny), vt = s1*(ux*tx+uy*ty);
-    const hard = clamp(Math.abs(vn)/RAIL_VREF, 0, 1);
-    const vn2 = -RAIL_N*vn;
-    const vt2 = RAIL_T*(1-RAIL_TS*hard)*vt + RAIL_E*E;
-    /* クッションを離れた手玉には、擦れによる横回転が残る（順捻り側へ）。
-       ノーイングリッシュ中は railGen = 0 なので、E は 0 のまま＝素直に反射する。 */
-    E = RAIL_ED*E - railGen*vt;
-    const s2 = Math.hypot(vn2,vt2);
-    if(s2 < 0.6) break;
-    ux = (nx*vn2 + tx*vt2)/s2;
-    uy = (ny*vn2 + ty*vt2)/s2;
-    pot = s2*s2;
-    rails++; legStep=0;                            /* 次のレッグで刻み直す */
-    if(rec) railIdx.push(pts.length-1);
+/* 弦の上を距離 d だけ進めて、そのぶん速度・回転を進める。経過秒を返す。 */
+function advanceBall(b, dx, dy, d, sliding, hx, hy, dtSeg, L){
+  let dtu;
+  if(sliding){
+    dtu = L>1e-9 ? dtSeg*(d/L) : 0;
+    b.x += dx*d; b.y += dy*d;
+    b.vx  -= A_SLIDE*hx*dtu;      b.vy  -= A_SLIDE*hy*dtu;
+    b.wvx += 2.5*A_SLIDE*hx*dtu;  b.wvy += 2.5*A_SLIDE*hy*dtu;
+  } else {
+    const s0=Math.hypot(b.vx,b.vy);
+    const disc=s0*s0-2*A_ROLL*d;
+    const s1=disc>0?Math.sqrt(disc):0;
+    dtu=(s0-s1)/A_ROLL;
+    b.x += dx*d; b.y += dy*d;
+    b.vx = dx*s1; b.vy = dy*s1;
+    b.wvx = b.vx; b.wvy = b.vy;
   }
-  SIM.x=clamp(x,R,W-R); SIM.y=clamp(y,R,HT-R);
+  const dec=SPINDEC*dtu;
+  b.wz = Math.abs(b.wz)<=dec ? 0 : b.wz-(b.wz>0?dec:-dec);
+  return dtu;
+}
+const SIMB = ballSt(0,0,0,0,0,0,0);        // simulate 用の使い回し（毎回作らない）
+function simulate(st, balls, rec, resolve){
+  const b = SIMB;
+  b.x=st.x; b.y=st.y; b.vx=st.vx; b.vy=st.vy; b.wvx=st.wvx; b.wvy=st.wvy; b.wz=st.wz||0;
+  if(noEnglish) b.wz = 0;
+  let rails=0, scratch=false, hit=false, run=0, T=0;
+  const pts = rec ? [[b.x,b.y,0]] : null;
+  const railIdx = rec ? [] : null;
+  let hits=null, nCol=0, guard=0;
+  const nSeg = rec ? SEG_REC : SEG_FAST;
+
+  outer:
+  while(guard++ < 400){
+    const sp0 = Math.hypot(b.vx,b.vy);
+    if(sp0 < STOP_V) break;
+    const uxs=b.vx-b.wvx, uys=b.vy-b.wvy;
+    const us=Math.hypot(uxs,uys);
+    const sliding = us > SLIP_EPS;
+    let hx=0, hy=0, dtSeg=0, n=1;
+    if(sliding){ hx=uxs/us; hy=uys/us; dtSeg=us/(3.5*A_SLIDE)/nSeg; n=nSeg; }
+    else       { dtSeg=sp0/A_ROLL; n=1; }
+
+    for(let i=0;i<n;i++){
+      const s0=Math.hypot(b.vx,b.vy);
+      if(s0 < STOP_V && !sliding) break outer;
+      let mx, my;
+      if(sliding){
+        mx=b.vx*dtSeg-0.5*A_SLIDE*hx*dtSeg*dtSeg;
+        my=b.vy*dtSeg-0.5*A_SLIDE*hy*dtSeg*dtSeg;
+      } else {
+        const d=s0*s0/(2*A_ROLL);
+        mx=b.vx/s0*d; my=b.vy/s0*d;
+      }
+      const L=Math.hypot(mx,my);
+      if(L<1e-6){
+        T += advanceBall(b,0,0,0,sliding,hx,hy,dtSeg,1);
+        continue;
+      }
+      const dx=mx/L, dy=my/L;
+      /* この弦の上で最初に起きること（クッション／球／ポケット） */
+      let t=L, kind=0, nx=0, ny=0, bi=-1;
+      if(dx>1e-9){ const tt=(W-R-b.x)/dx;  if(tt<t){t=tt;kind=1;nx=-1;ny=0;} }
+      else if(dx<-1e-9){ const tt=(R-b.x)/dx; if(tt<t){t=tt;kind=1;nx=1;ny=0;} }
+      if(dy>1e-9){ const tt=(HT-R-b.y)/dy; if(tt<t){t=tt;kind=1;nx=0;ny=-1;} }
+      else if(dy<-1e-9){ const tt=(R-b.y)/dy; if(tt<t){t=tt;kind=1;nx=0;ny=1;} }
+      if(t<0) t=0;
+      for(let j=0;j<balls.length;j++){
+        if(hits && struckIdx(hits,j)) continue;        // 弾いた球はもうそこに居ない
+        const o=balls[j], tt=hitCircle(b.x,b.y,dx,dy,t,o.x,o.y,BD);
+        if(tt<t){ t=tt; kind=2; bi=j; }
+      }
+      for(let j=0;j<6;j++){
+        const p=POCKETS[j], tt=hitCircle(b.x,b.y,dx,dy,t,p.x,p.y,p.corner?2.25:2.45);
+        if(tt<t){ t=tt; kind=3; bi=-1; }
+      }
+      T += advanceBall(b,dx,dy,t,sliding,hx,hy,dtSeg,L);
+      run += t;
+      if(rec) pts.push([b.x,b.y,T]);
+
+      if(kind===3){ scratch=true; break outer; }
+      if(kind===2){
+        hit=true;
+        if(!resolve || nCol>=MAX_COL) break outer;
+        /* --- 2 球衝突：法線衝撃＋接線摩擦衝撃をそのまま解く（§11）------- */
+        const o=balls[bi];
+        const ob=ballSt(o.x,o.y,0,0,0,0,0);
+        ballCollide(b, ob);
+        (hits || (hits=[])).push({i:bi, st:ob, T:T});
+        nCol++;
+        if(Math.hypot(b.vx,b.vy) < STOP_V) break outer;
+        continue outer;
+      }
+      if(kind===1){
+        if(rails>=5) break outer;                      // 現実的な範囲は 5 クッション
+        railBounce(b, nx, ny);
+        rails++;
+        if(rec) railIdx.push(pts.length-1);
+        if(Math.hypot(b.vx,b.vy) < STOP_V) break outer;
+        continue outer;
+      }
+    }
+    /* すべり相を最後まで走りきった：数値ドリフトを残さないよう転がりへスナップ */
+    if(sliding){ b.wvx=b.vx; b.wvy=b.vy; }
+  }
+  SIM.x=clamp(b.x,R,W-R); SIM.y=clamp(b.y,R,HT-R);
   SIM.rails=rails; SIM.scratch=scratch; SIM.hit=hit;
-  SIM.pts=pts; SIM.railIdx=railIdx; SIM.hits=hits||NOHITS; SIM.run=run;
+  SIM.pts=pts; SIM.railIdx=railIdx; SIM.hits=hits||NOHITS; SIM.run=run; SIM.T=T;
+  SIM.pot=vPot(Math.hypot(b.vx,b.vy));   // 止まった／当たった時点で残っている勢い
   return SIM;
+}
+
+/* --- 狙った 1 球ぶんの衝突を解く（§01・§03・§06）------------------------
+   d̂ = 手玉の進行方向 ／ n̂ = 芯線（＝的玉が出る方向）／ Q,f,wz = 到達時の状態。
+   ゴーストボールの位置に手玉、そこから 2R 先に的玉を置いて ballCollide を通す。
+   返す CUE には次が入る。
+     CUE.st … 衝突直後の手玉（そのまま simulate に渡せる。まだ滑っている状態）
+     CUE.ob … 衝突直後の的玉（スロウとスピン移動を含む）
+     CUE.fx/fy/m … 摩擦相を抜けたあとの向きと速さ比 v_f = (5u + 2w)/7。
+                   分離角の表示と、出し先の見積り（cuePot）に使う。
+     CUE.thr … 補正しなかった場合のスロウ角 [rad]
+   実戦ではスロウを狙いで相殺して撞くので、的玉だけはスロウのぶんを戻して
+   ちょうど芯線方向（＝ポケット）へ出す。手玉のほうは補正せず生の物理のまま
+   返す。狙いのずらしが手玉のラインに与える影響はスロウ角と同程度（数度）で、
+   §09・§10 が認めているモデル誤差より小さいので、ここでは持ち込まない。
+   なお手玉の分離角が §03 のマスター式より数度前寄りになるのは
+     ・反発係数 e < 1 による芯線方向の残留速度 0.025·v·cosφ
+     ・スロウの反作用で接線速度がわずかに削られる
+   の 2 つによるもので、§10 が「θ実測 と θ理論 は 1〜3°ずれる」と書いている分。 */
+const IMP_CUE = ballSt(0,0,0,0,0,0,0);
+const IMP_OB  = ballSt(0,0,0,0,0,0,0);
+const CUE = {st:IMP_CUE, ob:IMP_OB, fx:0, fy:0, m:0, thr:0};
+function solveImpact(gx,gy,dx,dy,nx,ny,Q,f,wz){
+  const v=potV(Q), c=IMP_CUE, o=IMP_OB;
+  c.x=gx; c.y=gy; c.vx=v*dx; c.vy=v*dy; c.wvx=f*v*dx; c.wvy=f*v*dy; c.wz=noEnglish?0:wz;
+  o.x=gx+nx*BD; o.y=gy+ny*BD; o.vx=0; o.vy=0; o.wvx=0; o.wvy=0; o.wz=0;
+  ballCollide(c,o);
+  CUE.thr = Math.atan2(o.vx*(-ny)+o.vy*nx, o.vx*nx+o.vy*ny);
+  if(Math.abs(CUE.thr) > 1e-6){                      // 的玉だけ芯線方向へ戻す
+    const om=Math.hypot(o.vx,o.vy);
+    o.vx=om*nx; o.vy=om*ny;
+  }
+  const fx=(5*c.vx+2*c.wvx)/7, fy=(5*c.vy+2*c.wvy)/7;
+  CUE.fx=fx; CUE.fy=fy; CUE.m = v>1e-6 ? Math.hypot(fx,fy)/v : 0;
+  return CUE;
+}
+/* plan の一手（st）から衝突直後の状態を作り直す。
+   探索・描画・再生がすべて同じ物理を通るように、入口をここ 1 か所にまとめる。 */
+function stepImpact(st){
+  impactState(st.b, st.P0, st.d1);
+  return solveImpact(st.gx, st.gy, st.ax, st.ay, st.lx, st.ly,
+                     IMP.Q, IMP.f, spinAt(st.a, st.P0, IMP.T));
 }
 
 /* 当たられた球を走らせて、落ち着き先を返す。
@@ -1790,17 +1974,15 @@ function resolveHits(hits, balls, rec){
   for(const h of hits){
     RH_BUF.length=0;
     for(let i=0;i<balls.length;i++) if(i!==h.i) RH_BUF.push(balls[i]);
-    const s=simulate(h.x, h.y, h.ux, h.uy, h.pot, 0, RH_BUF, rec, false);
-    out.push({i:h.i, x0:h.x, y0:h.y, x:s.x, y:s.y, pot:h.pot,
+    const s=simulate(h.st, RH_BUF, rec, false);
+    out.push({i:h.i, x0:h.st.x, y0:h.st.y, x:s.x, y:s.y, t0:h.T, dur:s.T,
               potted:s.scratch, rails:s.rails,
-              pts: rec ? s.pts.map(p=>[p[0],p[1]]) : null});
+              pts: rec ? s.pts.map(p=>[p[0],p[1],p[2]]) : null});
   }
   return out;
 }
 
 /* --- クラスターを割る（ブレイクアウト）----------------------------------
-   以前は手玉が他球に当たる手を一律 0.35 倍に減点していたので、
-   探索は「当たる手は全部避ける」動作しかできなかった（実測 325 手中 0 手）。
    実戦の取り切りは半分が「いつ、どの球でクラスターを割るか」の判断なので、
    2 球衝突を解いたうえで
      ・当たられた球の狙えるポケットが増える（＝開いた）なら価値を戻す
@@ -1808,7 +1990,7 @@ function resolveHits(hits, balls, rec){
    という形にする。厄介な球（hardness が高い）を割ったときほど見返りが大きい。 */
 const HITB_PEN = 0.55;   // 他球に当てる手の基本減点（読みにくさ）
 const BREAK_K  = 0.80;   // ブレイクアウトが成功したときに戻る割合
-/* 順番外の球が落ちる。は落ちた球を盤面から外して先を組み直すので
+/* 順番外の球が落ちるのは、落ちた球を盤面から外して先を組み直すので
    「扱えない」わけではないが、狙って再現できる形ではないので減点は残す。 */
 const POTX_PEN = 0.55;
 /* (x,y) から素直に狙えるポケットの数。skip は無視する球（自分自身）。 */
@@ -1849,7 +2031,6 @@ function breakFactor(lay, res, k){
   }
   return f;
 }
-
 /* =========================================================================
    4. 盤面状態
    ========================================================================= */
@@ -2263,9 +2444,11 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
     const tm = Math.hypot(tx,ty);
     if(tm>1e-6){ tx/=tm; ty/=tm; } else { tx = -pd.ly; ty = pd.lx; }
 
-    /* 必要最小ポテンシャル：手玉が d1 進み、的玉が d2 + 余裕 進む */
+    /* 必要最小ポテンシャル：手玉が d1 進み、的玉が d2 + 余裕 進む。
+       的玉に渡るのは 0.975·v·cosφ（＝ポテンシャルで E_XFER·cos²φ）で、
+       しかも的玉は無回転で滑り出すので走るのは OBJ_RUN 倍だけ（§01・§08）。 */
     const c2 = cosT*cosT;
-    let p0min = d1 + 1.18*pd.d2/c2 + 2;
+    let p0min = d1 + 1.18*pd.d2/(OBJ_REACH*c2) + 2;
     if(p0min > PMAX) continue;
     /* 撞点を手動指定しているときは、その回転が的玉に届くまで残る力加減にする
        （引きを指定したのにストップ／押しになってしまうのを防ぐ） */
@@ -2304,7 +2487,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
       /* 厚み 9 割・力 1 割 ― 素直な力加減の手を優先する */
       const powPref = powerPref(P0, p0min);
       const pw  = P0/Math.max(p0min,8);         // 必要最小の何倍か（表示用）
-      const spd = Math.sqrt(P0/SPD_REF);        // 精度に効く「速さ」(1 = 旧版の最大)
+      const spd = potV(P0)/SPD_V;               // 精度に効く「速さ」(1 = ひと通りの強打)
 
       /* 通常の球速までは無罰。強打するほど精度が落ちる */
       const sOver    = Math.max(0, spd-0.35)/0.65;
@@ -2317,27 +2500,19 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
         if(b > bUpL+1e-9 || b < -bDnL-1e-9) continue;  // 土手際・近すぎる球では撞けない
         impactState(b, P0, d1);
         const f  = IMP.f;                       // 的玉に届いた時点の縦回転
-        const s1 = Math.sqrt(IMP.Q > 0.01 ? IMP.Q : 0.01); // 衝突時の速さ
+        const Q1 = IMP.Q, tImp = IMP.T;         // 衝突時のポテンシャルと到達時間
         /* 的玉に渡る勢い。衝突時のポテンシャル（滑走ぶんを解いた実際の速さ）
            から取るので、強い引きでは押しより的玉が弱くなる。 */
-        const obPot = IMP.Q*c2;
-        if(obPot < pd.d2*1.04) continue;        // これでは的玉がポケットに届かない
-        const over  = obPot/Math.max(pd.d2,3);
+        const obPot = Q1*c2*E_XFER;
+        if(obPot*OBJ_RUN < pd.d2*1.04) continue;  // これでは的玉がポケットに届かない
+        const over  = obPot*OBJ_RUN/Math.max(pd.d2,3);
         const overPen = over>6 ? Math.max(0.80, 1-0.030*(over-6)) : 1;
-        /* 衝突後の手玉ベクトル（正確な分離角） */
-        const fx = (5/7)*sinT*tx + (2/7)*f*ax;
-        const fy = (5/7)*sinT*ty + (2/7)*f*ay;
-        const m  = Math.hypot(fx,fy);
         const bPen = 1 - 0.30*b*b*(b<0?1.5:1);
         /* 引き撞点なのに到達時が押し（f ≥ 0）になる手は、撞点図と実際の動きが
            食い違う（＝「引きと出ているのに手玉が前へ出る」）。同じ力加減の
            芯撞きは必ず候補にあるので、そちらへ寄せるための好みの減点をかける。
            表示するシュート率は汚さないので pref 側だけに効かせる。 */
         const tipPref = (b < -0.05 && f > -0.05) ? 0.80 : 1;
-        /* 手玉の走る距離は左右撞点に依らないので、ここで一度だけ決める */
-        const cuePot0 = IMP.Q*m*m;
-        if(cuePot0 > CUEMAX) continue;          // 現実の出しでこれ以上は転がさない
-        const still = (cuePot0 < 0.5 || m < 0.02);   // 手玉はその場に残る
 
         for(let ia=0; ia<aset.length; ia++){
           const a = aset[ia];
@@ -2349,7 +2524,15 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
           /* 捻りは実行難度も上がる（わずかな利得では使わせない） */
           const aPen = 1 - 0.30*a*a - (aAbs>0.05?0.05:0) - (Math.hypot(a,b)>0.44?0.06:0);
 
-          const E0 = -SPIN_K*a*s1*0.88;         // 衝突後に残る横回転（速度単位）
+          const E0 = spinAt(a, P0, tImp);       // 衝突時に残っている捻り R·ωz
+          /* 衝突を解く（法線衝撃＋接線摩擦衝撃）。
+             m は摩擦相を抜けたあとの速さ比なので、cuePot = Q1·m² が
+             手玉の実際に走る距離の見積りになる。 */
+          solveImpact(pd.gx, pd.gy, ax, ay, pd.lx, pd.ly, Q1, f, E0);
+          const m = CUE.m, fx = CUE.fx, fy = CUE.fy;
+          const cuePot0 = Q1*m*m;
+          if(cuePot0 > CUEMAX) continue;        // 現実の出しでこれ以上は転がさない
+          const still = (cuePot0 < 0.5 || m < 0.02);   // 手玉はその場に残る
           let ex, ey, rails=0, scr=false, hitb=false, cuePot = still?0:cuePot0;
           let brk = 1, hitRes = null;
           if(still){ ex=pd.gx; ey=pd.gy; }
@@ -2358,7 +2541,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
                当てられた球の行き先まで解くのは重いので、
                価値マップ（粗い探索）では一律の減点で済ませ、
                仕上げのルート探索でだけブレイクアウトの価値を測る。 */
-            simulate(pd.gx,pd.gy,fx/m,fy/m,cuePot,E0,others,false,true);
+            simulate(CUE.st,others,false,true);
             ex=SIM.x; ey=SIM.y; rails=SIM.rails; scr=SIM.scratch; hitb=SIM.hit;
             if(hitb && fine && SIM.hits.length){
               const hs=SIM.hits.slice();        // SIM は使い回しなので先に複製
@@ -2404,7 +2587,8 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
           SI.scr=scr; SI.hit=hitb; SI.q0=q0; SI.imm=imm; SI.pos=pos; SI.gap=gap;
           SI.spd=spd; SI.pw=pw; SI.hitRes=hitRes; SI.close=(d1 < BD+DHIT_GAP);
           SI.cosT=cosT; SI.sinT=sinT; SI.d1=d1;
-          SI.ux=m>0.02?fx/m:0; SI.uy=m>0.02?fy/m:0;
+          { const fm=Math.hypot(fx,fy);
+            SI.ux = fm>1e-6 ? fx/fm : 0; SI.uy = fm>1e-6 ? fy/fm : 0; }
           SI.tx=tx; SI.ty=ty; SI.ax=ax; SI.ay=ay; SI.E0=E0;
           SI.needRail = (rails>0);
           SI.sidePick = sidePick;
@@ -2450,8 +2634,8 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
     const bUpL=cl<1?Math.min(bMaxUp,TIPMAX*cl):bMaxUp, bDnL=bMaxDn*cl, aMaxL=aMax*cl;
 
     /* 必要最小：1 球目が dk 走り、9 番が dL 走るだけの勢いを渡す */
-    const need = (cd.dk + 1.15*cd.dL/Math.max(k2,0.25));
-    let p0min = d1 + need/c2 + 3;
+    const need = (cd.dk/OBJ_RUN + 1.15*cd.dL/(OBJ_REACH*Math.max(k2,0.25)));
+    let p0min = d1 + need/(E_XFER*c2) + 3;
     if(p0min > PMAX) continue;
 
     let np=0;
@@ -2474,7 +2658,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
       const P0 = POTBUF[ip];
       const powPref = powerPref(P0, p0min);
       const pw  = P0/Math.max(p0min,8);
-      const spd = Math.sqrt(P0/SPD_REF);
+      const spd = potV(P0)/SPD_V;
       const sOver = Math.max(0, spd-0.35)/0.65;
       const baseErr = errCore*(1 + 0.55*sOver*sOver);
       const powPen  = 1 - 0.16*Math.min(spd,1.35)*Math.min(spd,1.35);
@@ -2483,16 +2667,14 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
         const b = bset[ib];
         if(b > bUpL+1e-9 || b < -bDnL-1e-9) continue;
         impactState(b, P0, d1);
-        const f=IMP.f, obPot=IMP.Q*c2;
-        if((obPot - cd.dk)*k2 < cd.dL*1.04) continue;   // 9 番がポケットに届かない
-        const s1=Math.sqrt(IMP.Q>0.01?IMP.Q:0.01);
+        const f=IMP.f, Q1=IMP.Q, tImp=IMP.T;
+        const obPot=Q1*c2*E_XFER;
+        /* 1 球目が dk 走ってから 9 番へ渡し、9 番が dL 走れるか（§08 の二相込み） */
+        if((obPot - cd.dk/OBJ_RUN)*k2*OBJ_REACH < cd.dL*1.04) continue;
         let tx=ax-cd.wx*cosT, ty=ay-cd.wy*cosT;
         const tm=Math.hypot(tx,ty);
         if(tm>1e-6){ tx/=tm; ty/=tm; } else { tx=-cd.wy; ty=cd.wx; }
-        const fx=(5/7)*sinT*tx+(2/7)*f*ax, fy=(5/7)*sinT*ty+(2/7)*f*ay;
-        const m=Math.hypot(fx,fy);
         const bPen=1-0.30*b*b*(b<0?1.5:1);
-        const cuePot=IMP.Q*m*m;
 
         for(let ia=0; ia<aset.length; ia++){
           const a=aset[ia], aAbs=Math.abs(a);
@@ -2501,10 +2683,13 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
           const q0=pocketProb(cd.margin, baseErr+aErr);
           if(q0<0.05) continue;
           const aPen=1-0.30*a*a-(aAbs>0.05?0.05:0);
-          const E0=-SPIN_K*a*s1*0.88;
+          const E0=spinAt(a, P0, tImp);
+          solveImpact(cd.gx, cd.gy, ax, ay, cd.wx, cd.wy, Q1, f, E0);
+          const m=CUE.m, fx=CUE.fx, fy=CUE.fy;
+          const cuePot=Q1*m*m;
           let scr=false, ex=cd.gx, ey=cd.gy;
           if(cuePot>0.5 && m>0.02){
-            simulate(cd.gx,cd.gy,fx/m,fy/m,cuePot,E0,others,false,false);
+            simulate(CUE.st,others,false,false);
             ex=SIM.x; ey=SIM.y; scr=SIM.scratch;
           }
           const imm=q0*powPen*bPen*aPen*(scr?0.03:1);
@@ -2516,7 +2701,8 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
           SI.scr=scr; SI.hit=false; SI.q0=q0; SI.imm=imm; SI.pos=1; SI.gap=gap;
           SI.spd=spd; SI.pw=pw; SI.hitRes=null; SI.close=(d1 < BD+DHIT_GAP);
           SI.cosT=cosT; SI.sinT=sinT; SI.d1=d1;
-          SI.ux=m>0.02?fx/m:0; SI.uy=m>0.02?fy/m:0;
+          { const fm=Math.hypot(fx,fy);
+            SI.ux = fm>1e-6 ? fx/fm : 0; SI.uy = fm>1e-6 ? fy/fm : 0; }
           SI.tx=tx; SI.ty=ty; SI.ax=ax; SI.ay=ay; SI.E0=E0;
           SI.needRail=false; SI.sidePick=false; SI.pref=pref;
           cb(pref);                     // 決まれば取り切り完了なので nv は掛けない
@@ -2809,13 +2995,13 @@ const SB_F=[-0.45,-0.22,0,0.22,0.45], SB_C=[-0.40,0,0.40];
 const SA_F=[-0.35,0,0.35],            SA_C=[0];
 /* 強めの力加減まで振るのは、直接隠せないときに 1〜2 クッションで
    手玉を難所へ送るセーフティーを取りこぼさないため。
-   PMAX の再較正（460 → 1000）に合わせて同じ倍率で振り直してある。 */
-const SP_F=[0,40,100,195,350,565,800], SP_C=[0,90,240,480];
+   PMAX（標準ラシャで約 1900）に合わせて振ってある。 */
+const SP_F=[0,75,190,370,665,1075,1520], SP_C=[0,170,455,910];
 
 /* --- 相手のバンクショット（1 クッション）--------------------------------
-   クッションは法線 RAIL_N・接線 RAIL_T で跳ねるので、実際の反射は鏡像より
-   「長く」出る。tan(出) = (RAIL_T/RAIL_N)·tan(入) を満たすクッション上の点を
-   解き、そこを狙う筋として扱う。
+   クッションでは法線成分だけが ec で減り、接線は摩擦で少し削られるだけなので、
+   実際の反射は鏡像より「長く」出る。tan(出) = RAIL_BANK_K·tan(入) を満たす
+   クッション上の点を解き、そこを狙う筋として扱う（§09）。
    バンクは狙い誤差がクッションで拡大し、的玉の走行距離も伸び、さらに
    力加減・捻り・ラシャで反射角そのものがぶれる。直球と同じ誤差モデルに
    BANK_ERR 倍と反射角のばらつきを足して、A級の実力での成功率を出す。
@@ -2835,7 +3021,7 @@ const BANK_RAILS = [
 ];
 /* cbRail / railOb は呼び出し元（opponentBest）で計算済みのものを受け取る */
 function bankBest(cx,cy,ob,others,cbRail,railOb){
-  const K = RAIL_T/RAIL_N;                              // 反射の「伸び」
+  const K = RAIL_BANK_K;                                // 反射の「伸び」（§09）
   let best=0, bestPi=-1, brx=0, bry=0;
   for(const rl of BANK_RAILS){
     const vert = rl.ax==='x';
@@ -3034,7 +3220,7 @@ function snookRead(cx, cy, ob, others){
   let ways = 0, foul = 0;
   for(let i=0;i<KICK_DIRS;i++){
     const a = i/KICK_DIRS*Math.PI*2;
-    const s = simulate(cx, cy, Math.cos(a), Math.sin(a), KICK_POT, 0, all, false, false);
+    const s = simulate(rollSt(cx, cy, Math.cos(a), Math.sin(a), KICK_POT), all, false, false);
     /* resolve を渡していないので simulate は球に当たった時点で止まる。
        ＝ SIM の座標がそのまま接触点で、的玉に当たったかどうかが分かる。 */
     const onOb = s.hit && s.rails >= 1 && Math.hypot(s.x-ob.x, s.y-ob.y) < BD+0.5;
@@ -3071,16 +3257,12 @@ function returnSafety(cEnd, oEnd, n, others){
    そこへさらに sg を掛けると、th<0 側の手（＝半分の手）だけ接線が反転し、
    手玉が中心線の反対側＝タンジェント線の裏側へ抜けていく絵になっていた。
    これは 2 球衝突では絶対に起こらない動きなので、sg は掛けない。 */
-function safetyCueVec(b,a,P0,t,dx,dy,lx,ly,cT,sT){
+function safetyCueVec(b,a,P0,t,gx,gy,dx,dy,lx,ly){
   impactState(b,P0,t);
-  const f=IMP.f, Q1=IMP.Q;                    // Q1 = 滑走ぶんの割り増し込み
-  let tx=dx-lx*cT, ty=dy-ly*cT;               // 接線方向（向きも符号もこれで正しい）
-  const tm=Math.hypot(tx,ty);
-  if(tm>1e-6){tx/=tm;ty/=tm;} else {tx=0;ty=0;}
-  const s=Math.abs(sT);                       // |sinθ| ＝ 接線成分の大きさ
-  const fx=(5/7)*s*tx+(2/7)*f*dx;
-  const fy=(5/7)*s*ty+(2/7)*f*dy;
-  return {f, Q1, fx, fy, m:Math.hypot(fx,fy)};
+  const f=IMP.f, Q1=IMP.Q;                    // Q1 = 衝突時のポテンシャル
+  solveImpact(gx,gy,dx,dy,lx,ly,Q1,f,spinAt(a,P0,IMP.T));
+  return {f, Q1, fx:CUE.fx, fy:CUE.fy, m:CUE.m,
+          cue:copySt(CUE.st), ob:copySt(CUE.ob)};
 }
 
 /* 1 本のセーフティーを打ってみる。成立すれば SF に結果を書いて true。
@@ -3118,21 +3300,21 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
      バグ修正の経緯 ―― 的玉だけ (P0−t)·cos²θ という別式で出していたため、
      引きでは的玉が速すぎ・押しでは遅すぎ、手玉と的玉で別々の物理が
      走っていた（取り切り側は 1.0.3 で IMP.Q に直っている）。 */
-  const cvec=safetyCueVec(b,a,P0,t,dx,dy,lx,ly,cT,sT);
+  const cvec=safetyCueVec(b,a,P0,t,gx,gy,dx,dy,lx,ly);
   /* 的玉。他球に当たったら 2 球衝突を解いて走り続ける（取り切り側と同じ resolve）。
      SIM は使い回しなので、次の simulate を呼ぶ前に hits を複製しておく。 */
-  const objPot=cvec.Q1*cT*cT;
-  const os=simulate(target.x,target.y,lx,ly,objPot,0,others,false,true);
+  const objPot=cvec.Q1*cT*cT*E_XFER;
+  const os=simulate(cvec.ob,others,false,true);
   const oEnd={x:os.x,y:os.y},
         oScr=os.scratch, oRails=os.rails, oHit=os.hit, oRun=os.run;
   const oHits=os.hits.length?os.hits.slice():null;
   /* 手玉 */
-  const fx=cvec.fx, fy=cvec.fy, m=cvec.m;
+  const m=cvec.m;
   const cuePot=cvec.Q1*m*m;
   if(cuePot>CUEMAX*1.08) return false;
   let cEnd={x:gx,y:gy}, cScr=false, cRails=0, cHit=false, cHits=null, cRun=0;
   if(cuePot>0.5 && m>0.02){
-    const cs=simulate(gx,gy,fx/m,fy/m,cuePot,-SPIN_K*a*Math.sqrt(Math.max(cvec.Q1,0.01))*0.88,others,false,true);
+    const cs=simulate(cvec.cue,others,false,true);
     cEnd={x:cs.x,y:cs.y}; cScr=cs.scratch; cRails=cs.rails; cHit=cs.hit; cRun=cs.run;
     cHits=cs.hits.length?cs.hits.slice():null;
   }
@@ -3199,7 +3381,7 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
   SF.hitFull=op.hitFull; SF.hide=hide;
   SF.score=sc; SF.scoreOpp=scOpp;
   SF.good=good; SF.cuePot=cuePot; SF.objPot=objPot; SF.ctrl=ctrl;
-  SF.spd=Math.sqrt(P0/SPD_REF);
+  SF.spd=potV(P0)/SPD_V;
   SF.pw =P0/Math.max(t+10, 14);           // 必要最小のおおよそ何倍か（表示用）
   return true;
 }
@@ -3223,32 +3405,15 @@ function snapSafety(cx,cy,target){
    （実測 372 手中 11 手＋逆向き 12 手）。手玉と的玉はすり抜けないので
    これは描けてはいけない動きになる。
 
-   手玉も的玉も同じ割合で減速するから、共通の時間パラメータ u で
-     進んだ距離 d(u) = 2u√P − u²   （u = √P で停止）
-   と書ける。両球を同時に走らせて、どこかで球 1 個ぶんより近づいたらキス。
+   simulate が軌跡の各点に経過秒を入れて返すので、両球を同じ時刻で並べて
+   突き合わせるだけでよい。どこかで球 1 個ぶんより近づいたらキス。
    キスの先は 2 球衝突が絡んで読めないので、その手は選ばない。
 
    刻みごとに「点どうしの距離」を見るだけでは、走り出しの速い区間で
    球 1 個ぶんを一気に飛び越えてしまう（強い手では 1 刻み 7″ も進む）。
-   1 刻みの中では両球とも直線に動くので、相対運動も直線になる。
+   1 刻みの中では両球とも直線に動くとみなせるので、相対運動も直線になる。
    その線分上の最小距離を解析的に出せば、刻みが粗くても取りこぼさない。 */
-function pathCur(pts){                     // 道すじを距離で引くためのカーソル
-  const n=pts.length, seg=new Float64Array(n>1?n-1:0);
-  let acc=0;
-  for(let i=1;i<n;i++){ acc+=Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]); seg[i-1]=acc; }
-  return {pts, seg, i:0};
-}
-function curAt(c,d,out){                   // d は必ず増える方向に呼ぶこと
-  const {pts,seg}=c, m=seg.length;
-  if(!m){ out[0]=pts[0][0]; out[1]=pts[0][1]; return out; }
-  while(c.i<m-1 && seg[c.i]<d) c.i++;
-  const i=c.i, prev=i?seg[i-1]:0, L=seg[i]-prev;
-  const u=L<1e-9?0:clamp((d-prev)/L,0,1);
-  out[0]=pts[i][0]+(pts[i+1][0]-pts[i][0])*u;
-  out[1]=pts[i][1]+(pts[i+1][1]-pts[i][1])*u;
-  return out;
-}
-const KISS_P0=[0,0], KISS_P1=[0,0], KISS_Q0=[0,0], KISS_Q1=[0,0], KISS_N=100;
+const KISS_N   = 120;
 const KISS_GAP = BD-0.05;      // これより近づいたらキス（接触は BD ちょうど）
 const KISS_ARM = BD+0.30;      // いったんここまで離れてから判定を始める
 /* 1 刻みのあいだの、2 球の最接近距離の 2 乗（相対運動が直線なのでこれで厳密） */
@@ -3261,28 +3426,25 @@ function sweepMin2(p0,p1,q0,q1){
   const dx=ax+bx*s, dy=ay+by*s;
   return dx*dx+dy*dy;
 }
-function kissPaths(oPts,oPot,cPts,cPot){
-  const so=Math.sqrt(Math.max(oPot,0)), sc=Math.sqrt(Math.max(cPot,0));
-  const uMax=Math.max(so,sc);
-  if(uMax<=1e-6) return false;
-  const co=pathCur(oPts), cc=pathCur(cPts);
+function kissPaths(oPts,cPts){
+  const T=Math.max(pathDur(oPts), pathDur(cPts));
+  if(T<=1e-6) return false;
   const g2=KISS_GAP*KISS_GAP, arm2=KISS_ARM*KISS_ARM;
-  let p0=curAt(co,0,KISS_P0).slice(), q0=curAt(cc,0,KISS_Q0).slice();
+  let p0=ptAtTime(oPts,0), q0=ptAtTime(cPts,0);
   /* 衝突直後の 2 球はちょうど接している（間隔 = BD）。分離角ぶん必ず
      離れていくので、まず 1 刻みだけ空ける。押しで真っすぐ追いかける手は
      間隔が BD のまま伸びないので、そこは「ひらくのを待つ」ようにはしない
      ―― 追いついて当たり直すのは実際に起きるキスだから。 */
   let armed=false;
   for(let i=1;i<=KISS_N;i++){
-    const u=uMax*i/KISS_N, uo=Math.min(u,so), uc=Math.min(u,sc);
-    const p1=curAt(co, 2*uo*so-uo*uo, KISS_P1);
-    const q1=curAt(cc, 2*uc*sc-uc*uc, KISS_Q1);
+    const t=T*i/KISS_N;
+    const p1=ptAtTime(oPts,t), q1=ptAtTime(cPts,t);
     if(armed && sweepMin2(p0,p1,q0,q1) < g2) return true;
     if(!armed){
       const dx=p1[0]-q1[0], dy=p1[1]-q1[1];
       if(dx*dx+dy*dy > arm2 || i>=2) armed=true;
     }
-    p0[0]=p1[0]; p0[1]=p1[1]; q0[0]=q1[0]; q0[1]=q1[1];
+    p0=p1; q0=q1;
   }
   return false;
 }
@@ -3290,13 +3452,12 @@ function kissPaths(oPts,oPot,cPts,cPot){
    重いので、勝ち残った上位候補にだけ掛ける。 */
 function kissSafety(c, others){
   if(c.cuePot<=0.5) return false;
-  const os=simulate(c.ox,c.oy,c.lx,c.ly,Math.max(c.objPot,0.01),0,others,true,true);
-  const oPts=os.pts.map(p=>[p[0],p[1]]);          // SIM は使い回しなので先に複製
-  const v=safetyCueVec(c.b,c.a,c.P0,c.t,c.dx,c.dy,c.lx,c.ly,c.cT,c.sT);
+  const v=safetyCueVec(c.b,c.a,c.P0,c.t,c.gx,c.gy,c.dx,c.dy,c.lx,c.ly);
+  const os=simulate(v.ob,others,true,true);
+  const oPts=os.pts.map(p=>[p[0],p[1],p[2]]);     // SIM は使い回しなので先に複製
   if(v.m<=0.02) return false;
-  const cs=simulate(c.gx,c.gy,v.fx/v.m,v.fy/v.m,c.cuePot,
-                    -SPIN_K*c.a*Math.sqrt(Math.max(v.Q1,0.01))*0.88,others,true,true);
-  return kissPaths(oPts, c.objPot, cs.pts, c.cuePot);
+  const cs=simulate(v.cue,others,true,true);
+  return kissPaths(oPts, cs.pts);
 }
 
 /* 狙い・力加減を振って「成立率」を測る。
@@ -3893,10 +4054,6 @@ function crispText(txt,x,y,col,px){
    ・線は 1 本のパスとしてなめらかに描く
    ・クッション接点だけ丸を打つ（railIdx）
    ・矢印は「距離で等間隔」に置く                                     */
-function polyLen(pts){
-  let t=0; for(let i=1;i<pts.length;i++) t+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
-  return t;
-}
 function arrowsAlong(pts,col,alpha){
   const seg=[]; let tot=0;
   for(let i=1;i<pts.length;i++){
@@ -4006,20 +4163,15 @@ function flushLabels(){
   LBLQ=[]; OBST=[];
 }
 
-/* スロー角（度）。正 = タンジェント側へ逸れる。
-   係数は実測レンジに合わせてある（旧版は中央値 1.20°・最大 2.69°で、
-   実測のカットスロー（遅い転がりの半分厚で 5°前後）の半分以下だった）。
-   これは「狙いを逆に補正する量」としてそのまま画面に出す数字なので、
-   2 倍のずれは練習の参考値として大きい。 */
-const THROW_CIT = 11.0;   // カットスロー
-const THROW_SIT = 7.0;    // 捻りスロー
+/* スロー角（度）。正 = タンジェント側へ逸れる（§06）。
+   接触点の相対すべり s = v·sinφ + R·ωz が唯一の駆動量で、
+     ・切り角そのものが生む押し出し（CIT）
+     ・捻りが生む押し出し（SIT。外捻りは逆向き）
+   の両方がここに含まれる。摩擦係数 μbb はすべり速度が上がるほど下がるので、
+   強打すると自然に小さくなる。ギア外捻り（s = 0）ではちょうど 0 になる。
+   数式を別に持たず、実際の衝突を解いた結果（solveImpact）をそのまま出す。 */
 function throwDeg(st){
-  const spd = Math.min(st.spd||0, 1.3);
-  const th = Math.acos(clamp(st.cosT,-1,1));
-  const cit = THROW_CIT*THROW_K*Math.sin(th)*st.cosT*st.cosT*(1-0.35*spd);
-  const sgn = (st.lx*st.ty - st.ly*st.tx) >= 0 ? 1 : -1;
-  const sit = -THROW_SIT*THROW_K*st.a*(1-0.40*spd);              // 捻りスロー(右→左へ)
-  return cit*sgn + sit;
+  return stepImpact(st).thr*180/Math.PI;
 }
 
 function drawStep(st, active){
@@ -4090,12 +4242,13 @@ function drawStep(st, active){
     addObst(G[0],G[1],R*S*1.05);
   }
 
-  /* 手玉の走り（捻りが残っている間はゆるやかな曲線になる）。
+  /* 手玉の走り。分離直後はまだ滑っているので、接線から出発して
+     v_f = (5u+2w)/7 の向きへ乗るまでの弧がそのまま出る（§03・§04 機構1）。
      他球に当たったら 2 球衝突を解いて走り続けるので、
      当てられた球の道すじもここで一緒に描く。 */
   if(show.cuePath && st.dist>0.5){
     const others = st.lay.others[st.k];
-    const sim = simulate(st.gx,st.gy,st.ux,st.uy,st.dist,st.E0,others,true,!cb);
+    const sim = simulate(stepImpact(st).st,others,true,!cb);
     const pts = sim.pts.map(p=>P(p[0],p[1]));
     const railIdx = (sim.railIdx||[]).slice();
     const hits = sim.hits.slice();
@@ -4121,12 +4274,13 @@ function drawStep(st, active){
       const L1 = P(st.gx+st.ux*along, st.gy+st.uy*along);
       label(L1[0],L1[1],`分離 ${Math.round(sep)}°`,'#b6f4ff',a*0.95,2);
     }
-    /* 捻りで曲がっている量を明示する */
-    if(active && Math.abs(st.a)>0.07 && sim.pts.length>2){
+    /* 接線から漸近方向へ乗るまでの曲がり（＝滑走ぶん）を明示する。
+       強く撞くほど曲がりきる距離が伸びる＝ラインが直線的になる（§04 機構1）。 */
+    if(active && sim.pts.length>2){
       const bend = Math.abs(bendDeg(sim.pts));
       if(bend>3){
         const mid = pts[Math.round(pts.length*0.72)];
-        if(mid) label(mid[0],mid[1],`捻りカーブ ${Math.round(bend)}°`,'#e6ccff',a*0.95,1);
+        if(mid) label(mid[0],mid[1],`滑走カーブ ${Math.round(bend)}°`,'#e6ccff',a*0.95,1);
       }
     }
   }
@@ -4170,26 +4324,31 @@ function bendDeg(pts){
 
 /* セーフティー時の手玉の走行ライン（描画・再生で共用）。
    探索と同じ resolve=true で走らせるので、他球に当たった先まで一致する。 */
+/* セーフティー時の的玉の走行ライン（描画・再生で共用）。
+   探索と同じ solveImpact の結果から走らせるので、成立率の計算と食い違わない。 */
+function safetyObjPath(sf){
+  const v=safetyCueVec(sf.b,sf.a,sf.P0,sf.t,sf.gx,sf.gy,sf.dx,sf.dy,sf.lx,sf.ly);
+  const os=simulate(v.ob, balls.slice(1), true, true);
+  return {pts:os.pts.map(p=>[p[0],p[1],p[2]]), railIdx:(os.railIdx||[]).slice(),
+          hits:os.hits.length?os.hits.slice():null, dur:os.T};
+}
 function safetyCuePath(sf){
   if(sf.cuePot<=0.5) return null;
-  const {fx,fy,m,Q1}=safetyCueVec(sf.b,sf.a,sf.P0,sf.t,sf.dx,sf.dy,sf.lx,sf.ly,sf.cT,sf.sT);
-  if(m<=0.02) return null;
-  const cs=simulate(sf.gx,sf.gy,fx/m,fy/m,sf.cuePot,
-                    -SPIN_K*sf.a*Math.sqrt(Math.max(Q1,0.01))*0.88,
-                    balls.slice(1),true,true);
-  return {pts:cs.pts.map(p=>[p[0],p[1]]), railIdx:(cs.railIdx||[]).slice(),
-          hits:cs.hits.length?cs.hits.slice():null};
+  const v=safetyCueVec(sf.b,sf.a,sf.P0,sf.t,sf.gx,sf.gy,sf.dx,sf.dy,sf.lx,sf.ly);
+  if(v.m<=0.02) return null;
+  const cs=simulate(v.cue, balls.slice(1),true,true);
+  return {pts:cs.pts.map(p=>[p[0],p[1],p[2]]), railIdx:(cs.railIdx||[]).slice(),
+          hits:cs.hits.length?cs.hits.slice():null, dur:cs.T};
 }
 /* セーフティーで手玉・的玉に弾かれた球の道すじ。
    others = balls.slice(1) と添字が一致する（trySafety と同じ並び）。 */
-function safetyStruck(hits, pathPts, srcPot){
+function safetyStruck(hits){
   const others=balls.slice(1), out=[];
   if(!hits || !hits.length) return out;
   for(const h of resolveHits(hits, others, true)){
     const bn=others[h.i];
     if(!bn) continue;
-    out.push({n:bn.n, bi:balls.indexOf(bn), pts:h.pts, pot:h.pot, potted:h.potted,
-              srcPot, srcDist:distAlongTo(pathPts, h.x0, h.y0)});
+    out.push({n:bn.n, bi:balls.indexOf(bn), pts:h.pts, potted:h.potted, t0:h.t0});
   }
   return out;
 }
@@ -4208,9 +4367,8 @@ function drawSafety(sf){
   /* 的玉の走り（勢いは探索が出した objPot をそのまま使う。
      ここで別式を立てると、描いた線と成立率の計算が食い違う）。
      SIM は使い回しなので、道すじと hits を先に複製してから次の simulate を呼ぶ。 */
-  const os=simulate(sf.ox,sf.oy,sf.lx,sf.ly,Math.max(sf.objPot,0),0,balls.slice(1),true,true);
-  const oPts=os.pts.map(p=>[p[0],p[1]]), oRail=(os.railIdx||[]).slice();
-  const oHits=os.hits.length?os.hits.slice():null;
+  const op=safetyObjPath(sf);
+  const oPts=op.pts, oRail=op.railIdx, oHits=op.hits;
   drawPath(oPts.map(p=>P(p[0],p[1])), oRail, col, 0.96, Math.max(1.9,0.21*S), [7,4]);
 
   /* 手玉の走り */
@@ -4218,8 +4376,7 @@ function drawSafety(sf){
   if(cpath) drawPath(cpath.pts.map(p=>P(p[0],p[1])), cpath.railIdx, '#5fdcee', 1, Math.max(1.9,0.21*S));
 
   /* 手玉・的玉に弾かれた球。取り切り側と同じ見せ方にする */
-  for(const s of safetyStruck(oHits, oPts, sf.objPot)
-                 .concat(safetyStruck(cpath?cpath.hits:null, cpath?cpath.pts:[], sf.cuePot)))
+  for(const s of safetyStruck(oHits).concat(safetyStruck(cpath?cpath.hits:null)))
     drawPath(s.pts.map(p=>P(p[0],p[1])), null, BALLCOL[s.n]||'#ffa14a',
              0.9, Math.max(1.5,0.17*S), [6,4]);
 
@@ -4260,146 +4417,115 @@ function drawSafety(sf){
 /* =========================================================================
    9b. 再生 — 実際の手玉／的玉の動きを再現する
    -------------------------------------------------------------------------
-   等減速（転がり抵抗）で走る球の運動を時間で解く。
-   ポテンシャル P（そのまま止まるまでに進む距離）と加速度 a の関係は
-       P = v0²/(2a)  →  進んだ距離 d(t) = v0·t − a·t²/2
-   なので、d(t) = P − (√P − t·√(a/2))²。
-   軌道そのものは物理シミュレーション（simulate）の結果をそのまま使うので、
-   捻りによるクッションの反射角の変化・ゆるやかなカーブも再生に現れる。
+   道すじも速さの移り変わりも、物理シミュレーション（simulate）の結果を
+   そのまま使う。simulate は軌跡の各点に「撞いてからの経過秒」を入れて返すので、
+   再生はその時刻を引くだけでよい。したがって
+     ・分離直後の手玉が接線から漸近方向へ乗るまでの弧（§03・§04）
+     ・的玉が滑走で 2/7 を失い、転がりに入ると急に止まらなくなる二相（§08）
+     ・クッションでの反射角の変化と、離れぎわの押しの乗り（§09）
+   がそのまま再生に現れる。
    ========================================================================= */
-/* ACC は「見た目の速さ」用に大きめに取った減速度。
-   実際のラシャの転がり減速は 4〜10 inch/s² 程度で、100″ 転がるのに 4.5〜7 秒
-   かかるが、それでは練習台として待たされるだけなので、見やすさを取って
-   ACC=108（100″ を 1.36 秒＝実物のおよそ 3〜4 倍速）で流す。
-   「最後にゆっくり止まる」感じは減速の形が同じなので、これでも残る。 */
-const ACC = 108;                 // 見た目の速さ [inch/s²]
+/* 実物の 100″ の転がりは 7 秒近くかかる。練習台として待たされるだけなので
+   TIME_SCALE 倍の早回しで流す（見た目の速さだけの係数で、物理には触らない）。
+   減速の形は物理そのままなので「最後にゆっくり止まる」感じは残る。 */
+const TIME_SCALE = 5.3;
+const TAIL_RUN = 1.4, TAIL_SAFE = 2.1;   // 落ち着き先を見せる余韻 [物理秒]
 let animSpeed = 0.8;             // 遅い 0.4 / 普通 0.8 / 早い 1.2（#spds の初期選択と合わせる）
 /* 再生の状態。ph は 0 = 手玉が的玉へ向かう / 1 = 当たった後、
-   i は何手目か、t はその段階に入ってからの経過秒。 */
+   i は何手目か、t はその段階に入ってからの経過秒（物理時間）。 */
 /* atEnd = 最後の一手（9番のシュート）まで流し終えた状態。
    ここでもう一度「再生」を押したら、選択中のカードではなく 1 球目から流し直す。 */
 const anim = {on:false, shots:null, i:0, ph:0, t:0, raf:0, last:0,
               keepTrail:true, hint:'', atEnd:false};
 
-function distAt(P,t){                       // t 秒で進んだ距離
-  if(P<=0) return 0;
-  const k = Math.sqrt(P) - t*Math.sqrt(ACC/2);
-  return k<=0 ? P : P-k*k;
-}
-function timeTo(P,d){                       // 距離 d を進むのにかかる秒数
-  if(P<=0) return 0;
-  if(d>=P) return Math.sqrt(2*P/ACC);
-  return Math.sqrt(2/ACC)*(Math.sqrt(P)-Math.sqrt(P-d));
-}
-/* 折れ線 pts 上で、点 (x,y) にいちばん近い所までの道のり */
-function distAlongTo(pts,x,y){
-  let acc=0, best=0, bd=Infinity;
-  for(let i=0;i<pts.length;i++){
-    if(i){
-      acc += Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
-    }
-    const d=Math.hypot(pts[i][0]-x, pts[i][1]-y);
-    if(d<bd){ bd=d; best=acc; }
-  }
-  return best;
-}
-function ptAlong(pts,d){
-  if(pts.length<2) return [pts[0][0],pts[0][1]];
-  let acc=0;
-  for(let i=1;i<pts.length;i++){
-    const dx=pts[i][0]-pts[i-1][0], dy=pts[i][1]-pts[i-1][1], L=Math.hypot(dx,dy);
-    if(acc+L>=d || i===pts.length-1){
-      const u=L<1e-9?0:clamp((d-acc)/L,0,1);
-      return [pts[i-1][0]+dx*u, pts[i-1][1]+dy*u];
-    }
-    acc+=L;
-  }
-  return [pts[pts.length-1][0],pts[pts.length-1][1]];
-}
-function subPath(pts,d){
+/* 時刻 t までに通った部分（軌跡の描画用。pathDur / ptAtTime は計算コア側） */
+function subPathTime(pts, t){
   const out=[[pts[0][0],pts[0][1]]];
-  let acc=0;
   for(let i=1;i<pts.length;i++){
-    const dx=pts[i][0]-pts[i-1][0], dy=pts[i][1]-pts[i-1][1], L=Math.hypot(dx,dy);
-    if(acc+L<=d){ out.push([pts[i][0],pts[i][1]]); acc+=L; continue; }
-    const u=L<1e-9?0:(d-acc)/L;
-    if(u>0.004) out.push([pts[i-1][0]+dx*u, pts[i-1][1]+dy*u]);
+    if(pts[i][2] <= t){ out.push([pts[i][0],pts[i][1]]); continue; }
+    const A=pts[i-1], B=pts[i], dt=B[2]-A[2];
+    const u=dt>1e-9?clamp((t-A[2])/dt,0,1):0;
+    if(u>0.004) out.push([A[0]+(B[0]-A[0])*u, A[1]+(B[1]-A[1])*u]);
     break;
   }
   return out;
 }
-/* 手玉→的玉の間の実際の道すじ。
-   捻ると一度スカートで逆へ弾かれ、横回転で狙いへ戻ってくる（スワーブ）。 */
-function aimPath(cx,cy,gx,gy,a){
+/* 無回転で滑り出した球の直線の道すじに、各点の到達時刻を入れる（§08 の二相）。
+   simulate を通さないコンビの 2 球目などで使う。 */
+function stampStun(pts, pot){
+  const out=[[pts[0][0],pts[0][1],0]];
+  let acc=0;
+  for(let i=1;i<pts.length;i++){
+    acc += Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
+    out.push([pts[i][0],pts[i][1], stunTime(pot, acc)]);
+  }
+  return out;
+}
+/* 手玉→ゴーストの実際の道すじ（§05）。
+   捻ると撞いた瞬間に照準線から捻った側と逆へ外れ（トビ θ ≈ 0.11·bh/R）、
+   走るうちに横回転で狙いへ戻ってくる（スワーブ）。両者が打ち消し合う点が
+   ピボットポイントで、プレイヤーはそこに合わせて撞いている。
+   各点には撞いてからの経過秒も入れる（撞点で滑走の減速が変わる）。 */
+function aimPath(cx,cy,gx,gy,a,b,P0){
   const dx=gx-cx, dy=gy-cy, L=Math.hypot(dx,dy);
-  if(L<0.5 || Math.abs(a)<0.07) return [[cx,cy],[gx,gy]];
-  const ux=dx/L, uy=dy/L, px=uy, py=-ux;          // px,py = 進行方向の左
-  const bulge = a*Math.min(L,46)*0.030;           // 右撞きは一度左へ逃げる
-  const out=[], n=16;
+  const ux=L>1e-9?dx/L:1, uy=L>1e-9?dy/L:0, px=uy, py=-ux;   // px,py = 進行方向の左
+  /* 捻っていなくても細かく刻む。撞点で滑走の減速が変わるので、
+     点ごとの時刻がそのまま「走り出しは速く、届くころは緩む」動きになる。 */
+  const swerve = !(L<0.5 || Math.abs(a)<0.02 || noEnglish);
+  const n = L<0.5 ? 1 : (swerve ? 16 : 10);
+  const bulge = swerve ? SQUIRT_K*a*L*0.25 : 0;   // トビ → スワーブの最大ふくらみ
+  const out=[];
   for(let i=0;i<=n;i++){
-    const s=i/n, wgt=Math.sin(Math.PI*s)*Math.pow(1-s,0.35);
-    out.push([cx+ux*L*s+px*bulge*wgt, cy+uy*L*s+py*bulge*wgt]);
+    const s=i/n, d=L*s;
+    const w = swerve ? Math.sin(Math.PI*s)*Math.pow(1-s,0.35) : 0;
+    out.push([cx+ux*d+px*bulge*w, cy+uy*d+py*bulge*w, impactState(b,P0,d).T]);
   }
   return out;
 }
 
 /* --- 1 手ごとの再生ペース -------------------------------------------------
    球の速さは物理どおり √P に比例する。そのまま再生すると、強く撞く手だけ
-   画面上を 3 倍近い速さで飛んでいき、「速度：普通」を選んだ意味が薄れる
-   （実測: 1 つの取り切りの中で最速÷最遅が中央値 1.9 倍・最大 3.0 倍）。
+   画面上を 3 倍近い速さで飛んでいき、「速度：普通」を選んだ意味が薄れる。
    そこで 1 手ごとに時間の尺度を掛けて、手と手の速さの差を圧縮する。
      ・同じ手の中の「的玉は速い／手玉はゆっくり出ていく」という差は物理のまま
      ・強く撞いた手がやや速い、という感じだけは残す
    PACE_B = 0 で完全に物理どおり、1 で完全に等速。 */
-const PACE_REF = 110;    // 基準ポテンシャル（ふつうの力加減はこのあたり）
+const PACE_REF = 210;    // 基準ポテンシャル（ふつうの力加減はこのあたり）
 const PACE_B   = 0.65;
 function shotPace(P0){
   return clamp(Math.pow(PACE_REF/Math.max(P0,1), PACE_B/2), 0.55, 1.8);
 }
 function shotTimes(sh){
-  sh.aimLen = polyLen(sh.aim);
-  sh.objLen = polyLen(sh.obj);
-  sh.cueLen = polyLen(sh.cue);
   sh.pace = shotPace(sh.aimPot);
-  /* 手玉が的玉に届くまで。曲がる道すじのぶんも含めるので aimLen を使う */
-  const aimT = timeTo(sh.aimPot, Math.min(sh.aimLen, sh.aimPot));
-  const objT = timeTo(sh.objPot, Math.min(sh.objLen, sh.objPot));
-  const cueT = sh.cuePot>0.5 ? timeTo(sh.cuePot, Math.min(sh.cueLen, sh.cuePot)) : 0;
-  sh.T0 = aimT/sh.pace;
-  /* 2 球衝突・コンビで後から走り出す球は、動き出す時刻と長さも出しておく */
+  sh.T0 = pathDur(sh.aim);
   let secT = 0;
   for(const s of (sh.sec||[])){
-    s.len = polyLen(s.pts);
-    s.t0  = timeTo(s.srcPot, Math.min(s.srcDist, s.srcPot));
-    const e = s.t0 + timeTo(s.pot, Math.min(s.len, s.pot));
+    const e = s.t0 + pathDur(s.pts);
     if(e>secT) secT = e;
   }
   /* 最後に少し止めて、落ち着き先を見せる */
-  sh.T1 = Math.max(objT,cueT,secT)/sh.pace + (sh.kind==='run' ? 0.34 : 0.5);
+  sh.T1 = Math.max(pathDur(sh.obj), pathDur(sh.cue), secT)
+        + (sh.kind==='run' ? TAIL_RUN : TAIL_SAFE);
 }
 function buildShots(fromStep, single){
   if(gameMode==='safe'){
     if(!safety) return null;
     const sf=safety;
-    const objPot=Math.max(sf.objPot, 0.01);
     /* simulate() は同じ SIM オブジェクトを使い回すので、
        次の simulate（手玉側）を呼ぶ前に的玉の道すじを複製しておく。
        これを忘れると的玉が手玉の道すじを走ってしまう。 */
-    const os=simulate(sf.ox,sf.oy,sf.lx,sf.ly,objPot,0,balls.slice(1),true,true);
-    const objPts=os.pts.map(p=>[p[0],p[1]]);
-    const oHits=os.hits.length?os.hits.slice():null;
+    const op=safetyObjPath(sf);
     const cp=safetyCuePath(sf);
     /* 弾かれた球も一緒に動かす。resolveHits は SIM を上書きするので、
        手玉・的玉の道すじを複製し終えてから呼ぶ。 */
-    const sec=safetyStruck(oHits, objPts, objPot)
-              .concat(safetyStruck(cp?cp.hits:null, cp?cp.pts:[], sf.cuePot));
+    const sec=safetyStruck(op.hits).concat(safetyStruck(cp?cp.hits:null));
     /* 的玉は balls の何番目か（＝再生中に静止球として描かない球） */
     let oi=balls.findIndex(b=>b.n===sf.n); if(oi<0) oi=0;
     return [{
       kind:'safe', n:sf.n, pi:-1, oi,
-      aim:aimPath(sf.cx,sf.cy,sf.gx,sf.gy,sf.a), aimPot:sf.P0,
-      obj:objPts, objPot,
-      cue:cp?cp.pts:[[sf.gx,sf.gy]], cuePot:cp?sf.cuePot:0,
+      aim:aimPath(sf.cx,sf.cy,sf.gx,sf.gy,sf.a,sf.b,sf.P0), aimPot:sf.P0,
+      obj:op.pts, objPot:Math.max(sf.objPot,0.01),
+      cue:cp?cp.pts:[[sf.gx,sf.gy,0]], cuePot:cp?sf.cuePot:0,
       sec, remain:balls.slice()
     }];
   }
@@ -4410,15 +4536,22 @@ function buildShots(fromStep, single){
     /* 前の手で動いた球を反映した盤面。ここを balls の元配置に戻すと、
        弾いた球が次の一手でまた元の場所に現れてしまう。 */
     const others=st.lay.others[st.k], remain=st.lay.rem[st.k];
-    /* 的玉に渡る勢いは衝突時のポテンシャルから取る（impactState と同じ） */
-    const objPot=Math.max(impactState(st.b,st.P0,st.d1).Q*st.cosT*st.cosT, 0.01);
+    /* 探索と同じ衝突解から、手玉・的玉の衝突直後の状態を作り直す。
+       CUE は使い回しなので、次の solveImpact を呼ぶ前に両方複製しておく。 */
+    const im=stepImpact(st);
+    const cueSt=copySt(im.st), obSt=copySt(im.ob);
+    const objPot=Math.max(vPot(Math.hypot(obSt.vx,obSt.vy)), 0.01);
+    /* 的玉。コンビのときは 9 番に当たった時点で止まる（resolve は渡さない）。
+       ここも simulate なので、滑走→転がりの二相がそのまま再生に出る。 */
+    const os=simulate(obSt, others, true, false);
+    const objPts=os.pts.map(p=>[p[0],p[1],p[2]]);
+    const objDur=os.T, objRest=os.pot;
     const sec=[];
-    let cue=[[st.gx,st.gy]], cuePts=null, hits=[];
+    let cue=[[st.gx,st.gy,0]], hits=[];
     if(st.dist>0.5){
-      const cs=simulate(st.gx,st.gy,st.ux,st.uy,st.dist,st.E0,others,true,!cb);
-      cuePts=cs.pts.map(p=>[p[0],p[1]]);
+      const cs=simulate(cueSt, others, true, !cb);
+      cue=cs.pts.map(p=>[p[0],p[1],p[2]]);
       hits=cs.hits.slice();
-      cue=cuePts;
     }
     /* 手玉に弾かれた球（クラスター処理）。resolveHits は SIM を上書きするので、
        手玉の道すじを複製し終えてから呼ぶ。 */
@@ -4426,24 +4559,21 @@ function buildShots(fromStep, single){
       for(const h of resolveHits(hits, others, true)){
         const bn=others[h.i];
         if(!bn) continue;
-        sec.push({n:bn.n, bi:remain.indexOf(bn), pts:h.pts, pot:h.pot, potted:h.potted,
-                  srcPot:st.dist, srcDist:distAlongTo(cue, h.x0, h.y0)});
+        sec.push({n:bn.n, bi:remain.indexOf(bn), pts:h.pts, potted:h.potted, t0:h.t0});
       }
     }
     if(cb){
       /* コンビ: 1 球目は 9 番の手前まで、そこから 9 番がポケットへ */
       const L9=remain.find(b=>b.n===cb.Ln);
+      const p9=Math.max(objRest*E_XFER*cb.cos2*cb.cos2, 0.01);
       sec.push({n:cb.Ln, bi:L9?remain.indexOf(L9):-1,
-                pts:[[cb.Lx,cb.Ly],[POCKETS[st.pi].x,POCKETS[st.pi].y]],
-                pot:Math.max((objPot-cb.dk)*cb.cos2*cb.cos2, 0.01), potted:true,
-                srcPot:objPot, srcDist:cb.dk});
+                pts:stampStun([[cb.Lx,cb.Ly],[POCKETS[st.pi].x,POCKETS[st.pi].y]], p9),
+                potted:true, t0:objDur});
     }
     out.push({
       kind:'run', n:st.n, pi:st.pi, k:st.k, idx:i, oi:0, combo:!!cb,
-      aim:aimPath(st.cx,st.cy,st.gx,st.gy,st.a), aimPot:st.P0,
-      obj: cb ? [[st.bx,st.by],[cb.g2x,cb.g2y]]
-              : [[st.bx,st.by],[POCKETS[st.pi].x,POCKETS[st.pi].y]],
-      objPot,
+      aim:aimPath(st.cx,st.cy,st.gx,st.gy,st.a,st.b,st.P0), aimPot:st.P0,
+      obj:objPts, objPot,
       cue, cuePot:st.dist,
       sec, remain:remain.slice()
     });
@@ -4491,8 +4621,9 @@ function animTick(ts){
   if(!anim.last) anim.last=ts;
   let dt=(ts-anim.last)/1000; anim.last=ts;
   if(dt>0.07) dt=0.07;
-  anim.t += dt*animSpeed;
   const sh=anim.shots[anim.i];
+  /* anim.t は物理時間。TIME_SCALE で早回しし、手ごとのペースを掛ける */
+  anim.t += dt*animSpeed*TIME_SCALE*sh.pace;
   if(anim.ph===0 && anim.t>=sh.T0){
     anim.t-=sh.T0; anim.ph=1;
     anim.hint=animHintFor(sh,1);
@@ -4525,7 +4656,7 @@ function drawAnim(){
   LBLQ=[]; OBST=[];
   drawTable();
   const sh=anim.shots[anim.i], ph=anim.ph;
-  const t=anim.t*sh.pace;        // 手ごとのペースを掛けた「物理の時間」
+  const t=anim.t;                // 撞いてから（当たってから）の物理時間 [秒]
   const wd=Math.max(1.9,0.21*S), tw=Math.max(1.5,0.16*S);
 
   /* これから通る予定のライン（薄く先に見せておく） */
@@ -4539,24 +4670,24 @@ function drawAnim(){
 
   let cuePos, objPos=null, objAlpha=1;
   if(ph===0){
-    const d=Math.min(distAt(sh.aimPot,t), sh.aimLen);
-    cuePos=ptAlong(sh.aim,d);
+    cuePos=ptAtTime(sh.aim,t);
     if(anim.keepTrail)
-      drawPath(subPath(sh.aim,d).map(p=>P(p[0],p[1])), null, '#f2f7fc', 0.62, tw, [], false);
+      drawPath(subPathTime(sh.aim,t).map(p=>P(p[0],p[1])), null, '#f2f7fc', 0.62, tw, [], false);
   } else {
     if(anim.keepTrail)
       drawPath(sh.aim.map(p=>P(p[0],p[1])), null, '#f2f7fc', 0.42, tw, [], false);
-    const dObj=Math.min(distAt(sh.objPot,t), sh.objLen);
-    const dCue=sh.cuePot>0.5 ? Math.min(distAt(sh.cuePot,t), sh.cueLen) : 0;
-    objPos=ptAlong(sh.obj,dObj);
-    cuePos=sh.cuePot>0.5 ? ptAlong(sh.cue,dCue) : [sh.cue[0][0],sh.cue[0][1]];
+    objPos=ptAtTime(sh.obj,t);
+    cuePos=sh.cuePot>0.5 ? ptAtTime(sh.cue,t) : [sh.cue[0][0],sh.cue[0][1]];
     if(anim.keepTrail){
-      drawPath(subPath(sh.obj,dObj).map(p=>P(p[0],p[1])), null, '#ffd67a', 0.78, tw, [], false);
+      drawPath(subPathTime(sh.obj,t).map(p=>P(p[0],p[1])), null, '#ffd67a', 0.78, tw, [], false);
       if(sh.cuePot>0.5)
-        drawPath(subPath(sh.cue,dCue).map(p=>P(p[0],p[1])), null, '#5fdcee', 0.98, wd, [], false);
+        drawPath(subPathTime(sh.cue,t).map(p=>P(p[0],p[1])), null, '#5fdcee', 0.98, wd, [], false);
     }
     /* コンビは 1 球目が 9 番の手前で止まるので、消えるのは 9 番のほう */
-    if(sh.kind==='run' && !sh.combo) objAlpha = 1-clamp((dObj-(sh.objLen-2.6))/2.6, 0, 1);
+    if(sh.kind==='run' && !sh.combo){
+      const oe=sh.obj[sh.obj.length-1];
+      objAlpha = clamp(Math.hypot(objPos[0]-oe[0], objPos[1]-oe[1])/2.6, 0, 1);
+    }
   }
 
   /* 後から走り出す球（手玉に弾かれた球・コンビの 9 番）*/
@@ -4565,12 +4696,14 @@ function drawAnim(){
     if(s.bi<0) continue;
     let pos=[s.pts[0][0], s.pts[0][1]], al=1;
     if(ph>=1 && t>s.t0){
-      const d=Math.min(distAt(s.pot, t-s.t0), s.len);
-      pos=ptAlong(s.pts,d);
+      pos=ptAtTime(s.pts, t-s.t0);
       if(anim.keepTrail)
-        drawPath(subPath(s.pts,d).map(p=>P(p[0],p[1])), null,
+        drawPath(subPathTime(s.pts, t-s.t0).map(p=>P(p[0],p[1])), null,
                  BALLCOL[s.n]||'#ffa14a', 0.85, tw, [], false);
-      if(s.potted) al = 1-clamp((d-(s.len-2.6))/2.6, 0, 1);
+      if(s.potted){
+        const se=s.pts[s.pts.length-1];
+        al = clamp(Math.hypot(pos[0]-se[0], pos[1]-se[1])/2.6, 0, 1);
+      }
     }
     secPos.push({bi:s.bi, n:s.n, pos, al});
   }
