@@ -1049,7 +1049,9 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
      5. ショット列挙 1 球について「撞点 × 力加減 × 捻り」を総当たりする中核
      6. DP           「ここに手玉があれば残りを取り切れる確率」の価値マップ
      7. ルート抽出   ビームサーチ（取り切り）／セーフティー探索
-                    （相手の直球・バンクを評価し、隠す・密着させる手を優先）
+                    （相手の直球・バンク・キック・ジャンプ・カーブを評価し、
+                      隠す・厚みを消す・離す・密着させる手を優先。
+                      6 割以上で入るバンクを残す手は選ばない）
      8. 再計算       入力が変わったときに何を作り直すか
      9. 描画・再生
     10. パネル       右（スマホは下）の表示を組み立てる
@@ -1082,13 +1084,37 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
      ルート探索の評価値は imm × pos × 好み なので、数値を変えると提示ルートも変わる。
 
    ■ 「確率」と「好み」を分けている理由
-     画面に出す％は上の式そのもの。それとは別に、実戦の極意
-     （厚み 9 割・力 1 割／最終球から逆算／難所は中盤で処理／逃げ道を確保／
-      アングルを作る／近いサイドを使う／
-      セーフティーは厚みを消す・離す・クッションで送る・攻めた振り・
-      転がしてからの密着は当てにしない）を
+     画面に出す％は上の式そのもの。それとは別に、実戦の極意を
      「好み」としてルート選択にだけ掛けている。
      確率モデルが見ていない再現性を買う仕組みで、表示する％は汚さない。
+
+     取り切り（→「ビリヤード取り切りセオリー」）
+       ① 厚み 9 割・力 1 割          powerPref
+       ② 最終球から逆算              ENDGAME_POW
+       ③ 難所は中盤で処理            hardPref / ballHardness
+       ④ 逃げ道を確保                escapeFactor
+       ⑤ アングルを作る（12〜35°）   angleWindow
+       ⑥ 近いサイドを使う            markSidePicks
+       ⑦ 成功率の低いカットは撞かない shotQualityPref
+       ⑧ ラインに乗せる              lineOfPosition
+       ⑨ 手玉は一方向に回す          circulationPref
+     それぞれの理屈と較正値は、各関数の直前のコメントに書いてある。
+     なお取り切りの候補にバンク（1 クッションで的玉を入れる筋）は入れていない。
+     buildLayout が作る pdata は pocketLine（直球）だけで、バンクを解いているのは
+     相手の脅威を測る bankBest（セーフティー側）のみ。
+
+     セーフティー（→「ビリヤードセーフティーの極意」）
+       ・厚みを消す（完全に隠せなくても効く）        hideValue
+       ・離す（ロング＆シン）                        longFac
+       ・クッションで手玉を難所へ送る                cRails
+       ・密着させて相手のキューを振らせない          tightness
+       ・攻めた振り                                  disguiseOf
+       ・転がしてからの密着は当てにしない            freezeErr
+       ・キック筋を数える（逃げ道 その 1）           snookRead
+       ・ジャンプ／カーブを封じる（逃げ道 その 2・3）escapeDeny
+       ・的玉をレール際へ（角度を殺す・TYPE 05）     obRail
+       ・バンクで入る配置は作らない                  SAFE_BANK_VETO
+     同書の四条件（視界・距離・角度・逃げ道）に一つずつ対応している。
    ========================================================================= */
 
 /* =========================================================================
@@ -1174,7 +1200,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.2.5';
+const VERSION = '1.2.6';
 
 /* =========================================================================
    物理定数 —— 「ビリヤード物理学ハンドブック」§00 に準拠
@@ -1471,9 +1497,15 @@ function spinLive(wz, v){
   return clamp(Math.abs(wz)/(v*SPIN_K*TIPMAX), 0, 1);
 }
 
+/* =========================================================================
+   実戦の極意 —— ここから下の *Pref / *Window / *Factor は
+   すべて「ルートの好み」であって確率ではない。探索の評価値にだけ掛け、
+   画面に出すシュート率（q0 / imm）には一切触れない。以下では繰り返さない。
+   出典は「ビリヤード取り切りセオリー」。丸数字は同書での並び。
+   ========================================================================= */
+
 /* --- 取り切りの最後の一発は「フリ 30°未満」に組み立てる -----------------
-   薄い最終球はミスの代償が最大なので、ルート選択で強く避ける。
-   ルートの好みにだけ効かせ、表示するシュート率そのものは変えない。 */
+   薄い最終球はミスの代償が最大なので、ルート選択で強く避ける。 */
 const LAST_CUT = 30;
 function lastShotPref(cosT){
   const deg = angDeg(cosT);
@@ -1483,8 +1515,7 @@ function lastShotPref(cosT){
 /* --- 出しは「的玉から 2 ポイント以内」を目指す ---------------------------
    1 ポイント = 12.5″。遠くから撞くほど狙いもストロークも精度が落ちるので、
    実戦の組み立てと同じく、次の的玉まで 2 ポイント（25″）に収まる出しを優遇する。
-   最後の一発はミスの代償が最大なので、ここをとくに強く効かせる。
-   ルートの好みにだけ効かせ、表示するシュート率そのものは変えない。 */
+   最後の一発はミスの代償が最大なので、ここをとくに強く効かせる。 */
 const NEAR_PT = 25.0;     // 2 ポイント
 const NEAR_K  = 0.0090;   // 超過 1″ あたりの減点（途中の球）
 const NEAR_KL = 0.0300;   // 最後の一発は 3 倍以上きつく効かせる
@@ -1500,7 +1531,6 @@ function nearPref(d1, isLast){
    力を張ったり抜いたりして合わせた出しは、本番でいちばん再現できない。
    同じ所へ出せる手が複数あるなら、必要最小限に近い＝素直な力加減の手を選ぶ。
    強打の減点を抜きの 3 倍近くきつくしているのは「振り回さない」ため。
-   ルートの好みにだけ効かせ、表示するシュート率そのものは変えない。
    （実測: 同じ 42 配置で最大ポテンシャル 370→265、平均 104→99 に下がる。
      モデル上の取り切り率は 2 ポイントほど落ちるが、これは
      ストロークの再現性という、確率モデルが見ていない分を買っている。） */
@@ -1600,7 +1630,7 @@ function angleWindow(cosT, isLast){
                     後者が無いと、サイドを選んだせいで次が撞けなくなる
                     ルートまで拾ってしまう（実測で取り切り率 −14 ポイント）。
    スクラッチする手は優遇しない（サイドは対角のサイド・コーナーへ飛び込みやすく、
-   回避が絶対条件）。ルートの好みにだけ効かせ、表示するシュート率は変えない。
+   回避が絶対条件）。
    条件を満たした手では、遠いコーナーへ振り直させる減点
    （最後の一発の薄さ lastShotPref ／ 途中の球のアングル窓 angleWindow）を
    打ち消してから上乗せする。この 2 つが「遠いコーナーのほうが緩い」配置で
@@ -1652,6 +1682,109 @@ function closeLim(d1){
    価値を膨らませると多球で発散するので、選択肢が乏しいほうを減点する形にする。 */
 const ESC_K = 0.13;
 function escapeFactor(opts){ return 1 - ESC_K*(1 - clamp(opts-1,0,2)/2); }
+
+/* --- 実戦の極意 ⑦「成功率の低いカットは撞かない」-----------------------
+   「ビリヤード取り切りセオリー」第 0 章。取り切り率は 1 球ごとの成功率の
+   掛け算なので、80% を 95% に上げるだけで 9 球の取り切り率は 13% → 63% になる。
+   逆に言えば、1 本でも低い球を混ぜた時点でルート全体が壊れる。
+
+   ところが探索の評価値は imm（＝ q0 を 1 次で含む）なので、
+   「シュート率 35% だが出しが最高」の手と「シュート率 90% だが出しは並」の手が
+   ほぼ並んでしまう。実戦ではこの 2 つは比べるまでもない ——
+   前者は外した瞬間にラックを相手に渡すからで、
+   セーフティー極意 第 7 章の「外したときの損失まで含めて期待値を見る」が
+   そのまま取り切りにも効く。
+
+   そこで q0 が SHOTQ_OK（70%）を下回るぶんを、確率とは別に「好み」として
+   もう一段引く。70% は両ドキュメントに共通する分岐点で、
+   セーフティー極意では「7 割入る球なら撞け、それ以下なら守れ」として出てくる。
+
+   下限を SHOTQ_FLOOR で残してあるのは、要求どおり
+   「クラスターを割った結果などで他に選択肢がない場合に限り許可」するため。
+   候補としては必ず生き残るので、他に手が無ければそのまま選ばれる。 */
+const SHOTQ_OK       = 0.70;   // ここを下回ると減点しはじめる
+const SHOTQ_POW      = 2.2;    // 途中の球の効き
+const SHOTQ_POW_LAST = 3.0;    // 最後の一発は外した代償が最大なのできつく
+const SHOTQ_FLOOR    = 0.06;   // 0 にはしない（＝他に手が無ければ選ばれる）
+const SHOTQ_TAG      = 0.55;   // これを下回る手は画面に注意として出す
+function shotQualityPref(q0, isLast){
+  if(q0 >= SHOTQ_OK) return 1;
+  const r = q0 > 0 ? q0/SHOTQ_OK : 0;
+  return SHOTQ_FLOOR + (1-SHOTQ_FLOOR)*Math.pow(r, isLast ? SHOTQ_POW_LAST : SHOTQ_POW);
+}
+
+/* --- 実戦の極意 ⑧「ラインに乗せる」(Line of Position) -------------------
+   「ビリヤード取り切りセオリー」第 3 章 3.3。取り切りの中核。
+
+   手玉の停止位置の誤差は、横方向より進行方向（行き過ぎ／足りない）に
+   圧倒的に大きく出る。だから次の球の「ポジションライン」
+   （的玉とポケットを結ぶ線の、手玉側への延長）に沿って手玉を走らせれば、
+   強弱を誤ってもカット角はほとんど変わらず、変わるのは距離だけになる。
+   逆にラインを横切る向きから入ると、同じ誤差が「厚い球 ↔ 極薄」の
+   致命的な変動になる。
+
+   価値マップ（Vb）は等方的なぼかしなので、この「誤差の向き」を持っていない。
+   ここでは 手玉が止まる瞬間の進行方向 と 次の球のポジションラインの
+   平行度で補う。
+     1 = ラインに沿って進入（誤差は距離だけ）
+     0 = ラインを直交して横切る（誤差がそのままフリ角の変動）
+   ほとんど動かない手では誤差自体が小さいので、走った距離ぶんだけ効かせる。
+
+   ラインに「乗せる」と言っても、ライン上に止めればフリ 0°になってしまう。
+   効かせているのは平行度だけで、ラインからどれだけ横にずらすか
+   （＝フリ角そのもの）は angleWindow が別に 12〜35°へ寄せている。
+   この 2 つが組み合わさって「ラインと平行に、12〜35°の幅を空けて走らせる」
+   という上級者の出しになる。
+
+   近いサイド（極意⑥）と同じく、仕上げのルート探索でだけ効かせる。
+   等方的な価値マップに向きの好みを混ぜると、地図そのものが歪む。 */
+const LOP_PREF = 0.18;   // 完全に横切る出しへの減点幅
+const LOP_RUN  = 60;     // これだけ走ればラインの向きが効きはじめる [inch]
+function lineOfPosition(k, ex, ey, dx, dy, run){
+  if(!(dx||dy) || !(run > 0)) return 1;
+  const list = LAY.pdata[k+1];
+  if(!list || !list.length) return 1;
+  /* 次の球を撞くときに使う筋 ＝ ここから見ていちばん厚く入る筋 */
+  let bestC = -2, blx = 0, bly = 0;
+  for(let i=0;i<list.length;i++){
+    const pd = list[i];
+    const ax = pd.gx-ex, ay = pd.gy-ey;
+    const d = Math.hypot(ax,ay);
+    if(d < 0.6) continue;
+    const c = (ax*pd.lx + ay*pd.ly)/d;
+    if(c > bestC){ bestC = c; blx = pd.lx; bly = pd.ly; }
+  }
+  if(bestC < CUTMAX) return 1;                     // そこからは次が撞けない（別の項で落ちる）
+  const al = Math.abs(dx*blx + dy*bly);            // 1 = 平行 / 0 = 直交
+  const w  = clamp(run/LOP_RUN, 0, 1);
+  return 1 - LOP_PREF*w*(1-al);
+}
+
+/* --- 実戦の極意 ⑨「手玉は一方向に回す」（Z パターンの排除）--------------
+   「ビリヤード取り切りセオリー」第 4 章 4.2。番号順が固定される 9 ボールでも、
+   ポケット選択と手玉のルートで経路の形は変えられる。
+   台を何度も横断・縦断する Z 型は、総移動距離が伸びて誤差が累積し、
+   途中の球へのキスの危険も増す。王道は 時計回り／反時計回りの
+   どちらか一方向に手玉を回し続けること。
+
+   移動距離そのものは posFactor と distPen が既に見ているので、
+   ここで足りないのは「回る向きが揃っているか」だけ。
+   台の中心まわりの回り角の符号を手ごとに持ち、前の手と向きが反転したら軽く引く。
+   1 手ぶんの好みなので効きは小さく、他が拮抗したときの決め手として働く。
+   これは手順の履歴が要る＝ルート探索でしか判定できないので findPlan 側で掛ける。 */
+const CIRC_MIN  = 0.22;   // これ未満の回り込みは「向き無し」とみなす [rad]
+const CIRC_PREF = 0.10;   // 向きが反転する手への減点
+function tableTurn(cx,cy,ex,ey){
+  const a0 = Math.atan2(cy-HT/2, cx-W/2), a1 = Math.atan2(ey-HT/2, ex-W/2);
+  let d = a1-a0;
+  while(d >  Math.PI) d -= 2*Math.PI;
+  while(d < -Math.PI) d += 2*Math.PI;
+  return d;
+}
+function circulationPref(prev, cur){
+  if(Math.abs(prev) < CIRC_MIN || Math.abs(cur) < CIRC_MIN) return 1;
+  return prev*cur > 0 ? 1 : 1-CIRC_PREF;
+}
 
 /* --- クッションの実測合わせパラメータ（§09）------------------------------
    クッション反射はハンドブック中で最もモデル化が難しく、ゴムの粘弾性・球の
@@ -1769,7 +1902,9 @@ function segClearM(ax,ay,bx,by,balls,rad){
 }
 function segClear(ax,ay,bx,by,balls){ return segClearM(ax,ay,bx,by,balls,BD); }
 /* 通り道と他球の最小すき間 [inch]。負なら塞がれている（＝ segClear が false）。
-   「通るか」だけでなく「どれだけ余裕があるか」を gapPen に渡すために使う。 */
+   「通るか」だけでなく「どれだけ余裕があるか」を gapPen に渡すために使う。
+   segClearM と同じ点‐線分距離を回すが、あちらは 1 個見つけた時点で打ち切れる
+   （最内ループで効く）。まとめると その打ち切りが消えるので、分けたままにする。 */
 function segGap(ax,ay,bx,by,balls){
   const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy;
   if(L2<1e-9) return Infinity;
@@ -2016,7 +2151,8 @@ function railBounce(b, nx, ny){
      pts などが差し替わるので、続けて別の球を計算するときは
      必要な値を先に複製しておくこと。SIM.hits も同様。
    ------------------------------------------------------------------------- */
-const SIM = {x:0,y:0,rails:0,scratch:false,hit:false,pts:null,railIdx:null,hits:null,run:0,T:0};
+const SIM = {x:0,y:0,rails:0,scratch:false,hit:false,pts:null,railIdx:null,hits:null,run:0,T:0,
+             dirx:0, diry:0};   // dirx,diry = 止まる（当たる）直前の進行方向（→ lineOfPosition）
 const NOHITS  = [];
 const MAX_COL = 2;        // 1 手で解く球どうしの衝突はここまで（暴走防止）
 const STOP_V  = 1.0;      // これ以下は止まったとみなす [inch/s]
@@ -2059,6 +2195,7 @@ function simulate(st, balls, rec, resolve){
   const pts = rec ? [[b.x,b.y,0]] : null;
   const railIdx = rec ? [] : null;
   let hits=null, nCol=0, guard=0;
+  let ldx=0, ldy=0;                          // 最後に走った向き（→ SIM.dirx/diry）
   const nSeg = rec ? SEG_REC : SEG_FAST;
 
   outer:
@@ -2100,6 +2237,10 @@ function simulate(st, balls, rec, resolve){
         continue;
       }
       const dx=mx/L, dy=my/L;
+      /* 止まる直前の進行方向。「ラインに乗せる」（極意⑧）は、手玉の到達点
+         そのものではなく どちら向きから入ってきたか で決まるので、
+         最後に走った弦の向きをそのまま残しておく（弦ごとに 2 代入だけ）。 */
+      ldx=dx; ldy=dy;
       /* この弦の上で最初に起きること（ポケット／クッション／球）--------------
          ポケットを先に見る。実際の台ではポケットの口にクッションが無いので、
          落ちる向きで口に入った球は鼻先の面を素通りしてマウス線まで進む。
@@ -2162,6 +2303,7 @@ function simulate(st, balls, rec, resolve){
   SIM.x=clamp(b.x,R,W-R); SIM.y=clamp(b.y,R,HT-R);
   SIM.rails=rails; SIM.scratch=scratch; SIM.hit=hit;
   SIM.pts=pts; SIM.railIdx=railIdx; SIM.hits=hits||NOHITS; SIM.run=run; SIM.T=T;
+  SIM.dirx=ldx; SIM.diry=ldy;
   SIM.pot=vPot(Math.hypot(b.vx,b.vy));   // 止まった／当たった時点で残っている勢い
   return SIM;
 }
@@ -2759,18 +2901,59 @@ function bridgeLim(cx,cy){
   return clamp(0.20 + 0.80*(m-R)/(5.0-R), 0.18, 1);
 }
 
+/* ブリッジの組みにくさから来る狙いの甘さ（shotError に掛ける係数）。
+   式はここ 1 か所だけに置く。 */
+function railBridgePen(lim){ return 1 + CBRAIL_K*(1-lim); }
+function cueRailFac(x,y){ return railBridgePen(bridgeLim(x,y)); }
+
 /* 土手際の手玉で撞ける範囲。下撞き(引き)と捻りが特に制限され、押しは比較的残る。
    列挙のたびに作らないよう、使い回しの BLIM に書いて返す
    （呼び側は分割代入でローカルに落として内側のループで使う）。 */
-const BLIM = {lim:1, cbRail:1, bMaxUp:0, bMaxDn:0, aMax:0};
+const BLIM = {cbRail:1, bMaxUp:0, bMaxDn:0, aMax:0};
 function bridgeCaps(cx,cy){
   const lim = bridgeLim(cx,cy);
-  BLIM.lim    = lim;
-  BLIM.cbRail = 1 + CBRAIL_K*(1-lim);
+  BLIM.cbRail = railBridgePen(lim);
   BLIM.bMaxUp = TIPMAX*Math.min(1, lim+0.40);
   BLIM.bMaxDn = TIPMAX*lim;
   BLIM.aMax   = TIPMAX*lim;
   return BLIM;
+}
+
+/* 以下 3 つは forEachShot と forEachCombo に同じ式が二重に置いてあったもの。
+   片方だけ直すと静かに食い違うので 1 か所にまとめた
+   （毎回オブジェクトを作らず使い回すのは BLIM と同じ理由）。
+   tipCaps … 的玉が近すぎるダブルヒットの反則域で、撞点の上限をさらに絞る */
+const TIPC = {up:0, dn:0, a:0};
+function tipCaps(d1, bMaxUp, bMaxDn, aMax){
+  const cl = closeLim(d1);
+  TIPC.up = cl<1 ? Math.min(bMaxUp, TIPMAX*cl) : bMaxUp;
+  TIPC.dn = bMaxDn*cl;
+  TIPC.a  = aMax*cl;
+  return TIPC;
+}
+/* 手玉の進行方向 (ax,ay) から中心線 (lx,ly) の成分を抜いた残り＝接線方向。 */
+const TGT = {x:0, y:0};
+function tangentDir(ax,ay,lx,ly,cosT){
+  let tx = ax - lx*cosT, ty = ay - ly*cosT;
+  const tm = Math.hypot(tx,ty);
+  if(tm>1e-6){ tx/=tm; ty/=tm; } else { tx = -ly; ty = lx; }
+  TGT.x = tx; TGT.y = ty;
+  return TGT;
+}
+/* 通常の球速までは無罰、強打するほど狙いが荒れて精度が落ちる。
+   pw は表示用の力加減で、VMAX 比の絶対値で持つ（「必要最小の何倍」で
+   持っていた旧版は、近い球のそっとが 5 本バーの「最大」として出ていた）。 */
+const SPDC = {spd:0, pw:0, err:0, pen:0};
+function speedCaps(P0, errCore){
+  const v = potV(P0);
+  const spd = v/SPD_V;                       // 精度に効く「速さ」(1 = ひと通りの強打)
+  const sOver = Math.max(0, spd-0.35)/0.65;
+  const m = Math.min(spd, 1.35);
+  SPDC.spd = spd;
+  SPDC.pw  = v/VMAX;
+  SPDC.err = errCore*(1 + 0.55*sOver*sOver);
+  SPDC.pen = 1 - 0.16*m*m;
+  return SPDC;
 }
 
 /* ポテンシャル（力加減）の候補を POTBUF に詰めて本数を返す。
@@ -2799,7 +2982,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
      呼び出し側（手動の撞点指定を含む）が何を渡しても左右は必ず芯になる。 */
   if(noEnglish) aset = A_NONE;
 
-  const {lim, cbRail, bMaxUp, bMaxDn, aMax} = bridgeCaps(cx,cy);
+  const {cbRail, bMaxUp, bMaxDn, aMax} = bridgeCaps(cx,cy);
   /* 「近いサイドを使う」は仕上げのルート探索でだけ効かせる。
      価値マップ（DP）に混ぜると地図そのものがサイド狙いに引っ張られ、
      手前の球の出しまで組み替わって取り切り率が落ちる
@@ -2822,16 +3005,8 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
     const gap = Math.min(gapC, pd.gap);
     const sinT = Math.sqrt(Math.max(0,1-cosT*cosT));
 
-    /* 的玉が近すぎるとダブルヒットの反則域。撞点をここでも絞る */
-    const cl   = closeLim(d1);
-    const bUpL = cl<1 ? Math.min(bMaxUp, TIPMAX*cl) : bMaxUp;
-    const bDnL = bMaxDn*cl;
-    const aMaxL= aMax*cl;
-
-    /* タンジェント（接線）方向 */
-    let tx = ax - pd.lx*cosT, ty = ay - pd.ly*cosT;
-    const tm = Math.hypot(tx,ty);
-    if(tm>1e-6){ tx/=tm; ty/=tm; } else { tx = -pd.ly; ty = pd.lx; }
+    const {up:bUpL, dn:bDnL, a:aMaxL} = tipCaps(d1, bMaxUp, bMaxDn, aMax);
+    const {x:tx, y:ty} = tangentDir(ax, ay, pd.lx, pd.ly, cosT);
 
     /* 必要最小ポテンシャル：手玉が d1 進み、的玉が d2 + 余裕 進む。
        的玉に渡るのは 0.975·v·cosφ（＝ポテンシャルで E_XFER·cos²φ）で、
@@ -2839,8 +3014,6 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
     const c2 = cosT*cosT;
     let p0min = d1 + 1.18*pd.d2/(OBJ_REACH*c2) + 2;
     if(p0min > PMAX) continue;
-    /* 撞点を手動指定しているときは、その回転が的玉に届くまで残る力加減にする
-       （引きを指定したのにストップ／押しになってしまうのを防ぐ） */
     /* 撞点を手動指定しているとき。候補がその 1 本しかないので、
        必要最小をその撞点で撞いたときの実際の減速まで含めて引き直す。
          ・potForImpact … その撞点で的玉がポケットまで届く最小の力
@@ -2872,17 +3045,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
       const P0 = POTBUF[ip];
       /* 厚み 9 割・力 1 割 ― 素直な力加減の手を優先する */
       const powPref = powerPref(P0, p0min);
-      /* 表示用の力加減。実際のストローク速度を VMAX 比で持つ（＝絶対値）。
-         「必要最小の何倍」で持っていた旧版は、近い球のそっとが 5 本バーの
-         「最大」として出てしまい、選んだラベルと表示が食い違っていた。 */
-      const pw  = potV(P0)/VMAX;
-      const spd = potV(P0)/SPD_V;               // 精度に効く「速さ」(1 = ひと通りの強打)
-
-      /* 通常の球速までは無罰。強打するほど精度が落ちる */
-      const sOver    = Math.max(0, spd-0.35)/0.65;
-      const speedFac = 1 + 0.55*sOver*sOver;
-      const baseErr  = errCore*speedFac;
-      const powPen   = 1 - 0.16*Math.min(spd,1.35)*Math.min(spd,1.35);
+      const {spd, pw, err:baseErr, pen:powPen} = speedCaps(P0, errCore);
 
       for(let ib=0; ib<bset.length; ib++){
         const b = bset[ib];
@@ -2938,7 +3101,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
              cuePot はクッションでの減衰も滑走ぶんも含んでいないので、
              クッションを使う手・強い手ほど表示と再生が食い違っていた
              （実測: 最大＋押しの一発で 表示 199″ / 実際 115″）。 */
-          let run = 0;
+          let run = 0, dirx = 0, diry = 0;
           let brk = 1, brkPref = 1, hitRes = null;
           if(still){ ex=pd.gx; ey=pd.gy; }
           else{
@@ -2949,6 +3112,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
             simulate(CUE.st,others,false,true);
             ex=SIM.x; ey=SIM.y; rails=SIM.rails; scr=SIM.scratch; hitb=SIM.hit;
             run=SIM.run;                      // resolveHits が SIM を上書きする前に取る
+            dirx=SIM.dirx; diry=SIM.diry;     // 到達の向き（→ ラインに乗せる・極意⑧）
             if(hitb && fine && SIM.hits.length){
               const hs=SIM.hits.slice();        // SIM は使い回しなので先に複製
               hitRes = resolveHits(hs, others, false);
@@ -2999,7 +3163,15 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
           const sidePick = !!sideOk && !scr && pos >= SIDE_POS_OK
                         && nv >= SIDE_NV_OK*nvMax[sIdx];
           const sideFac  = sidePick ? SIDE_PREF/(lastPen*angP) : 1;
-          const pref = imm*pos*lastPen*nearP*hardP*angP*powPref*distPen*tipPref*sideFac*brkPref;
+          /* 成功率の低いカットは撞かない（極意⑦）。
+             他に手が無ければ選ばれるよう、下限を残した掛け算で効かせる。 */
+          const qP = shotQualityPref(q0, isLast);
+          /* ラインに乗せる（極意⑧）。仕上げのルート探索でだけ効かせる。
+             最後の一発は次の球が無いので対象外。 */
+          const lopP = (fine && !isLast && !still)
+                     ? lineOfPosition(k, ex, ey, dirx, diry, run) : 1;
+          const pref = imm*pos*lastPen*nearP*hardP*angP*powPref*distPen*tipPref*sideFac*brkPref
+                     * qP*lopP;
           const val = pref*nvw;
           if(val<=0) continue;
 
@@ -3014,6 +3186,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
           SI.tx=tx; SI.ty=ty; SI.ax=ax; SI.ay=ay; SI.E0=E0;
           SI.needRail = (rails>0);
           SI.sidePick = sidePick;
+          SI.lop = lopP;
           SI.pref = pref;
           cb(val);
         }
@@ -3033,7 +3206,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
   const list = LAY.combo[k], others = LAY.others[k];
   if(!list || !list.length) return;
   if(noEnglish) aset = A_NONE;
-  const {lim, cbRail, bMaxUp, bMaxDn, aMax} = bridgeCaps(cx,cy);
+  const {cbRail, bMaxUp, bMaxDn, aMax} = bridgeCaps(cx,cy);
 
   for(let ci=0; ci<list.length; ci++){
     const cd = list[ci];
@@ -3048,8 +3221,10 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
     const gap=Math.min(gapC, cd.gap);
     const sinT=Math.sqrt(Math.max(0,1-cosT*cosT));
     const c2=cosT*cosT, k2=cd.cos2*cd.cos2;
-    const cl=closeLim(d1);
-    const bUpL=cl<1?Math.min(bMaxUp,TIPMAX*cl):bMaxUp, bDnL=bMaxDn*cl, aMaxL=aMax*cl;
+    const {up:bUpL, dn:bDnL, a:aMaxL} = tipCaps(d1, bMaxUp, bMaxDn, aMax);
+    /* 接線方向は撞点にも力加減にも依らないので、ここで 1 度だけ出す
+       （以前は撞点のループの中で毎回同じ計算をしていた）。 */
+    const {x:tx, y:ty} = tangentDir(ax, ay, cd.wx, cd.wy, cosT);
 
     /* 必要最小：1 球目が dk 走り、9 番が dL 走るだけの勢いを渡す */
     const need = (cd.dk/OBJ_RUN + 1.15*cd.dL/(OBJ_REACH*Math.max(k2,0.25)));
@@ -3064,11 +3239,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
     for(let ip=0; ip<np; ip++){
       const P0 = POTBUF[ip];
       const powPref = powerPref(P0, p0min);
-      const pw  = potV(P0)/VMAX;                // 表示用（VMAX 比の絶対値）
-      const spd = potV(P0)/SPD_V;
-      const sOver = Math.max(0, spd-0.35)/0.65;
-      const baseErr = errCore*(1 + 0.55*sOver*sOver);
-      const powPen  = 1 - 0.16*Math.min(spd,1.35)*Math.min(spd,1.35);
+      const {spd, pw, err:baseErr, pen:powPen} = speedCaps(P0, errCore);
 
       for(let ib=0; ib<bset.length; ib++){
         const b = bset[ib];
@@ -3078,9 +3249,6 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
         const obPot=Q1*c2*E_XFER;
         /* 1 球目が dk 走ってから 9 番へ渡し、9 番が dL 走れるか（§08 の二相込み） */
         if((obPot - cd.dk/OBJ_RUN)*k2*OBJ_REACH < cd.dL*1.04) continue;
-        let tx=ax-cd.wx*cosT, ty=ay-cd.wy*cosT;
-        const tm=Math.hypot(tx,ty);
-        if(tm>1e-6){ tx/=tm; ty/=tm; } else { tx=-cd.wy; ty=cd.wx; }
         const bPen=1-0.30*b*b*(b<0?1.5:1);
 
         for(let ia=0; ia<aset.length; ia++){
@@ -3100,7 +3268,9 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
             ex=SIM.x; ey=SIM.y; scr=SIM.scratch; run=SIM.run;
           }
           const imm=q0*powPen*bPen*aPen*(scr?0.03:1);
-          const pref=imm*powPref*COMBO_PREF;
+          /* コンビも「成功率の低い一発は撞かない」（極意⑦）。決まれば上がりだが、
+             外せばそのまま相手の番になるので、素の入れ以上に低い成功率は選ばない。 */
+          const pref=imm*powPref*COMBO_PREF*shotQualityPref(q0, true);
           if(pref<=0) continue;
 
           SI.pd=cd; SI.combo=cd; SI.b=b; SI.a=a; SI.P0=P0; SI.f=f;
@@ -3111,7 +3281,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
           { const fm=Math.hypot(fx,fy);
             SI.ux = fm>1e-6 ? fx/fm : 0; SI.uy = fm>1e-6 ? fy/fm : 0; }
           SI.tx=tx; SI.ty=ty; SI.ax=ax; SI.ay=ay; SI.E0=E0;
-          SI.needRail=false; SI.sidePick=false; SI.pref=pref; SI.brk=1;
+          SI.needRail=false; SI.sidePick=false; SI.pref=pref; SI.brk=1; SI.lop=1;
           cb(pref);                     // 決まれば取り切り完了なので nv は掛けない
         }
       }
@@ -3309,7 +3479,7 @@ function snapStep(k,cx,cy){
     dist:SI.dist, run:SI.run, ex:SI.ex, ey:SI.ey, rails:SI.rails, gap:SI.gap,
     scr:SI.scr, hitb:SI.hit, hitRes:SI.hitRes, q:SI.imm, q0:SI.q0, pos:SI.pos,
     brk:SI.brk,
-    sidePick:SI.sidePick,
+    sidePick:SI.sidePick, lop:SI.lop,
     cosT:SI.cosT, sinT:SI.sinT, ux:SI.ux, uy:SI.uy,
     tx:SI.tx, ty:SI.ty, ax:SI.ax, ay:SI.ay, lx:SI.pd.lx, ly:SI.pd.ly, E0:SI.E0,
     /* コンビネーション（決まれば取り切り完了）*/
@@ -3325,7 +3495,7 @@ const BREAK_KEEP = 3;
 function findPlan(sx,sy){
   const N = balls.length, BEAM = SMALL?18:26;
   const keep = LAY;
-  let beam = [{x:sx,y:sy,prob:1,prob0:1,pos:1,pref:1,score:1,steps:[],lay:BASE}];
+  let beam = [{x:sx,y:sy,prob:1,prob0:1,pos:1,pref:1,score:1,turn:0,steps:[],lay:BASE}];
   const done = [];          // コンビで上がったルート（そこで取り切り完了）
   for(let k=0;k<N;k++){
     const cand=[];
@@ -3340,9 +3510,13 @@ function findPlan(sx,sy){
       LAY = st.lay;                          // この枝が見ている盤面で列挙する
       enumShots(k, st.x, st.y, true, val=>{
         const step = snapStep(k, st.x, st.y);
-        const e = { x:SI.ex, y:SI.ey,
+        /* 手玉は一方向に回す（極意⑨）。前の手と回る向きが反転する手を軽く引く。
+           履歴が要る好みなので、ここ（ルート探索）でしか判定できない。 */
+        const turn = tableTurn(st.x, st.y, SI.ex, SI.ey);
+        const cf   = circulationPref(st.turn, turn);
+        const e = { x:SI.ex, y:SI.ey, turn,
                     prob:st.prob*SI.imm, prob0:st.prob0*SI.q0, pos:st.pos*SI.pos,
-                    pref:st.pref*SI.pref, score:st.pref*val, lay:st.lay,
+                    pref:st.pref*SI.pref*cf, score:st.pref*val*cf, lay:st.lay,
                     steps: st.steps.concat([step]) };
         (step.combo ? done : cand).push(e);
       });
@@ -3447,17 +3621,32 @@ function findBestSpot(){
    洗い出し、どちらかが入りそうならその手は除外する。
    逆に、バンクでも配置が悪い・的玉が土手・距離が遠いなどで成功率が
    極端に低ければ、そのまま有効なセーフティーとして扱う。
-   実戦の極意として、次の 5 つを評価に組み込んでいる。
+   「ビリヤードセーフティーの極意」から、次を評価に組み込んでいる。
      ・完全に隠せなくても「厚みを取らせない」だけで十分効く（hideValue）
      ・手玉と的玉を離す＝ロングセーフティーを優先する（longFac）
+     ・的玉をクッションへ押し付けて角度を殺す（obRail・TYPE 05）
      ・直接隠せないときはクッションで手玉を難所へ送る（cRails）
+     ・逃げ道を塞ぐ ── キック筋の本数（snookRead）と、
+       ジャンプ・カーブの成立距離（escapeDeny）
      ・入れ狙いに見せて厚みをわずかに外す「攻めた振り」（disguiseOf）
      ・転がしてからの密着は狙って作れないので当てにしない（freezeErr）
+     ・入れられるバンクを残す手は選ばない（SAFE_BANK_VETO）
    さらに狙い/力加減を振って「その通りに打てなくても成立するか」を測り、
    成立率の高い（＝確率の高い）セーフティーを選ぶ。
    ========================================================================= */
 const SAFE_OK_Q   = 0.10;   // 相手に残してよい直球（カット）のシュート率
 const SAFE_BANK_Q = 0.12;   // 相手に残してよいバンクの成功率（バンクは元々入りにくい）
+/* --- バンクで入る配置は作らない（絶対に踏まない線）-----------------------
+   「ビリヤードセーフティーの極意」第 3 章。隠しても、あるいは厚みを消しても、
+   相手に 1 クッションで入れられる筋を残したのでは守りになっていない。
+   SAFE_BANK_Q（12%）は「良い守り」の目安だが、これは上を目指す基準であって、
+   下回れなければ手が無くなる場面もある。
+   それとは別に「ここから先は絶対に踏まない」線を持つ。
+   バンクの成功率が SAFE_BANK_VETO を超える手は、他の点数がどれだけ高くても
+   選ばない（＝相手にほぼ確実に入れられる配置は、そもそもセーフティーではない）。
+   全候補がこの線に掛かる配置だけ、いちばんバンクの薄い手を最後の手段として出し、
+   パネルに警告を添える。 */
+const SAFE_BANK_VETO = 0.60;
 /* 「成立」と呼ぶのに要る成立率。自分の成功率重視は 9 本中 6 本。
    相手の失敗率重視は「自分の成功率が多少下がってもよい」方針なので
    9 本中 4 本まで許し、そのぶん相手を困らせる手を取れるようにする。 */
@@ -3603,7 +3792,7 @@ function tightness(cEnd, oEnd, cRun, oRun){
      hitFull   = 相手が取れる最大の「厚み」（1 = 真っ芯 / 0.3 以下 = かすりだけ） */
 const FROZEN_EPS = 0.20;   // これ以下のすき間は「密着（＝すでに当たっている）」[inch]
 function opponentBest(cx,cy,ob,others){
-  const cbRail = 1 + CBRAIL_K*(1-bridgeLim(cx,cy));
+  const cbRail = cueRailFac(cx,cy);
   const railOb = railNear(ob.x, ob.y);
   let maxQ=0, bestPi=-1, bgx=0, bgy=0;
   for(let pi=0;pi<6;pi++){
@@ -3704,6 +3893,67 @@ function snookRead(cx, cy, ob, others){
     if(onOb) ways++; else foul++;
   }
   return {tight: clamp(1 - ways/KICK_OK, 0, 1), foul: foul/KICK_DIRS};
+}
+
+/* --- 逃げ道（条件Ⅳ）── ジャンプとカーブを封じる ------------------------
+   「ビリヤードセーフティーの極意」第 1 章の四条件（視界・距離・角度・逃げ道）
+   のうち、逃げ道だけが 3 本に分かれている ── キック／ジャンプ／カーブ。
+   キックの本数は snookRead が数えているので、ここは残る 2 本を測る。
+   第 3 章が明言するとおり、どちらも成否を決めているのは距離である。
+
+     ジャンプ … 邪魔球を跳び越すには、手玉の下端が邪魔球の上端より高くなる
+                 までの助走が要る。球径 d に対して中心が 1.5d まで上がる必要が
+                 あり、現実的な打ち出し角では水平に球 3 個分（≒ 6.75″）。
+                 それより近ければ、跳ぶ前に邪魔球へ当たってしまう。
+                 手玉がクッション際ならキューを立てられないので、これも封じ。
+     カーブ  … 邪魔球を回り込んでから的玉までに、曲がりきる距離が要る。
+                 邪魔球と的玉が近ければ、曲げても間に合わない。
+                 ＝「邪魔球は的球に近いほど強い」（第 2 章）と同じことを、
+                   逃げ道の側から測っていることになる。
+
+   0 = どちらも自由に使える ／ 1 = 二本とも封じている。
+   壁が無い（＝そもそも隠していない）配置では 0 を返す。
+   キック筋の走査（snookRead）と同じく、上位候補にだけ掛ける。 */
+const JUMP_RUN  = 3*BD;    // これ未満の助走では跳べない [inch]
+const CURVE_RUN = 5*BD;    // 邪魔球→的玉がこれ未満なら曲げ切れない [inch]
+function escapeDeny(cEnd, oEnd, others){
+  const dx=oEnd.x-cEnd.x, dy=oEnd.y-cEnd.y, L2=dx*dx+dy*dy;
+  if(L2 < 1e-6) return 0;
+  /* 手玉→的玉の線をいちばん強く塞いでいる球＝相手が越えなければならない壁 */
+  let wall=null, wd=Infinity;
+  for(let i=0;i<others.length;i++){
+    const b=others[i];
+    const t=((b.x-cEnd.x)*dx+(b.y-cEnd.y)*dy)/L2;
+    if(t<=0.02 || t>=0.98) continue;                  // 線分の内側にある球だけが壁になる
+    const px=cEnd.x+dx*t-b.x, py=cEnd.y+dy*t-b.y;
+    const off=Math.hypot(px,py);
+    if(off > BD*1.6) continue;                        // 離れすぎ＝塞いでいない
+    if(off < wd){ wd=off; wall=b; }
+  }
+  if(!wall) return 0;
+  const dCB = Math.hypot(wall.x-cEnd.x, wall.y-cEnd.y);   // 手玉→壁（＝ジャンプの助走）
+  const dOB = Math.hypot(wall.x-oEnd.x, wall.y-oEnd.y);   // 壁→的玉（＝カーブの曲げ代）
+  const jump  = clamp(1 - (dCB-BD)/(JUMP_RUN -BD), 0, 1);
+  const rail  = 1 - bridgeLim(cEnd.x, cEnd.y);            // 0〜0.8 キューを立てられない
+  const curve = clamp(1 - (dOB-BD)/(CURVE_RUN-BD), 0, 1);
+  return clamp(0.55*Math.max(jump, rail) + 0.45*curve, 0, 1);
+}
+
+/* --- finals に残った手だけ、飛ばしていたバンクを測り直す -----------------
+   opponentBest は探索を軽くするため、直球だけで既に基準を大きく超えている手
+   （maxQ > SAFE_OK_Q·2）ではバンクを評価せず bankNA = true・bankQ = 0 で返す。
+   ふだんはその手が選ばれないので問題にならないが、成立する手が 1 本も無い配置では
+   その中から「いちばんマシな手」を出すことになる。そこでバンクが未評価のまま
+   0 として通ると、バンク拒否（SAFE_BANK_VETO）が素通りしてしまう。
+   最終候補にだけ、必ず測り直す（4 クッション × 6 ポケットなので費用は小さい）。 */
+function bankRecheck(c){
+  if(!c.bankNA) return;
+  const ob = {x:c.oEnd.x, y:c.oEnd.y, n:c.n};
+  const cbRail = cueRailFac(c.cEnd.x, c.cEnd.y);
+  const bk = bankBest(c.cEnd.x, c.cEnd.y, ob, c.layout, cbRail, railNear(ob.x, ob.y));
+  c.bankQ = bk.q; c.bankPi = bk.pi; c.brx = bk.rx; c.bry = bk.ry;
+  c.bankNA = false;
+  c.threat = Math.max(c.maxQ, bk.q);
 }
 
 /* --- 相手の「セーフティー返し」------------------------------------------
@@ -3832,6 +4082,15 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
      密着は「転がした距離ぶんばらつく」ので、当てにできるぶんだけ数える。 */
   const tg = tightness(cEnd, oEnd, cRun, oRun);
   const tight = tg.t;
+  /* 的玉をクッションへ押し付ける（極意 TYPE 05 レール・フローズン）。
+     クッション際の的玉はレール沿いにしか進めず、どのポケットへも極薄になり、
+     当てても手玉を止める場所が無い。ドキュメントが「隠さない守りの最高峰」と
+     呼ぶ形で、隠せない配置ではこれが本命になる。
+     シュート率（maxQ）にも railOb として入っているが、maxQ は SAFE_OK_Q で
+     頭打ちの判定に使われるため、脅威が同じくらい低い手どうしの優劣が付かない。
+     独立した軸として持ち、レール際へ送る手を選び分けられるようにする。
+     手玉の密着（tightness）とは別物なので二重には数えない。 */
+  const obRail = railNear(oEnd.x, oEnd.y);
   const longFac = clamp(oppDist/LONG_REF, 0, 1);
   const leave = Math.max(0.16*longFac, 0.30*tight);
   let sc = (op.snookered?1.15:(1-op.threat)*(1+0.30*hide)) * (1+leave) * ctrl;
@@ -3857,7 +4116,7 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
   SF.bgx=op.bgx; SF.bgy=op.bgy; SF.oppDist=oppDist; SF.longFac=longFac;
   SF.bankQ=op.bankQ; SF.bankPi=op.bankPi; SF.brx=op.brx; SF.bry=op.bry;
   SF.bankNA=op.bankNA; SF.threat=op.threat; SF.tight=tight;
-  SF.frz=tg.frz; SF.gapRaw=tg.gap; SF.cRun=cRun; SF.oRun=oRun;
+  SF.frz=tg.frz; SF.gapRaw=tg.gap; SF.cRun=cRun; SF.oRun=oRun; SF.obRail=obRail;
   SF.hitFull=op.hitFull; SF.hide=hide;
   SF.score=sc; SF.scoreOpp=scOpp;
   SF.good=good; SF.cuePot=cuePot; SF.objPot=objPot; SF.ctrl=ctrl;
@@ -3874,7 +4133,7 @@ function snapSafety(cx,cy,target){
     bestPi:SF.bestPi, bgx:SF.bgx, bgy:SF.bgy, oppDist:SF.oppDist, longFac:SF.longFac,
     bankQ:SF.bankQ, bankPi:SF.bankPi, brx:SF.brx, bry:SF.bry, bankNA:SF.bankNA,
     threat:SF.threat, tight:SF.tight, good:SF.good, hitFull:SF.hitFull, hide:SF.hide,
-    frz:SF.frz, gapRaw:SF.gapRaw, cRun:SF.cRun, oRun:SF.oRun,
+    frz:SF.frz, gapRaw:SF.gapRaw, cRun:SF.cRun, oRun:SF.oRun, obRail:SF.obRail,
     cuePot:SF.cuePot, objPot:SF.objPot, ctrl:SF.ctrl,
     spd:SF.spd, pw:SF.pw, score:SF.score, scoreOpp:SF.scoreOpp};
 }
@@ -4018,11 +4277,19 @@ const SAFE_W = {
      long  = 手玉と的玉を離す（ロングセーフティー）
      rail  = クッションを使って手玉を難所へ送る
      disg  = 入れ狙いに見せかける（攻めた振り）
-     bank  = 相手にバンクの可能性を残す手を割り引く
+     bank  = 相手にバンクの可能性を残す手を割り引く。
+             1.2.6 から基準の方針（mine）にも効かせている ―― 相手にバンクを
+             残さないのは好みではなく守りの前提で、とくに成立する手が
+             1 本も無い配置では、この項だけが「よりマシな手」を選び分ける
      foul  = ほぼ確実にファウルになる配置を選ぶ
      fhide = 遠めの的玉の裏に隠す＝隠す × 距離
-   後ろの 3 つは「相手の失敗率重視」だけに効かせる（mine は 0）。
-   基準の方針（自分の成功率重視）が出す答えを変えないため。
+     orail = 的玉をクッションへ押し付ける（TYPE 05 レール・フローズン）。
+             レール際の的玉はどのポケットへも極薄になり、当てても出しが利かない
+     esc   = 逃げ道（条件Ⅳ）のうち ジャンプとカーブを封じている度合い。
+             キック筋の本数は snk が見ているので、ここは残る 2 本。
+             隠せていない配置では意味が無いので hide を掛けて効かせる
+   foul と fhide は「相手の失敗率重視」だけに効かせる（mine は 0）。
+   基準の方針（自分の成功率重視）が出す答えを大きく変えないため。
 
    opp は「相手が返せないセーフティー」を作りに行く方針なので、
    自分の成立率（rate）はほぼ捨てて、
@@ -4033,9 +4300,11 @@ const SAFE_W = {
    に振り切る。失敗すればフリーボールを渡すという性質は
    パネルの警告と成立率の表示で伝える。 */
   mine: {rate:1.00, opp:0.12, maxq:0.06, ctrl:0.26, hide:0.22, snk:0.14, ret:0.14,
-         tight:0.10, long:0.10, rail:0.04, disg:0.05, bank:0, foul:0, fhide:0},
+         tight:0.10, long:0.10, rail:0.04, disg:0.05, bank:0.20, foul:0, fhide:0,
+         orail:0.10, esc:0.10},
   opp : {rate:0.06, opp:1.00, maxq:0.70, ctrl:0.08, hide:1.05, snk:0.80, ret:0.55,
-         tight:0.30, long:0.42, rail:0.12, disg:0.06, bank:0.70, foul:0.80, fhide:0.55}
+         tight:0.30, long:0.42, rail:0.12, disg:0.06, bank:0.70, foul:0.80, fhide:0.55,
+         orail:0.28, esc:0.42}
 };
 /* セーフティー自体の実行難度。
    旧版は取り切り側に aPen があるのに、セーフティー側には捻りの減点が
@@ -4055,7 +4324,17 @@ function safeExec(c){
      ・ほぼ確実にファウルになる配置（foul）
      ・遠めの的玉の裏に隠す配置（隠す × 距離）
    のどちらかへ寄せる。 */
-function bankRisk(c){ return clamp((c.bankQ||0)/SAFE_BANK_Q, 0, 1); }
+function bankRisk(c){
+  const q = c.bankQ||0;
+  /* 旧版は目標（SAFE_BANK_Q ＝ 12%）で頭打ちだったので、
+     12% のバンクと 35% のバンクがまったく同じ点になっていた。
+     成立する手が 1 本もない配置ではその中から選ぶことになるので、
+     「より入りやすいバンクを残す手」を止められない。
+     目標までを 0→1、そこから拒否線（SAFE_BANK_VETO）までを 1→2 として、
+     目標を超えたぶんも効き続けるようにする。 */
+  if(q <= SAFE_BANK_Q) return clamp(q/SAFE_BANK_Q, 0, 1);
+  return 1 + clamp((q-SAFE_BANK_Q)/(SAFE_BANK_VETO-SAFE_BANK_Q), 0, 1);
+}
 function safeRank(c, pref){
   const w=SAFE_W[pref||safePref]||SAFE_W.mine;
   const s = w.rate*c.rate + w.opp*(1-c.meanQ) + w.maxq*(1-c.threat)
@@ -4064,6 +4343,8 @@ function safeRank(c, pref){
        + w.tight*c.tight
        + w.long*c.longFac + w.rail*clamp(c.cRails,0,2)/2 + w.disg*(c.disg||0)
        + w.foul*(c.foul||0) + w.fhide*c.hide*c.longFac
+       + w.orail*(c.obRail||0)
+       + w.esc*(c.escDeny||0)*c.hide
        - w.bank*bankRisk(c)
        + 0.04*c.score;
   /* bank は唯一の減点項なので、望みの無い候補ばかりのときに素点が負へ回り込むと
@@ -4092,6 +4373,7 @@ function divergeOpp(pool, alts, best){
   /* 自分の成功率重視の選び方をそのまま真似る（成立する手を優先し、その中で最良） */
   let mine=null;
   for(const c of pool){
+    if(c.bankVeto) continue;                 // バンク拒否に掛かった手は比較対象にしない
     if(mine && (mine.good > c.good ||
        (mine.good===c.good && safeRank(mine,'mine') >= safeRank(c,'mine')))) continue;
     mine=c;
@@ -4148,6 +4430,16 @@ function findSafety(cx,cy){
       ? snookRead(c.cEnd.x, c.cEnd.y, {x:c.oEnd.x,y:c.oEnd.y}, c.layout)
       : {tight:0, foul:0};
     c.snook = sk.tight; c.foul = sk.foul;
+    /* 逃げ道（条件Ⅳ）の残り 2 本 —— ジャンプとカーブを封じているか。
+       壁が無い配置では 0 が返るので、隠していない手には効かない。 */
+    c.escDeny = escapeDeny(c.cEnd, c.oEnd, c.layout);
+    /* バンクが未評価（bankNA）のまま残っている手は、ここで必ず測り直す。
+       そのうえで「6 割以上で入るバンクを残す手は選ばない」を立てる。
+       この拒否は good とは別の絶対条件なので、good を落とすだけでなく
+       最終の選抜からも外す（→ usable）。 */
+    bankRecheck(c);
+    c.bankVeto = (c.bankQ||0) >= SAFE_BANK_VETO;
+    if(c.bankVeto) c.good = false;
     c.ret=0;
     /* 途中でキスする手は、その先が読めない＝おすすめできない */
     c.kiss = kissSafety(c, others);
@@ -4168,21 +4460,29 @@ function findSafety(cx,cy){
      ret を読んでいない候補は ret=0（＝返されない）扱いで満点が付いてしまうので、
      最終の選抜も「ret を読んだ候補」だけで行う（相手の失敗率重視では
      ret の重みが大きく、読まずに勝ち上がると読み違いになる）。 */
-  top.sort((x,y)=>(y.good-x.good)||(y.rank-x.rank));
+  top.sort((x,y)=>(x.bankVeto-y.bankVeto)||(y.good-x.good)||(y.rank-x.rank));
   const finals=top.slice(0, opp ? 12 : 8);
   for(const c of finals){
     c.ret=returnSafety(c.cEnd, c.oEnd, c.n, c.layout);
     c.rank=safeRank(c);
   }
+  /* バンク拒否 —— 6 割以上で入るバンクを残す手は、他がどれだけ良くても選ばない。
+     全部が拒否に掛かる配置だけ、いちばんバンクの薄い手を最後の手段として出す
+     （その手には lastResort を立てて、パネルで警告する）。 */
+  let usable = finals.filter(c=>!c.bankVeto);
+  if(!usable.length){
+    usable = finals.slice().sort((x,y)=>(x.bankQ||0)-(y.bankQ||0)).slice(0,1);
+    if(usable[0]) usable[0].lastResort = true;
+  }
   let best=null, bestGood=null;
-  for(const c of finals){
+  for(const c of usable){
     if(!best||c.rank>best.rank) best=c;
     if(c.good && (!bestGood||c.rank>bestGood.rank)) bestGood=c;
   }
   /* 成立する手があるかぎり、入れ筋を残す手は選ばない */
   const pick = bestGood || best;
   /* 自分の成功率重視と同じ一手なら、相手の失敗率重視は別パターンを選び直す */
-  return opp ? divergeOpp(top, finals, pick) : pick;
+  return opp ? divergeOpp(top, usable, pick) : pick;
 }
 
 /* フリーボールでのセーフティー最適位置 */
@@ -4197,8 +4497,10 @@ function findSafeSpot(){
     let bs=0;
     for(const th of TH_C) for(const b of SB_C) for(const a of SA_C) for(const pa of SP_C){
       if(!trySafety(x,y,target,others,th,b,a,Math.max(pa,12))) continue;
-      /* 入れ筋（直球・バンク）を残す手しか作れない位置は大きく割り引く */
-      const v = SF.good ? SF.score : SF.score*0.45;
+      /* 入れ筋（直球・バンク）を残す手しか作れない位置は大きく割り引く。
+         6 割以上で入るバンクを与えてしまう位置は、置き所として論外なので更に落とす。 */
+      const v = (SF.bankQ >= SAFE_BANK_VETO) ? SF.score*0.10
+              : SF.good ? SF.score : SF.score*0.45;
       if(v>bs) bs=v;
     }
     if(bs>0) list.push({x,y,s:bs});
@@ -5847,6 +6149,7 @@ function renderSafetyPanel(){
   const sf=safety, r=sf.rate, rc=pctColor(r,0.7,0.4);
   /* snook / foul / ret は上位候補だけに付く値。付いていない手は 0 として扱う */
   sf.snook = sf.snook||0; sf.foul = sf.foul||0; sf.ret = sf.ret||0;
+  sf.escDeny = sf.escDeny||0; sf.obRail = sf.obRail||0;
   setSummary(r, rc);
   $('sMiss').textContent=sf.good?'成立':'不成立';
   $('sDist').textContent=Math.round(sf.cuePot)+'″';
@@ -5876,8 +6179,10 @@ function renderSafetyPanel(){
   if(sf.cHit) ws.push('⚠ 手玉が他の球に当たって、その球も動きます。');
   if(!sf.snookered && sf.maxQ>SAFE_OK_Q)
     ws.push(`⚠ 相手に ${Math.round(sf.maxQ*100)}% の直球（カット）が残ります（目標は ${Math.round(SAFE_OK_Q*100)}% 以下）。`);
-  if(!sf.snookered && bankQ>SAFE_BANK_Q)
-    ws.push(`⚠ 相手に ${Math.round(bankQ*100)}% のバンクが残ります（目標は ${Math.round(SAFE_BANK_Q*100)}% 以下）。`);
+  if(sf.lastResort)
+    ws.push(`⚠ この配置では、どう撞いても相手に ${Math.round(SAFE_BANK_VETO*100)}% 以上のバンクが残ります。本来こういう手は選びませんが、他に手が無いのでいちばんバンクの薄い一手（${Math.round(bankQ*100)}%）を出しています。<b>セーフティーで解決できる配置ではありません</b>。取り切りに戻すか、当てて遠ざけるだけの手も検討してください。`);
+  else if(!sf.snookered && bankQ>SAFE_BANK_Q)
+    ws.push(`⚠ 相手に ${Math.round(bankQ*100)}% のバンクが残ります（目標は ${Math.round(SAFE_BANK_Q*100)}% 以下、${Math.round(SAFE_BANK_VETO*100)}% 以上は選びません）。`);
   if(!sf.snookered && sf.hide>=0.35 && sf.maxQ<=SAFE_OK_Q)
     ws.push(`ℹ 完全には隠れていませんが、相手が取れる厚みは最大 ${Math.round(sf.hitFull*100)}% です。入れても次が作れません。`);
   if(sf.snookered && sf.snook<0.35)
@@ -5890,6 +6195,14 @@ function renderSafetyPanel(){
     ws.push(`ℹ 相手の失敗率重視では、バンクの可能性が残る手を割り引いています。`
       + `この手にはまだ ${Math.round(bankQ*100)}% のバンクが残るので、`
       + `別の位置からならファウル狙い（隠す）か、遠めの${sf.n}番の裏に隠す手が作れるかもしれません。`);
+  /* 逃げ道（条件Ⅳ）── キック筋の本数は上で出しているので、残る 2 本を伝える */
+  if(sf.hide>=0.35 && sf.escDeny>=0.55)
+    ws.push(`ℹ 壁と手玉が近く、相手は<b>ジャンプもカーブも使えません</b>（封じ具合 ${Math.round(sf.escDeny*100)}%）。跳ぶには球 3 個ぶんの助走、曲げるには的玉までの距離が要りますが、どちらも足りていません。残る逃げ道はクッション経由のキックだけです。`);
+  else if(sf.hide>=0.35 && sf.escDeny<=0.20)
+    ws.push(`⚠ 隠してはいますが、手玉と壁が離れているので相手は<b>ジャンプやカーブで抜けられます</b>。手玉をもっと壁の裏（球 1〜2 個分）か、クッション際まで寄せられると封じられます。`);
+  /* 的玉をクッションへ押し付ける ── 隠さない守りの最高峰（TYPE 05） */
+  if(sf.obRail>=0.70 && !sf.snookered)
+    ws.push(`ℹ ${sf.n}番をクッション際へ押し付けています。レール沿いにしか進めないのでどのポケットへも極薄になり、当てても手玉を止める場所がありません（隠さない守りの型）。`);
   if(sf.diverged)
     ws.push(`ℹ この配置では「自分の成功率重視」と答えが重なったので、`
       + `別のパターンのセーフティーを選び直しています。2 つを見比べて、`
@@ -5930,6 +6243,10 @@ function renderSafetyPanel(){
   const bankTag = (!sf.snookered && bankQ>0.02)
     ? `<span class="tag ${bankQ<=SAFE_BANK_Q?'s':'w'}">バンク ${Math.round(bankQ*100)}%</span>` : '';
   /* 実戦の極意がどれだけ効いた手なのかをタグで示す */
+  const orailTag = (sf.obRail>=0.70)
+    ? `<span class="tag s">${sf.n}番をレール際へ（角度を殺す）</span>` : '';
+  const escTag = (sf.hide>=0.35 && sf.escDeny>=0.55)
+    ? `<span class="tag s">ジャンプ・カーブを封じる</span>` : '';
   const thinTag = (!sf.snookered && sf.hide>=0.30)
     ? `<span class="tag s">厚みを消す（相手は最大 ${Math.round(sf.hitFull*100)}% の当たり）</span>` : '';
   const longTag = sf.oppDist>=45
@@ -5973,6 +6290,8 @@ function renderSafetyPanel(){
           ${retTag}
           ${thinTag}
           ${tightTag}
+          ${orailTag}
+          ${escTag}
           ${longTag}
           ${railTag}
           ${disgTag}
@@ -6074,9 +6393,22 @@ function renderPanel(){
       + `割った先の配置は当たり方しだいなので、実際に撞いたあとで置き直して見直してください。`);
   /* 撞点と到達時の回転の食い違いは、多球だと同じ文が並ぶので
      球番号だけ集めて 1 行にまとめる */
+  /* 成功率の低いカット（極意⑦）と、ポジションラインを横切る出し（極意⑧）。
+     どちらも「避ける組み立て」にしてあるので、残っていること自体が
+     この配置の性質を表している。ラインの注記は多球で並ぶと読みにくいので、
+     いちばん横切っている 1 手だけにまとめる。 */
+  let lopWorst=null;
+  for(const s of plan.steps)
+    if(s.lop!==undefined && s.lop < 0.90 && (!lopWorst || s.lop < lopWorst.lop)) lopWorst=s;
+  if(lopWorst)
+    ws.push(`ℹ ${lopWorst.n}番の後、手玉は次の球の<b>ポジションライン</b>（的玉とポケットを結ぶ線の、手玉側への延長）を横切る向きから入ります。この向きだと強弱のわずかな誤差がそのままフリ角の変動になるので、この一手は距離より<b>入る向き</b>を合わせてください。ラインに沿って入る筋は、この配置では作れませんでした。`);
   const rollOnly=[], drawGone=[];
   for(const s of plan.steps){
     if(s.scr) ws.push(`⚠ ${s.n}番の後、スクラッチの危険。`);
+    /* 成功率の低いカットは撞かない組み立てにしているので、
+       残っているということは他に繋がる筋が無かったということ。 */
+    if(s.q0 < SHOTQ_TAG)
+      ws.push(`⚠ ${s.n}番のシュート率は ${Math.round(s.q0*100)}% しかありません。${Math.round(SHOTQ_OK*100)}% を下回るカットは避ける組み立てですが、この配置ではこれ以外に最後まで繋がる筋がありませんでした（割った先や、狙える口が 1 つしかない球で起きます）。ここは出しより<b>入れそのもの</b>を優先してください。`);
     if(s.hitb){
       const mv=s.mv||[];
       const moved=mv.filter(m=>!m.potted).map(m=>`${m.n}番`).join('・');
