@@ -1167,12 +1167,14 @@ POCKETS.forEach(p=>{
   p.shelf= p.corner ? CORNER_SHELF : SIDE_SHELF;
   p.accPot = potAccMax(p.mouth, p.jawA);        // 落ちる向きの上限 [rad]
   p.cosPot = Math.cos(p.accPot);
+  /* 落ち口（描画・再生で球が消える点）。マウス線より少し奥に置く。 */
+  p.dropx = p.mx + p.ax*1.6;  p.dropy = p.my + p.ay*1.6;
 });
 const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.2.4';
+const VERSION = '1.2.5';
 
 /* =========================================================================
    物理定数 —— 「ビリヤード物理学ハンドブック」§00 に準拠
@@ -1732,11 +1734,27 @@ function potHit(x,y,dx,dy,tmax,pk){
   const q = (x+dx*t-pk.mx)*pk.tgx + (y+dy*t-pk.my)*pk.tgy;
   return Math.abs(q) <= pk.mhalf ? t : Infinity;       // マウスの中を通ったか
 }
-/* 鼻先に沿った座標が「ポケットの口＝クッションが無い区間」に入っているか。
+/* 鼻先の面を横切る点が「ポケット pk の口＝クッションが無い区間」に入っているか。
    落ちる球はここを素通りしてマウス線まで進み、落ちない球はジョーに当たって
-   戻る（ジョー面はマウス線の外側にあるので、鼻先の面で近似する）。 */
-function mouthGapX(x){ return x<CJT || x>W-CJT || (x>W/2-SJT && x<W/2+SJT); }
-function mouthGapY(y){ return y<CJT || y>HT-CJT; }
+   戻る（ジョー面はマウス線の外側にあるので、鼻先の面で近似する）。
+
+   ジョー先端は刃のようにとがっているので、球の中心が先端から R 以内で
+   鼻先の面を横切る場合、当たっているのは「面」ではなく「先端の角」である。
+   このとき接触の法線は 先端 → 球心 の向き（＝ほぼ進行方向）になるので、
+   球は台へ跳ね返されずポケットへ吸い込まれる。旧版は鼻先の面をそのまま
+   延長していてここを R ぶん狭く見ており、口へ入る球を弾き返していた
+   （実測: コーナーへフリ 26°で入れる球が全滅。的玉がジョーに蹴られて
+   台へ戻るのに、ルート上は「入った」ことになって次の球へ進んでいた）。
+
+   判定を「どのポケットの口か」まで含めているのは、口の素通りを許すのは
+   その球がいま入ろうとしているポケットだけ、という当たり前を守るため
+   （鼻先を走る球が、遠くのポケット目がけて飛んでいるという理由で
+   手前のクッションをすり抜ける、という抜けをここで塞いでいる）。 */
+const MOUTH_R = R;
+function inMouth(pk, x, y){
+  const h = (pk.corner ? CJT : SJT) + MOUTH_R;
+  return Math.abs(x-pk.x) < h && Math.abs(y-pk.y) < h;
+}
 function segClearM(ax,ay,bx,by,balls,rad){
   const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy, r2=rad*rad;
   if(L2<1e-9) return true;
@@ -2088,16 +2106,23 @@ function simulate(st, balls, rec, resolve){
          落ちない向き（浅すぎる球・土手に沿って走る球）は口の位置でも
          ジョーに当たって台へ戻るので、鼻先の面をそのまま残す。 */
       let t=L, kind=0, nx=0, ny=0, bi=-1;
-      let tPot=Infinity;
+      /* 口を素通りしてよいのは「いま入ろうとしているポケット」だけ。
+         その判定は弦の長さに依らない形（tmax なし）で取る —— 弦を刻んだ
+         都合でマウス線が次の弦に回っただけの球まで、鼻先で弾き返して
+         いたため（実測: サイドの口に置いた球を撞くと、口の中で
+         クッションに当たって台へ戻る手が 0.05% 残っていた）。 */
+      let tPot=Infinity, gate=null, tGate=Infinity;
       for(let j=0;j<6;j++){
-        const tt=potHit(b.x,b.y,dx,dy,L,POCKETS[j]);
-        if(tt<tPot) tPot=tt;
+        const tt=potHit(b.x,b.y,dx,dy,Infinity,POCKETS[j]);
+        if(tt<tGate){ tGate=tt; gate=POCKETS[j]; }
       }
-      const gate = tPot<Infinity;                      // この弦で落ちる＝口は素通り
-      if(dx>1e-9){ const tt=(W-R-b.x)/dx;  if(tt<t && !(gate&&mouthGapY(b.y+dy*tt))){t=tt;kind=1;nx=-1;ny=0;} }
-      else if(dx<-1e-9){ const tt=(R-b.x)/dx; if(tt<t && !(gate&&mouthGapY(b.y+dy*tt))){t=tt;kind=1;nx=1;ny=0;} }
-      if(dy>1e-9){ const tt=(HT-R-b.y)/dy; if(tt<t && !(gate&&mouthGapX(b.x+dx*tt))){t=tt;kind=1;nx=0;ny=-1;} }
-      else if(dy<-1e-9){ const tt=(R-b.y)/dy; if(tt<t && !(gate&&mouthGapX(b.x+dx*tt))){t=tt;kind=1;nx=0;ny=1;} }
+      if(tGate<=L) tPot=tGate;                         // この弦の中で落ちる
+      /* tt>=0 …… 口の中まで入り込んだ球は鼻先の面をすでに越えているので、
+         クッション面までの距離が負になる。そこを拾うと進めなくなる。 */
+      if(dx>1e-9){ const tt=(W-R-b.x)/dx;  if(tt>=0 && tt<t && !(gate&&inMouth(gate,W-R,b.y+dy*tt))){t=tt;kind=1;nx=-1;ny=0;} }
+      else if(dx<-1e-9){ const tt=(R-b.x)/dx; if(tt>=0 && tt<t && !(gate&&inMouth(gate,R,b.y+dy*tt))){t=tt;kind=1;nx=1;ny=0;} }
+      if(dy>1e-9){ const tt=(HT-R-b.y)/dy; if(tt>=0 && tt<t && !(gate&&inMouth(gate,b.x+dx*tt,HT-R))){t=tt;kind=1;nx=0;ny=-1;} }
+      else if(dy<-1e-9){ const tt=(R-b.y)/dy; if(tt>=0 && tt<t && !(gate&&inMouth(gate,b.x+dx*tt,R))){t=tt;kind=1;nx=0;ny=1;} }
       if(t<0) t=0;
       for(let j=0;j<balls.length;j++){
         if(hits && struckIdx(hits,j)) continue;        // 弾いた球はもうそこに居ない
@@ -2213,43 +2238,135 @@ const BREAK_K  = 0.80;   // ブレイクアウトが成功したときに戻る�
 /* 順番外の球が落ちるのは、落ちた球を盤面から外して先を組み直すので
    「扱えない」わけではないが、狙って再現できる形ではないので減点は残す。 */
 const POTX_PEN = 0.55;
-/* (x,y) から素直に狙えるポケットの数。skip は無視する球（自分自身）。 */
+/* (x,y) から素直に狙えるポケットの数。skip は無視する球（自分自身）。
+   判定は pocketLine そのものを通す —— ここを独自の簡易判定にしていたため、
+   ゴーストボールが台からはみ出す筋まで「開いている」と数えており、
+   「割って開いた」と評価した手の先で 実際には入り筋が 1 本も無い、
+   という食い違いが出ていた（実測: 開いたと判定した手の 4 割が空振り）。 */
+const OC_BUF = [];
 function openCount(x, y, others, skip){
+  OC_BUF.length = 0;
+  for(let i=0;i<others.length;i++) if(others[i] && others[i]!==skip) OC_BUF.push(others[i]);
+  OC_POS.x = x; OC_POS.y = y;
   let n=0;
-  for(let pi=0;pi<6;pi++){
-    const pk=POCKETS[pi];
-    let lx=pk.x-x, ly=pk.y-y;
-    const d=Math.hypot(lx,ly);
-    if(d<1) continue;
-    lx/=d; ly/=d;
-    if(lx*pk.ax + ly*pk.ay < pk.cosAcc) continue;
-    let blocked=false;
-    for(let i=0;i<others.length;i++){
-      const o=others[i];
-      if(o===skip) continue;
-      const t=clamp((o.x-x)*lx+(o.y-y)*ly, 0, d);
-      const px=x+lx*t-o.x, py=y+ly*t-o.y;
-      if(px*px+py*py < BD*BD){ blocked=true; break; }
-    }
-    if(!blocked) n++;
-  }
+  for(let pi=0;pi<6;pi++) if(pocketLine(OC_POS, pi, OC_BUF, 0.6)) n++;
   return n;
 }
-/* 当たった球ごとの価値の増減をまとめて 1 つの係数にする。
-   hit.i は lay.others[k]（＝この手で残っている球）の添字。 */
-function breakFactor(lay, res, k){
-  const base = lay.others[k], oidx = lay.oidx[k];
-  let f=1;
-  for(const h of res){
-    if(h.potted){ f*=POTX_PEN; continue; }
-    const ball=base[h.i];
-    const before=openCount(h.x0, h.y0, base, ball);
-    const after =openCount(h.x,  h.y,  base, ball);
-    const gain=clamp((after-before)/2, 0, 1);
-    const worth=lay.hard[oidx[h.i]]||0;
-    f*=clamp(HITB_PEN + BREAK_K*worth*gain + 0.14*gain, 0.25, 1);
+const OC_POS = {x:0, y:0};
+/* --- 割った結果をどう採点するか ----------------------------------------
+   旧版は「弾かれた球じたいが開いたか」だけを見て、しかも係数の上限が 1 —— つまり
+   ブレイクアウトは どうやっても『減点の小さい手』にしかならなかった。
+   その結果、実測 450 ルート中で他球に当てる手を選んだのは 0 件。
+   クラスターは常に「触らずに残す」→ 最後に撞けなくなる、という組み立てになる。
+
+   実戦の判断は「割ったあとに盤面全体がどうなるか」なので、ここもそう変える。
+     ・割ったあとの位置に差し替えた盤面を作り、残っている球ぜんぶについて
+       素直に狙えるポケットの数を数え直す（弾かれた球が別の球にフタを
+       してしまえば差し引きゼロ以下、という判定がこれで入る）
+     ・弾かれた球が土手ベタ・他球に密着・そもそも撞けなくなった場合は減点
+     ・厄介な球（hardness）を開けたときほど見返りを大きく取る
+   返す値は 2 本立てにする。
+     imm  … シュート率（＝画面に出す確率）に掛ける。1 を超えない。
+             球を弾く手は結果がぶれる、という事実だけをここに残す。
+     pref … ルートの好みに掛ける。本当にトラブルが開けたときだけ 1 を超え、
+             「ここで割りに行く」を積極的に選ばせる。確率には掛けないので、
+             表示される取り切り率が水増しされることはない。
+   ※ 弾かれた球の落ち着き先（hitRes）は fine の探索でしか解いていないので、
+     粗い価値マップは今までどおり一律 HITB_PEN のまま。 */
+const BRK_TROUBLE = 0.34;  // これ以上の hardness を「割る価値のあるトラブル」とみなす
+const BRK_TSPAN   = 0.30;  // そこから満点までの幅
+const BRK_BONUS   = 1.10;  // 割りに行く価値の上乗せ幅（pref だけ）
+/* 入り筋が 1 本も無かった球を開けたときの上乗せ。ここは別格に扱う ——
+   その球を開けないかぎり取り切りは成立しないので、割らない手はどれも
+   先で行き止まりになる。開けなければ 1 倍のままなので、素直な配置で
+   むやみに球を弾く手が選ばれることはない。 */
+const BRK_FREE    = 2.60;   // 2 球開けても 2 倍まで（掛け算で暴れさせない）
+const BRK_BURY    = 0.28;  // 割った結果、撞けない球ができてしまった
+const BRK_RAIL    = 0.86;  // 弾かれた球が土手ベタになった
+const BRK_FREEZE   = 0.80; // 弾かれた球が別の球に密着した
+const BRK_FRZ_GAP  = 0.60; // これ以下のすき間を「密着」とみなす [inch]
+const BRK_JAM      = 0.32; // 割った直後、手玉がクラスターに詰まった
+/* 入り筋の本数 → 「撞ける度合い」。実戦の感覚では 0 本と 1 本の差がいちばん
+   大きく、3 本もあれば十分で そこから先はほとんど変わらない。
+   単純な引き算（本数の差）だと 3 本→5 本 を 1 本→3 本 と同じに数えてしまい、
+   もともと素直な球をさらに開ける手が「割る価値のある手」に化けていた。 */
+const SHOOT = [0, 0.50, 0.80, 1, 1, 1, 1];
+const BRKF = {imm:1, pref:1};        // 使い回し（毎回オブジェクトを作らない）
+/* 割った直後の手玉のまわりの空き。手玉がクラスターへ詰まってしまうと、
+   せっかく開けた球が撞けない —— 実戦で「割ったのに何も無い」になるのは
+   たいていこれで、ユーザーが言う「割に行った後の配置には注意が必要」の
+   中身そのもの。弾いた球は動いたあとの位置で測る。 */
+function cueRoom(ex, ey, base, res){
+  let mn = Infinity;
+  for(let i=0;i<base.length;i++){
+    let x=base[i].x, y=base[i].y, gone=false;
+    for(const h of res) if(h.i===i){ x=h.x; y=h.y; gone=!!h.potted; break; }
+    if(gone) continue;
+    const d = Math.hypot(x-ex, y-ey);
+    if(d < mn) mn = d;
   }
-  return f;
+  return mn;
+}
+function breakFactor(lay, res, k, ex, ey){
+  const base = lay.others[k], oidx = lay.oidx[k];
+  BRKF.imm = 1; BRKF.pref = 1;
+  /* 割ったあとの盤面。落ちた球は外し、動いた球は新しい位置に差し替える。 */
+  const after = base.slice();
+  let potx = 0, nMoved = 0, trouble = 0;
+  for(const h of res){
+    if(h.potted){ after[h.i] = null; potx++; continue; }
+    after[h.i] = {n:base[h.i].n, x:h.x, y:h.y};
+    nMoved++;
+    const w = lay.hard[oidx[h.i]] || 0;
+    if(w > trouble) trouble = w;
+  }
+  let f = Math.pow(POTX_PEN, potx);
+  if(!nMoved){ BRKF.imm = f || HITB_PEN; return BRKF; }
+  const aliveB = base, aliveA = after.filter(Boolean);
+
+  /* 盤面全体の「素直に狙えるポケットの数」の増減。
+     開けた球の厄介さで重みを付け、塞いでしまった球は そのまま引く。 */
+  let gain = 0, freed = 0;
+  for(let i=0;i<base.length;i++){
+    const nb = after[i];
+    if(!nb) continue;                                   // 落ちた球は POTX_PEN 側
+    const bef = openCount(base[i].x, base[i].y, aliveB, base[i]);
+    const aft = openCount(nb.x,      nb.y,      aliveA, nb);
+    if(bef===aft) continue;
+    /* 「素直な球でも塞げば損」＋「筋が細い球ほど開ける価値が高い」 */
+    const w = Math.max(lay.hard[oidx[i]] || 0, 1-SHOOT[bef], 0.25);
+    if(aft===0 && bef>0) f *= BRK_BURY;                 // 撞けない球を作った
+    if(bef===0 && aft>0) freed++;                       // 撞けなかった球を開けた
+    gain += (SHOOT[aft]-SHOOT[bef]) * w;
+  }
+  gain = clamp(gain, -1, 1);
+
+  /* 弾かれた球そのものの落ち着き先（開いていても、置き場所が悪ければ意味がない） */
+  for(const h of res){
+    if(h.potted) continue;
+    const b = after[h.i];
+    if(railNear(b.x, b.y) > 0.70) f *= BRK_RAIL;
+    for(const o of aliveA){
+      if(o===b) continue;
+      const dx=o.x-b.x, dy=o.y-b.y;
+      if(dx*dx+dy*dy < (BD+BRK_FRZ_GAP)*(BD+BRK_FRZ_GAP)){ f *= BRK_FREEZE; break; }
+    }
+  }
+
+  const up = clamp(gain, 0, 1);
+  BRKF.imm  = clamp(f * clamp(HITB_PEN + BREAK_K*up + 0.14*up, 0.25, 1), 0.02, 1);
+  /* 上乗せは「トラブルを割った × 本当に開いた」ときだけ。
+     割って悪くしたときは好みの側でも下げる。 */
+  const tw = clamp((trouble-BRK_TROUBLE)/BRK_TSPAN, 0, 1);
+  BRKF.pref = (1 + BRK_BONUS*up*tw) * clamp(1 + 0.8*Math.min(gain,0), 0.35, 1)
+            * (1 + (BRK_FREE-1)*Math.min(freed,2));
+  /* 手玉がクラスターに詰まったら、どれだけ開けても次が撞けない。
+     減点だけでなく上乗せも取り消す（＝割りに行く理由にはならない）。 */
+  if(cueRoom(ex, ey, base, res) < BD + DHIT_GAP){
+    BRKF.imm *= BRK_JAM;
+    BRKF.pref = Math.min(BRKF.pref, 1);
+  }
+  return BRKF;
 }
 /* =========================================================================
    4. 盤面状態
@@ -2437,15 +2554,37 @@ function railNear(x,y){
    ルート探索（prepare）と相手の評価（opponentBest）で共用。
    slack = ゴーストが台からわずかにはみ出すのを許す量
            （探索側は甘め 0.6、相手の評価は厳しめ 0.25）。 */
+/* --- 的玉がクッションに触れずにポケットの口まで届くか --------------------
+   取り切りでバンクショット（的玉をクッションに当てて入れる）は選ばない。
+   マウス中央を狙っていれば普通は触れないが、土手ぎわの球を薄く切る筋だけは
+   途中でクッションに乗ることがある。その筋はここで候補から外すので、
+   取り切りのルートには的玉がクッションを使う手は 1 本も出てこない
+   （割りに行った結果そうなる配置は、次の一手として改めて評価される）。 */
+function railFreeToMouth(ox, oy, lx, ly, d2, pk){
+  const t1 = 0.05, t2 = d2 - 0.05;
+  let t;
+  if(lx >  1e-9){ t=(W-R-ox)/lx;  if(t>t1 && t<t2 && !inMouth(pk,W-R,oy+ly*t)) return false; }
+  if(lx < -1e-9){ t=(R-ox)/lx;    if(t>t1 && t<t2 && !inMouth(pk,R,oy+ly*t)) return false; }
+  if(ly >  1e-9){ t=(HT-R-oy)/ly; if(t>t1 && t<t2 && !inMouth(pk,ox+lx*t,HT-R)) return false; }
+  if(ly < -1e-9){ t=(R-oy)/ly;    if(t>t1 && t<t2 && !inMouth(pk,ox+lx*t,R)) return false; }
+  return true;
+}
 function pocketLine(ob, pi, others, slack){
   const pk = POCKETS[pi];
-  let lx = pk.x-ob.x, ly = pk.y-ob.y;
+  /* 狙うのは「ポケット点」ではなく マウス中央（＝口の真ん中）。
+     コーナーのポケット点は口より 2.25″ 奥にあるので、そこへ線を引くと
+     フリの大きい球ほど手前のジョーへ食い込む筋になり、球は先端に蹴られる。
+     実測: この狙い方だとコーナーへの手の 25% で的玉がクッションに乗り、
+     フリ 26°付近では入らずに台へ戻っていた。口の真ん中を狙えば
+     マウス線をちょうど中央で横切るので、どのフリ角でも素直に落ちる。 */
+  let lx = pk.mx-ob.x, ly = pk.my-ob.y;
   const d2 = Math.hypot(lx,ly);
   if(d2 < 1) return null;
   lx /= d2; ly /= d2;
   const cosPhi = lx*pk.ax + ly*pk.ay;
   if(cosPhi < pk.cosAcc) return null;                       // ポケットの受け角の外
-  const gap = segGap(ob.x,ob.y,pk.x,pk.y,others);           // 的玉→ポケットのすき間
+  if(!railFreeToMouth(ob.x, ob.y, lx, ly, d2, pk)) return null; // 途中でクッションに乗る筋
+  const gap = segGap(ob.x,ob.y,pk.mx,pk.my,others);         // 的玉→ポケットのすき間
   if(gap < 0) return null;                                  // 塞がれている
   const gx = ob.x-lx*BD, gy = ob.y-ly*BD;                   // ゴーストボールの中心
   if(gx<R-slack||gx>W-R+slack||gy<R-slack||gy>HT-R+slack) return null;
@@ -2498,7 +2637,7 @@ function comboLines(lay, k){
   const out = [];
   for(let pi=0; pi<6; pi++){
     const pk = POCKETS[pi];
-    let ux=pk.x-L.x, uy=pk.y-L.y;
+    let ux=pk.mx-L.x, uy=pk.my-L.y;
     const dL=Math.hypot(ux,uy);
     if(dL<3) continue;
     /* 穴前 1 ポイントより遠い 9 番のコンビは、実戦で狙う手ではないので作らない */
@@ -2506,7 +2645,8 @@ function comboLines(lay, k){
     ux/=dL; uy/=dL;
     const cosPhi = ux*pk.ax + uy*pk.ay;
     if(cosPhi < pk.cosAcc) continue;                          // ポケットの受け角
-    const gapL = segGap(L.x,L.y,pk.x,pk.y,mid);               // 9 番→ポケット
+    if(!railFreeToMouth(L.x, L.y, ux, uy, dL, pk)) continue;  // 9 番がクッションに乗る筋
+    const gapL = segGap(L.x,L.y,pk.mx,pk.my,mid);             // 9 番→ポケット
     if(gapL < 0) continue;
     const g2x=L.x-ux*BD, g2y=L.y-uy*BD;                       // 1 球目が 9 番に当たる位置
     if(g2x<R-0.4||g2x>W-R+0.4||g2y<R-0.4||g2y>HT-R+0.4) continue;
@@ -2604,6 +2744,10 @@ function prepare(){
    ※ 結果は使い回しの SI に書き込まれる。cb の中で必要な値を読むか、
      snapStep() で複製すること（cb を抜けると次の候補で上書きされる）。
    ========================================================================= */
+/* 割りに行く手を候補として残すための、行き先の最低限の値（→ forEachShot）。
+   台でいちばん良いマスに対する割合で持つ —— 絶対値で持つと、全体の値が
+   小さい難しい配置では この下駄がいちばん良いマスより高くなってしまう。 */
+const NV_BREAK = 0.10;
 const SI = {};                               // いま評価中の一手（使い回し）
 const POTBUF = new Float64Array(12);         // 力加減の候補（毎回作らず再利用）
 
@@ -2795,7 +2939,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
              クッションを使う手・強い手ほど表示と再生が食い違っていた
              （実測: 最大＋押しの一発で 表示 199″ / 実際 115″）。 */
           let run = 0;
-          let brk = 1, hitRes = null;
+          let brk = 1, brkPref = 1, hitRes = null;
           if(still){ ex=pd.gx; ey=pd.gy; }
           else{
             /* 他球に当たったら 2 球衝突を解いて走り続ける（クラスター処理）。
@@ -2808,15 +2952,28 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
             if(hitb && fine && SIM.hits.length){
               const hs=SIM.hits.slice();        // SIM は使い回しなので先に複製
               hitRes = resolveHits(hs, others, false);
-              brk = breakFactor(LAY, hitRes, k);
+              /* resolveHits が SIM を上書きするので、手玉の落ち着き先は ex,ey で渡す */
+              breakFactor(LAY, hitRes, k, ex, ey);
+              brk = BRKF.imm; brkPref = BRKF.pref;
             } else if(hitb) brk = HITB_PEN;
           }
 
           /* 手玉を長く走らせるほど到達点がブレる → ぼかしの強い価値マップで評価 */
           const sIdx = rails===0 ? (cuePot<14?0 : (cuePot<40?1:2))
                                  : (rails===1 ? (cuePot<45?1:2) : 3);
-          const nv = nextV[sIdx][cellIdx(ex,ey)];
-          if(nv<=0) continue;
+          let nv = nextV[sIdx][cellIdx(ex,ey)];
+          if(nv<=0){
+            /* 価値マップは「割る前の配置」で 1 度だけ作っているので、
+               割ったあとに立つ筋はここには載っていない。手玉をクラスターへ
+               走らせる手は行き先の値が 0 と出るのがふつうで、旧版はそこで
+               候補ごと捨てていた（＝割る手が最初から存在しない）。
+               割りに行く手だけは最低限の値を与えて、候補として残す。
+               実際に開いたかどうかは、この後のルート探索が
+               割ったあとの盤面で撞き直して確かめる。 */
+            if(!(hitb && brkPref > 1.05)) continue;
+            nv = NV_BREAK*nvMax[sIdx];
+            if(nv<=0) continue;
+          }
           /* 最終球から逆算：終盤は「次の球がどれだけ簡単になるか」を強く見る */
           const nvw = endgame ? Math.pow(nv, ENDGAME_POW) : nv;
 
@@ -2842,7 +2999,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
           const sidePick = !!sideOk && !scr && pos >= SIDE_POS_OK
                         && nv >= SIDE_NV_OK*nvMax[sIdx];
           const sideFac  = sidePick ? SIDE_PREF/(lastPen*angP) : 1;
-          const pref = imm*pos*lastPen*nearP*hardP*angP*powPref*distPen*tipPref*sideFac;
+          const pref = imm*pos*lastPen*nearP*hardP*angP*powPref*distPen*tipPref*sideFac*brkPref;
           const val = pref*nvw;
           if(val<=0) continue;
 
@@ -2850,6 +3007,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
           SI.dist=cuePot; SI.run=run; SI.ex=ex; SI.ey=ey; SI.rails=rails;
           SI.scr=scr; SI.hit=hitb; SI.q0=q0; SI.imm=imm; SI.pos=pos; SI.gap=gap;
           SI.spd=spd; SI.pw=pw; SI.hitRes=hitRes; SI.close=(d1 < BD+DHIT_GAP);
+          SI.brk=brkPref;
           SI.cosT=cosT; SI.sinT=sinT; SI.d1=d1;
           { const fm=Math.hypot(fx,fy);
             SI.ux = fm>1e-6 ? fx/fm : 0; SI.uy = fm>1e-6 ? fy/fm : 0; }
@@ -2953,7 +3111,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
           { const fm=Math.hypot(fx,fy);
             SI.ux = fm>1e-6 ? fx/fm : 0; SI.uy = fm>1e-6 ? fy/fm : 0; }
           SI.tx=tx; SI.ty=ty; SI.ax=ax; SI.ay=ay; SI.E0=E0;
-          SI.needRail=false; SI.sidePick=false; SI.pref=pref;
+          SI.needRail=false; SI.sidePick=false; SI.pref=pref; SI.brk=1;
           cb(pref);                     // 決まれば取り切り完了なので nv は掛けない
         }
       }
@@ -3063,6 +3221,17 @@ function gridMax(a){
   for(let i=0;i<a.length;i++) if(a[i]>m) m=a[i];
   return m;
 }
+/* --- 埋まっている球（狙えるポケットが 1 つも無い）------------------------
+   その球の価値マップは全マスが 0 になり、掛け算で手前の球まで 0 に潰れる。
+   旧版はこれで「クラスターに埋まった球が 1 つあるだけで、推奨位置も
+   ルートも何ひとつ出せない」状態だった（実測: 8 番が 9 番の陰に入った配置で
+   フリーボールの推奨位置すら出ず、手玉を置いても「1 球目が狙えません」）。
+   実戦ではこれは「手前の一手で割りに行く」配置なので、埋まっている球には
+   割って開く見込みぶんの下駄を履かせ、探索がそこまで到達できるようにする。
+   実際に開くかどうかは、ルート探索が 割ったあとの盤面で撞き直して確かめる
+   （開かなければその枝はそこで途切れ、「最後まで繋がるルートが
+   見つかりませんでした」と正直に出る）ので、確率の水増しにはならない。 */
+const BURIED_V = 0.16;
 function computeDP(){
   const N = balls.length;
   const ones = new Float32Array(GN).fill(1);
@@ -3072,6 +3241,14 @@ function computeDP(){
   for(let k=N-1;k>=0;k--){
     const g = new Float32Array(GN);
     const rem = BASE.rem[k];
+    /* 撞く球が埋まっているか（＝この球のシュート筋が 1 本も無い）。
+       下駄を履かせるのは ここが全マス 0 のときだけにする —— 筋が 1 本でも
+       残っている球は「その 1 本が通る場所」だけ値が立っているので、
+       そこに下駄を履かせると 地図が平らになって手玉の運び先を選べなくなる
+       （実測: 筋 1 本の球にも下駄を履かせたら、取り切れる配置で
+       途中の出しを外し、繋がらないルートが 7 倍に増えた）。 */
+    const floorV = (BASE.balls[k] && !BASE.pdata[k].length) ? BURIED_V : 0;
+    const nxt = Vb[k+1][0];
     for(let j=0;j<GH;j++){
       const cy = gy0 + j*GS;
       for(let i=0;i<GW;i++){
@@ -3082,7 +3259,8 @@ function computeDP(){
           if(dx*dx+dy*dy < BD*BD+0.3){ bad=true; break; }
         }
         if(bad) continue;
-        g[j*GW+i] = cellValue(k,cx,cy,false);
+        const c = j*GW+i, v = cellValue(k,cx,cy,false);
+        g[c] = floorV ? Math.max(v, floorV*railFactor(cx,cy)*nxt[c]) : v;
       }
     }
     Vb[k]=[blurGrid(g,1),blurGrid(g,2),blurGrid(g,4),blurGrid(g,6)];
@@ -3130,6 +3308,7 @@ function snapStep(k,cx,cy){
     b:SI.b, a:SI.a, P0:SI.P0, f:SI.f, spd:SI.spd, pw:SI.pw, close:SI.close,
     dist:SI.dist, run:SI.run, ex:SI.ex, ey:SI.ey, rails:SI.rails, gap:SI.gap,
     scr:SI.scr, hitb:SI.hit, hitRes:SI.hitRes, q:SI.imm, q0:SI.q0, pos:SI.pos,
+    brk:SI.brk,
     sidePick:SI.sidePick,
     cosT:SI.cosT, sinT:SI.sinT, ux:SI.ux, uy:SI.uy,
     tx:SI.tx, ty:SI.ty, ax:SI.ax, ay:SI.ay, lx:SI.pd.lx, ly:SI.pd.ly, E0:SI.E0,
@@ -3141,6 +3320,8 @@ function snapStep(k,cx,cy){
 /* コンビ（1 手）と全球取り切り（N 手）を見比べるときの尺度。
    出しのばらつきもここでは含める（含めないと手数の少ないコンビが必ず勝つ）。 */
 function routeCmp(e){ return e.prob*e.pos; }
+/* クラスターを割る手のために beam に確保しておく別枠の数 */
+const BREAK_KEEP = 3;
 function findPlan(sx,sy){
   const N = balls.length, BEAM = SMALL?18:26;
   const keep = LAY;
@@ -3182,6 +3363,29 @@ function findPlan(sx,sy){
       if(cnt>=2) continue;
       seen.set(key,cnt+1); nb.push(c);
       if(nb.length>=BEAM) break;
+    }
+    /* --- クラスターを割る手には別枠を用意する ----------------------------
+       割る手の値打ちは「割ったあとの盤面」にしか出ない。ところが価値マップ
+       （nv）は割る前の配置で 1 度だけ作っているので、割る手の点数はいつも
+       素の入れ／出しの点数で決まってしまい、しかも手玉をクラスターまで
+       走らせるぶん pos も railFactor も下がる。素点だけで beam を切ると
+       割る手は必ず落ちる（実測: 8 番が 1 本筋の配置で、割れば取り切れるのに
+       割る手の順位は 40 位。beam 26 に入れず「最後まで繋がるルートが
+       見つかりません」になっていた）。
+       そこで、割りに行く手が 1 本も残らなかったときだけ、上位を数本
+       別枠で残す。先で行き止まりになる枝ばかりのときの保険であって、
+       素直な配置では そもそも brk が 1 のままなので何も増えない。 */
+    const isBreak = c => { const s=c.steps[c.steps.length-1];
+                           return !!(s && s.k===k && s.hitRes && (s.brk||1) > 1.05); };
+    let nBrk = 0;
+    for(const c of nb) if(isBreak(c)) nBrk++;
+    if(nBrk < BREAK_KEEP){
+      const have = new Set(nb);
+      for(const c of cand){
+        if(nBrk >= BREAK_KEEP) break;
+        if(!isBreak(c) || have.has(c)) continue;
+        nb.push(c); nBrk++;
+      }
     }
     /* 生き残った枝だけ、弾かれた球を動かした盤面に差し替える。
        盤面の作り直しは候補ごとにやると重いので、ここまで絞ってから行う。 */
@@ -4621,7 +4825,7 @@ function throwDeg(st){
 function drawStep(st, active){
   const a = active?1:0.24;
   const cb = st.combo;
-  const C=P(st.cx,st.cy), G=P(st.gx,st.gy), B=P(st.bx,st.by), PK=P(POCKETS[st.pi].x,POCKETS[st.pi].y);
+  const C=P(st.cx,st.cy), G=P(st.gx,st.gy), B=P(st.bx,st.by), PK=P(POCKETS[st.pi].dropx,POCKETS[st.pi].dropy);
 
   /* この球は前の手で弾かれて動いている。いま台にある位置ではなく
      「動いたあとの位置」から筋を引いているので、そこに薄く球を出しておく。 */
@@ -5013,7 +5217,7 @@ function buildShots(fromStep, single){
       const L9=remain.find(b=>b.n===cb.Ln);
       const p9=Math.max(objRest*E_XFER*cb.cos2*cb.cos2, 0.01);
       sec.push({n:cb.Ln, bi:L9?remain.indexOf(L9):-1,
-                pts:stampStun([[cb.Lx,cb.Ly],[POCKETS[st.pi].x,POCKETS[st.pi].y]], p9),
+                pts:stampStun([[cb.Lx,cb.Ly],[POCKETS[st.pi].dropx,POCKETS[st.pi].dropy]], p9),
                 potted:true, t0:objDur});
     }
     out.push({
@@ -5860,6 +6064,14 @@ function renderPanel(){
     ws.push(hardK >= balls.length-2
       ? `⚠ 難所の${balls[hardK].n}番が終盤（${hardK+1}球目）に残ります。ここで外すと修正が効かないので、手前の出しをとくに正確に。`
       : `ℹ 難所は${balls[hardK].n}番（${hardK+1}球目）。中盤のうちに近く・厚く入れて片付ける組み立てです。`);
+  /* 埋まっている球（入り筋が 1 本も無い）。手前の一手で割らないと取り切れない */
+  const buriedNs=[];
+  for(let k=0;k<balls.length;k++)
+    if(BASE.balls[k] && !BASE.pdata[k].length) buriedNs.push(`${balls[k].n}番`);
+  if(buriedNs.length)
+    ws.push(`⚠ ${buriedNs.join('・')}は<b>いま入り筋が 1 本もありません</b>（他の球に埋まっています）。`
+      + `手前の一手で手玉を当てて割らないかぎり取り切りは成立しないので、ルートはその前提で組んでいます。`
+      + `割った先の配置は当たり方しだいなので、実際に撞いたあとで置き直して見直してください。`);
   /* 撞点と到達時の回転の食い違いは、多球だと同じ文が並ぶので
      球番号だけ集めて 1 行にまとめる */
   const rollOnly=[], drawGone=[];
@@ -5871,8 +6083,19 @@ function renderPanel(){
       const potx =mv.filter(m=> m.potted).map(m=>`${m.n}番`).join('・');
       if(!mv.length) ws.push(`⚠ ${s.n}番の後、手玉が他の球に接触します。`);
       else {
-        if(moved) ws.push(`ℹ ${s.n}番の後、手玉が${moved}に当たって動かします（クラスターを割る手）。`
-          + `${moved}はこの手で動いた位置のまま、次の手へ続きます。結果はぶれやすいので注意。`);
+        if(moved){
+          /* brk は breakFactor が返した「割りに行く価値」。1 を超えていれば
+             割ったあとの盤面がはっきり良くなっている（撞けなかった球が
+             開いた／厄介な球のポケットが増えた）と読める。 */
+          const good = (s.brk||1) >= 1.20;
+          ws.push(`ℹ ${s.n}番の後、手玉が${moved}に当たって動かします（クラスターを割る手）。`
+            + (good
+               ? `この配置は<b>割りに行ってよい形</b>で、割ったあとの${moved}から次のシュート筋が立ちます。`
+               : `割らずに残す手より良いと判断していますが、見返りは大きくありません。`)
+            + `${moved}はこの手で動いた位置のまま、次の手へ続きます。`
+            + `当たる厚みが変わると${moved}の止まる位置も変わるので、`
+            + `<b>この一手は入れるより「当て方」を優先</b>して撞いてください。`);
+        }
         if(potx) ws.push(`ℹ ${s.n}番の後、弾かれた${potx}がそのまま落ちます。台から消えるので、以降の手順からは外しています。`);
       }
     }
