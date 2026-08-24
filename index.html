@@ -1200,7 +1200,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.2.6';
+const VERSION = '1.2.7';
 
 /* =========================================================================
    物理定数 —— 「ビリヤード物理学ハンドブック」§00 に準拠
@@ -2186,10 +2186,32 @@ function advanceBall(b, dx, dy, d, sliding, hx, hy, dtSeg, L){
   b.wz = Math.abs(b.wz)<=dec ? 0 : b.wz-(b.wz>0?dec:-dec);
   return dtu;
 }
+/* 弦の始点から距離 d の点に着くまでの秒数（advanceBall の時間だけを取り出したもの）。
+   「まだそこに来ていない球」（restObst）の当たり判定に使う。 */
+function segTime(b, d, sliding, dtSeg, L){
+  if(sliding) return L>1e-9 ? dtSeg*(d/L) : 0;
+  const s0=Math.hypot(b.vx,b.vy), disc=s0*s0-2*A_ROLL*d;
+  return (s0-(disc>0?Math.sqrt(disc):0))/A_ROLL;
+}
+/* --- あとから効く障害物（§11 の 2 球衝突を時間差で使う）------------------
+   simulate は 1 球ずつしか解けないので、手玉と的玉は順番に走らせている。
+   先に解いたほうを「tArr 秒で止まった球」としてここで渡すと、あとから解く
+   球はその時刻以降だけそこに球があるものとして扱う。
+     ・分離した直後はまだそこに居ないので素通りさせる
+     ・クッションから戻ってきたときには止まっているので、ちゃんと弾く
+   これを持っていなかったため、クッションで戻った的玉が手玉を素通りしていた。 */
+function restObst(x, y, tArr){ return {x, y, tArr, rest:true}; }
 const SIMB = ballSt(0,0,0,0,0,0,0);        // simulate 用の使い回し（毎回作らない）
 function simulate(st, balls, rec, resolve){
   const b = SIMB;
   b.x=st.x; b.y=st.y; b.vx=st.vx; b.vy=st.vy; b.wvx=st.wvx; b.wvy=st.wvy; b.wz=st.wz||0;
+  /* 走り出す位置を台の中へ入れておく。入れ筋の判定（pocketLine / trySafety）は
+     ゴーストボールが台からわずかにはみ出す筋まで許しているので、衝突直後の
+     手玉はクッション面の外から走り出すことがある。そのまま走らせると
+     外向きのクッション面までの距離が負になって当たり判定が素通りし、
+     手玉が台をはみ出して走り去っていた（実測: 実戦の入れ筋の 2% が
+     台外へゴースト、そのうち 9 割で手玉が最大 48″ 外まで走った）。 */
+  b.x=clamp(b.x,R,W-R); b.y=clamp(b.y,R,HT-R);
   if(noEnglish) b.wz = 0;
   let rails=0, scratch=false, hit=false, run=0, T=0;
   const pts = rec ? [[b.x,b.y,0]] : null;
@@ -2258,17 +2280,22 @@ function simulate(st, balls, rec, resolve){
         if(tt<tGate){ tGate=tt; gate=POCKETS[j]; }
       }
       if(tGate<=L) tPot=tGate;                         // この弦の中で落ちる
-      /* tt>=0 …… 口の中まで入り込んだ球は鼻先の面をすでに越えているので、
-         クッション面までの距離が負になる。そこを拾うと進めなくなる。 */
-      if(dx>1e-9){ const tt=(W-R-b.x)/dx;  if(tt>=0 && tt<t && !(gate&&inMouth(gate,W-R,b.y+dy*tt))){t=tt;kind=1;nx=-1;ny=0;} }
-      else if(dx<-1e-9){ const tt=(R-b.x)/dx; if(tt>=0 && tt<t && !(gate&&inMouth(gate,R,b.y+dy*tt))){t=tt;kind=1;nx=1;ny=0;} }
-      if(dy>1e-9){ const tt=(HT-R-b.y)/dy; if(tt>=0 && tt<t && !(gate&&inMouth(gate,b.x+dx*tt,HT-R))){t=tt;kind=1;nx=0;ny=-1;} }
-      else if(dy<-1e-9){ const tt=(R-b.y)/dy; if(tt>=0 && tt<t && !(gate&&inMouth(gate,b.x+dx*tt,R))){t=tt;kind=1;nx=0;ny=1;} }
-      if(t<0) t=0;
+      /* Math.max(…,0) …… クッション面までの距離が負になるのは、球がすでに
+         その面を越えているとき。以前はそこを「当たらない」として捨てていたが、
+         それだと外に出た球は二度とクッションに触れず台の外まで走ってしまう。
+         0 に丸めてその場で弾き返し、口の中まで入り込んだ球だけは
+         inMouth で除外する（ポケットの口にはクッションが無い）。 */
+      if(dx>1e-9){ const tt=Math.max((W-R-b.x)/dx,0); if(tt<t && !(gate&&inMouth(gate,W-R,b.y+dy*tt))){t=tt;kind=1;nx=-1;ny=0;} }
+      else if(dx<-1e-9){ const tt=Math.max((R-b.x)/dx,0); if(tt<t && !(gate&&inMouth(gate,R,b.y+dy*tt))){t=tt;kind=1;nx=1;ny=0;} }
+      if(dy>1e-9){ const tt=Math.max((HT-R-b.y)/dy,0); if(tt<t && !(gate&&inMouth(gate,b.x+dx*tt,HT-R))){t=tt;kind=1;nx=0;ny=-1;} }
+      else if(dy<-1e-9){ const tt=Math.max((R-b.y)/dy,0); if(tt<t && !(gate&&inMouth(gate,b.x+dx*tt,R))){t=tt;kind=1;nx=0;ny=1;} }
       for(let j=0;j<balls.length;j++){
         if(hits && struckIdx(hits,j)) continue;        // 弾いた球はもうそこに居ない
         const o=balls[j], tt=hitCircle(b.x,b.y,dx,dy,t,o.x,o.y,BD);
-        if(tt<t){ t=tt; kind=2; bi=j; }
+        if(tt>=t) continue;
+        /* まだそこに来ていない球は素通りする（restObst） */
+        if(o.tArr!==undefined && T+segTime(b,tt,sliding,dtSeg,L) < o.tArr) continue;
+        t=tt; kind=2; bi=j;
       }
       if(tPot<t){ t=tPot; kind=3; bi=-1; }
       T += advanceBall(b,dx,dy,t,sliding,hx,hy,dtSeg,L);
@@ -2300,6 +2327,11 @@ function simulate(st, balls, rec, resolve){
     /* すべり相を最後まで走りきった：数値ドリフトを残さないよう転がりへスナップ */
     if(sliding){ b.wvx=b.vx; b.wvy=b.vy; }
   }
+  /* 鼻先の面より外で止まったということは、ポケットの口の中＝棚の上に居る。
+     そこに球が乗ったままになる場所は無いので落ちたものとして扱う。
+     （落ち着き先だけクッション面へ丸めていたので、口へ転がり込んだ球が
+       画面の上でだけ土手まで戻る、という食い違いが残っていた） */
+  if(!scratch && (b.x<R || b.x>W-R || b.y<R || b.y>HT-R)) scratch=true;
   SIM.x=clamp(b.x,R,W-R); SIM.y=clamp(b.y,R,HT-R);
   SIM.rails=rails; SIM.scratch=scratch; SIM.hit=hit;
   SIM.pts=pts; SIM.railIdx=railIdx; SIM.hits=hits||NOHITS; SIM.run=run; SIM.T=T;
@@ -2354,19 +2386,77 @@ function stepImpact(st){
    simulate() の SIM は使い回しなので、呼び出し元は先に必要な値を
    複製してからここを呼ぶこと（この中で SIM が上書きされる）。
    ※ 走り出す球自身は当たり判定から外す。開始時点では重ならないが、
-     クッションで戻ってきたときに「自分の元いた場所」に当たってしまう。 */
+     クッションで戻ってきたときに「自分の元いた場所」に当たってしまう。
+   ※ restObst（先に走り終わった手玉など）は別に解いてあるのでここでは走らせない。
+     当たり判定には残すが、時刻は「弾かれた瞬間」からの相対に直す。 */
 const RH_BUF = [];
 function resolveHits(hits, balls, rec){
   const out=[];
   for(const h of hits){
+    if(balls[h.i] && balls[h.i].rest) continue;
     RH_BUF.length=0;
-    for(let i=0;i<balls.length;i++) if(i!==h.i) RH_BUF.push(balls[i]);
+    for(let i=0;i<balls.length;i++){
+      if(i===h.i) continue;
+      const o=balls[i];
+      RH_BUF.push(o.rest ? restObst(o.x, o.y, o.tArr-h.T) : o);
+    }
     const s=simulate(h.st, RH_BUF, rec, false);
     out.push({i:h.i, x0:h.st.x, y0:h.st.y, x:s.x, y:s.y, t0:h.T, dur:s.T,
               potted:s.scratch, rails:s.rails,
               pts: rec ? s.pts.map(p=>[p[0],p[1],p[2]]) : null});
   }
   return out;
+}
+
+/* --- 一手ぶんを解く（手玉 → 的玉 → 弾かれた手玉）-------------------------
+   simulate は 1 球ずつしか解けないので、次の順に解いて時間でつなぐ。
+     1) 手玉を最後まで走らせる（他の静止球とは今までどおり衝突する）
+     2) 的玉を走らせる。1) で止まった手玉を restObst として渡すので、
+        クッションから戻ってきた的玉は手玉を素通りせずにちゃんと弾く
+     3) 弾かれた手玉をそこから走らせて、手玉の道すじの続きとして足す
+   旧版は 1) と 2) を互いに知らないまま別々に走らせていたので、
+   的玉と手玉がすり抜けていた。
+     others  … 静止している他の球（手玉・的玉は含まない）
+     rec     … 軌跡を記録する（描画・再生）
+     o.cueMoves   … 分離後の手玉に勢いがあるか。false なら手玉はゴーストに残る
+     o.resolveCue … 手玉が他球に当たったら衝突を解いて走り続ける
+     o.resolveObj … 的玉も同じ扱いにする（コンビは当たった時点で止めたいので false）
+   返り値は毎回新しいオブジェクト（SIM のような使い回しはしない）。 */
+function shotRun(cueSt, obSt, others, rec, o){
+  /* その場に残る手玉もクッションの内側に置く（simulate の走り出しと同じ扱い） */
+  const cx0=clamp(cueSt.x,R,W-R), cy0=clamp(cueSt.y,R,HT-R);
+  const cue = {pts: rec?[[cx0,cy0,0]]:null, railIdx: rec?[]:null,
+               hits:null, x:cx0, y:cy0, T:0,
+               scratch:false, rails:0, hit:false, run:0, pot:0};
+  if(o.cueMoves){
+    const cs = simulate(cueSt, others, rec, o.resolveCue);
+    if(rec){ cue.pts=cs.pts.map(p=>[p[0],p[1],p[2]]); cue.railIdx=cs.railIdx.slice(); }
+    cue.hits = cs.hits.length ? cs.hits.slice() : null;
+    cue.x=cs.x; cue.y=cs.y; cue.T=cs.T; cue.scratch=cs.scratch;
+    cue.rails=cs.rails; cue.hit=cs.hit; cue.run=cs.run; cue.pot=cs.pot;
+  }
+  /* 落ちた手玉は台に居ないので障害物に入れない */
+  const list = cue.scratch ? others : others.concat([restObst(cue.x, cue.y, cue.T)]);
+  const os = simulate(obSt, list, rec, o.resolveObj);
+  const obj = {pts: rec?os.pts.map(p=>[p[0],p[1],p[2]]):null,
+               railIdx: rec?os.railIdx.slice():null,
+               hits: os.hits.length?os.hits.slice():null,
+               x:os.x, y:os.y, T:os.T, scratch:os.scratch, rails:os.rails,
+               hit:os.hit, run:os.run, pot:os.pot};
+  /* 的玉が止まっている手玉を弾いたら、手玉の続きを解く（＝はじける） */
+  const kh = cue.scratch ? null : (obj.hits||[]).find(h => h.i === list.length-1);
+  if(kh){
+    const ks = simulate(kh.st, others, rec, false);
+    if(rec){
+      const base = cue.pts.length;
+      for(const p of ks.pts) cue.pts.push([p[0], p[1], kh.T+p[2]]);
+      for(const ri of ks.railIdx) cue.railIdx.push(base+ri);
+    }
+    cue.x=ks.x; cue.y=ks.y; cue.T=kh.T+ks.T;
+    cue.scratch=ks.scratch; cue.rails+=ks.rails; cue.run+=ks.run; cue.pot=ks.pot;
+    cue.hit=true;
+  }
+  return {cue, obj, others:list};
 }
 
 /* --- クラスターを割る（ブレイクアウト）----------------------------------
@@ -3114,8 +3204,9 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
             run=SIM.run;                      // resolveHits が SIM を上書きする前に取る
             dirx=SIM.dirx; diry=SIM.diry;     // 到達の向き（→ ラインに乗せる・極意⑧）
             if(hitb && fine && SIM.hits.length){
-              const hs=SIM.hits.slice();        // SIM は使い回しなので先に複製
-              hitRes = resolveHits(hs, others, false);
+              const hs=SIM.hits.slice(), cT=SIM.T;   // SIM は使い回しなので先に複製
+              /* 弾かれた球も、止まったあとの手玉を素通りしない（描画・再生と同じ扱い） */
+              hitRes = resolveHits(hs, scr?others:others.concat([restObst(ex,ey,cT)]), false);
               /* resolveHits が SIM を上書きするので、手玉の落ち着き先は ex,ey で渡す */
               breakFactor(LAY, hitRes, k, ex, ey);
               brk = BRKF.imm; brkPref = BRKF.pref;
@@ -3976,7 +4067,7 @@ function returnSafety(cEnd, oEnd, n, others){
 
 /* セーフティーの、衝突後の手玉ベクトル。
    物理は取り切りと同じ v = (5/7)·|sinθ|·t̂ + (2/7)·f·d̂。
-   探索（trySafety）と描画・再生（safetyCuePath）で必ず同じ値を使うため共通化。
+   探索（trySafety）と描画・再生（safetyPaths）で必ず同じ値を使うため共通化。
 
    バグ修正の経緯 ―― ここで th の符号 sg を接線に掛けていた。
    t̂ は「手玉の進行方向 d̂ から中心線成分を抜いた残り」なので、
@@ -3995,7 +4086,7 @@ function safetyCueVec(b,a,P0,t,gx,gy,dx,dy,lx,ly){
 
 /* 1 本のセーフティーを打ってみる。成立すれば SF に結果を書いて true。
    SF は使い回しなので、値が必要なら snapSafety() で複製すること。
-   ここは探索専用なので軌跡は記録しない（描画・再生は safetyCuePath / drawSafety）。 */
+   ここは探索専用なので軌跡は記録しない（描画・再生は safetyPaths / drawSafety）。 */
 const SF={};
 function trySafety(cx,cy,target,others,th,b,a,P0){
   if(noEnglish) a = 0;                              // 捻り無しはここでも必ず封じる
@@ -4029,23 +4120,19 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
      引きでは的玉が速すぎ・押しでは遅すぎ、手玉と的玉で別々の物理が
      走っていた（取り切り側は 1.0.3 で IMP.Q に直っている）。 */
   const cvec=safetyCueVec(b,a,P0,t,gx,gy,dx,dy,lx,ly);
-  /* 的玉。他球に当たったら 2 球衝突を解いて走り続ける（取り切り側と同じ resolve）。
-     SIM は使い回しなので、次の simulate を呼ぶ前に hits を複製しておく。 */
   const objPot=cvec.Q1*cT*cT*E_XFER;
-  const os=simulate(cvec.ob,others,false,true);
-  const oEnd={x:os.x,y:os.y},
-        oScr=os.scratch, oRails=os.rails, oHit=os.hit, oRun=os.run;
-  const oHits=os.hits.length?os.hits.slice():null;
-  /* 手玉 */
   const m=cvec.m;
   const cuePot=cvec.Q1*m*m;
   if(cuePot>CUEMAX*1.08) return false;
-  let cEnd={x:gx,y:gy}, cScr=false, cRails=0, cHit=false, cHits=null, cRun=0;
-  if(cuePot>0.5 && m>0.02){
-    const cs=simulate(cvec.cue,others,false,true);
-    cEnd={x:cs.x,y:cs.y}; cScr=cs.scratch; cRails=cs.rails; cHit=cs.hit; cRun=cs.run;
-    cHits=cs.hits.length?cs.hits.slice():null;
-  }
+  /* 手玉 → 的玉 の順に解く（shotRun）。的玉は止まった手玉も障害物として見るので、
+     クッションから戻ってきたら手玉を弾く。他球に当たったときの resolve も
+     取り切り側と同じ扱いにする。 */
+  const rr=shotRun(cvec.cue, cvec.ob, others, false,
+                   {cueMoves: cuePot>0.5 && m>0.02, resolveCue:true, resolveObj:true});
+  const cEnd={x:rr.cue.x,y:rr.cue.y}, cScr=rr.cue.scratch, cRails=rr.cue.rails,
+        cHit=rr.cue.hit, cRun=rr.cue.run, cHits=rr.cue.hits;
+  const oEnd={x:rr.obj.x,y:rr.obj.y}, oScr=rr.obj.scratch, oRails=rr.obj.rails,
+        oHit=rr.obj.hit, oRun=rr.obj.run, oHits=rr.obj.hits;
   if(cScr) return false;                                  // スクラッチは論外
   if(oScr) return false;                                  // 的玉が入ってしまうのはセーフティーでない
   if(cRails===0 && oRails===0) return false;              // ノークッション＝ファウル
@@ -4058,7 +4145,7 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
   if(oHits||cHits){
     layout=[];
     const moved=new Map();
-    for(const h of resolveHits((oHits||[]).concat(cHits||[]), others, false)) moved.set(h.i,h);
+    for(const h of resolveHits((oHits||[]).concat(cHits||[]), rr.others, false)) moved.set(h.i,h);
     for(let i=0;i<others.length;i++){
       const h=moved.get(i);
       if(!h) layout.push(others[i]);
@@ -5198,15 +5285,20 @@ function drawStep(st, active){
      当てられた球の道すじもここで一緒に描く。 */
   if(show.cuePath && st.dist>0.5){
     const others = st.lay.others[st.k];
-    const sim = simulate(stepImpact(st).st,others,true,!cb);
-    const pts = sim.pts.map(p=>P(p[0],p[1]));
-    const railIdx = (sim.railIdx||[]).slice();
-    const hits = sim.hits.slice();
+    /* 再生（buildShots）とまったく同じ shotRun を通す。そうしないと
+       「描いた線」と「再生で走る線」が食い違う。 */
+    const im = stepImpact(st);
+    const rr = shotRun(copySt(im.st), copySt(im.ob), others, true,
+                       {cueMoves:true, resolveCue:!cb, resolveObj:!cb});
+    const cuePts = rr.cue.pts;
+    const pts = cuePts.map(p=>P(p[0],p[1]));
+    const railIdx = rr.cue.railIdx;
+    const hits = (rr.cue.hits||[]).concat(rr.obj.hits||[]);
     const col = st.scr?'#ff8585':(st.hitb?'#ffa14a':'#5fdcee');
     /* 当てられた球（resolveHits が SIM を上書きするので複製してから呼ぶ） */
     if(hits.length){
-      for(const h of resolveHits(hits, others, true)){
-        const bn = others[h.i];
+      for(const h of resolveHits(hits, rr.others, true)){
+        const bn = rr.others[h.i];
         drawPath(h.pts.map(p=>P(p[0],p[1])), null,
                  BALLCOL[bn?bn.n:9]||'#ffa14a', a*0.75, Math.max(1.3,0.14*S), [4,4], false);
         if(active){
@@ -5226,8 +5318,8 @@ function drawStep(st, active){
     }
     /* 接線から漸近方向へ乗るまでの曲がり（＝滑走ぶん）を明示する。
        強く撞くほど曲がりきる距離が伸びる＝ラインが直線的になる（§04 機構1）。 */
-    if(active && sim.pts.length>2){
-      const bend = Math.abs(bendDeg(sim.pts));
+    if(active && cuePts.length>2){
+      const bend = Math.abs(bendDeg(cuePts));
       if(bend>3){
         const mid = pts[Math.round(pts.length*0.72)];
         if(mid) label(mid[0],mid[1],`滑走カーブ ${Math.round(bend)}°`,'#e6ccff',a*0.95,1);
@@ -5272,23 +5364,14 @@ function bendDeg(pts){
   return sum*180/Math.PI;
 }
 
-/* セーフティー時の手玉の走行ライン（描画・再生で共用）。
-   探索と同じ resolve=true で走らせるので、他球に当たった先まで一致する。 */
-/* セーフティー時の的玉の走行ライン（描画・再生で共用）。
-   探索と同じ solveImpact の結果から走らせるので、成立率の計算と食い違わない。 */
-function safetyObjPath(sf){
+/* セーフティー時の手玉・的玉の走行ライン（描画・再生で共用）。
+   探索（trySafety）とまったく同じ shotRun を通すので、成立率の計算と食い違わない。
+   的玉は止まった手玉も障害物として見るため、クッションから戻ってきたら
+   手玉を弾き、手玉の道すじはそこから続く。 */
+function safetyPaths(sf){
   const v=safetyCueVec(sf.b,sf.a,sf.P0,sf.t,sf.gx,sf.gy,sf.dx,sf.dy,sf.lx,sf.ly);
-  const os=simulate(v.ob, balls.slice(1), true, true);
-  return {pts:os.pts.map(p=>[p[0],p[1],p[2]]), railIdx:(os.railIdx||[]).slice(),
-          hits:os.hits.length?os.hits.slice():null, dur:os.T};
-}
-function safetyCuePath(sf){
-  if(sf.cuePot<=0.5) return null;
-  const v=safetyCueVec(sf.b,sf.a,sf.P0,sf.t,sf.gx,sf.gy,sf.dx,sf.dy,sf.lx,sf.ly);
-  if(v.m<=0.02) return null;
-  const cs=simulate(v.cue, balls.slice(1),true,true);
-  return {pts:cs.pts.map(p=>[p[0],p[1],p[2]]), railIdx:(cs.railIdx||[]).slice(),
-          hits:cs.hits.length?cs.hits.slice():null, dur:cs.T};
+  return shotRun(v.cue, v.ob, balls.slice(1), true,
+                 {cueMoves: sf.cuePot>0.5 && v.m>0.02, resolveCue:true, resolveObj:true});
 }
 /* 手玉・的玉に弾かれた球（クラスター）の道すじ。
      others = 衝突判定に渡した並び（h.i がこの添字）
@@ -5305,8 +5388,8 @@ function struckPaths(hits, others, stage){
   }
   return out;
 }
-/* セーフティー版。others = balls.slice(1) と添字が一致する（trySafety と同じ並び） */
-function safetyStruck(hits){ return struckPaths(hits, balls.slice(1), balls); }
+/* セーフティー版。others は shotRun が使った並び（＝ balls.slice(1) ＋ 止まった手玉） */
+function safetyStruck(hits, others){ return struckPaths(hits, others, balls); }
 
 function drawSafety(sf){
   const C=P(sf.cx,sf.cy), G=P(sf.gx,sf.gy);
@@ -5319,19 +5402,15 @@ function drawSafety(sf){
     ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=Math.max(1,0.12*S);
     ctx.beginPath(); ctx.arc(G[0],G[1],R*S,0,7); ctx.stroke(); ctx.restore();
   }
-  /* 的玉の走り（勢いは探索が出した objPot をそのまま使う。
-     ここで別式を立てると、描いた線と成立率の計算が食い違う）。
-     SIM は使い回しなので、道すじと hits を先に複製してから次の simulate を呼ぶ。 */
-  const op=safetyObjPath(sf);
-  const oPts=op.pts, oRail=op.railIdx, oHits=op.hits;
-  drawPath(oPts.map(p=>P(p[0],p[1])), oRail, col, 0.96, Math.max(1.9,0.21*S), [7,4]);
-
-  /* 手玉の走り */
-  const cpath = safetyCuePath(sf);
-  if(cpath) drawPath(cpath.pts.map(p=>P(p[0],p[1])), cpath.railIdx, '#5fdcee', 1, Math.max(1.9,0.21*S));
+  /* 的玉と手玉の走り（勢いは探索が出した objPot / cuePot をそのまま使う。
+     ここで別式を立てると、描いた線と成立率の計算が食い違う）。 */
+  const rr=safetyPaths(sf);
+  drawPath(rr.obj.pts.map(p=>P(p[0],p[1])), rr.obj.railIdx, col, 0.96, Math.max(1.9,0.21*S), [7,4]);
+  if(rr.cue.pts.length>1)
+    drawPath(rr.cue.pts.map(p=>P(p[0],p[1])), rr.cue.railIdx, '#5fdcee', 1, Math.max(1.9,0.21*S));
 
   /* 手玉・的玉に弾かれた球。取り切り側と同じ見せ方にする */
-  for(const s of safetyStruck(oHits).concat(safetyStruck(cpath?cpath.hits:null)))
+  for(const s of safetyStruck(rr.obj.hits, rr.others).concat(safetyStruck(rr.cue.hits, rr.others)))
     drawPath(s.pts.map(p=>P(p[0],p[1])), null, BALLCOL[s.n]||'#ffa14a',
              0.9, Math.max(1.5,0.17*S), [6,4]);
 
@@ -5470,21 +5549,19 @@ function buildShots(fromStep, single){
   if(gameMode==='safe'){
     if(!safety) return null;
     const sf=safety;
-    /* simulate() は同じ SIM オブジェクトを使い回すので、
-       次の simulate（手玉側）を呼ぶ前に的玉の道すじを複製しておく。
-       これを忘れると的玉が手玉の道すじを走ってしまう。 */
-    const op=safetyObjPath(sf);
-    const cp=safetyCuePath(sf);
+    const rr=safetyPaths(sf);
     /* 弾かれた球も一緒に動かす。resolveHits は SIM を上書きするので、
-       手玉・的玉の道すじを複製し終えてから呼ぶ。 */
-    const sec=safetyStruck(op.hits).concat(safetyStruck(cp?cp.hits:null));
+       手玉・的玉の道すじを複製し終えてから呼ぶ（shotRun が複製済み）。 */
+    const sec=safetyStruck(rr.obj.hits, rr.others).concat(safetyStruck(rr.cue.hits, rr.others));
     /* 的玉は balls の何番目か（＝再生中に静止球として描かない球） */
     let oi=balls.findIndex(b=>b.n===sf.n); if(oi<0) oi=0;
     return [{
       kind:'safe', n:sf.n, pi:-1, oi,
       aim:aimPath(sf.cx,sf.cy,sf.gx,sf.gy,sf.a,sf.b,sf.P0), aimPot:sf.P0,
-      obj:op.pts, objPot:Math.max(sf.objPot,0.01),
-      cue:cp?cp.pts:[[sf.gx,sf.gy,0]], cuePot:cp?sf.cuePot:0,
+      obj:rr.obj.pts, objPot:Math.max(sf.objPot,0.01),
+      /* cuePot は再生では「手玉が動くか」の判定にしか使わない。
+         その場に残る手玉でも、的玉に弾かれれば道すじが伸びる。 */
+      cue:rr.cue.pts, cuePot: rr.cue.pts.length>1 ? Math.max(sf.cuePot,1) : 0,
       sec, remain:balls.slice()
     }];
   }
@@ -5500,20 +5577,16 @@ function buildShots(fromStep, single){
     const im=stepImpact(st);
     const cueSt=copySt(im.st), obSt=copySt(im.ob);
     const objPot=Math.max(vPot(Math.hypot(obSt.vx,obSt.vy)), 0.01);
-    /* 的玉。コンビのときは 9 番に当たった時点で止まる（resolve は渡さない）。
-       ここも simulate なので、滑走→転がりの二相がそのまま再生に出る。 */
-    const os=simulate(obSt, others, true, false);
-    const objPts=os.pts.map(p=>[p[0],p[1],p[2]]);
-    const objDur=os.T, objRest=os.pot;
+    /* セーフティーと同じ shotRun を通す。的玉は狙ったポケットへ落ちるのがふつうだが、
+       外して戻ってきたときに手玉を素通りしないよう、止まった手玉も障害物に入れる。
+       コンビのときだけ 1 球目は 9 番に当たった時点で止める（resolveObj = false）。 */
+    const rr=shotRun(cueSt, obSt, others, true,
+                     {cueMoves: st.dist>0.5, resolveCue: !cb, resolveObj: !cb});
+    const objPts=rr.obj.pts, objDur=rr.obj.T, objRest=rr.obj.pot;
     const sec=[];
-    let cue=[[st.gx,st.gy,0]], hits=[];
-    if(st.dist>0.5){
-      const cs=simulate(cueSt, others, true, !cb);
-      cue=cs.pts.map(p=>[p[0],p[1],p[2]]);
-      hits=cs.hits.slice();
-    }
-    /* 手玉に弾かれた球（クラスター処理）。手玉の道すじを複製し終えてから呼ぶ。 */
-    for(const s of struckPaths(hits, others, remain)) sec.push(s);
+    /* 手玉・的玉に弾かれた球（クラスター処理） */
+    for(const s of struckPaths(rr.cue.hits, rr.others, remain)) sec.push(s);
+    for(const s of struckPaths(rr.obj.hits, rr.others, remain)) sec.push(s);
     if(cb){
       /* コンビ: 1 球目は 9 番の手前まで、そこから 9 番がポケットへ */
       const L9=remain.find(b=>b.n===cb.Ln);
@@ -5526,7 +5599,8 @@ function buildShots(fromStep, single){
       kind:'run', n:st.n, pi:st.pi, k:st.k, idx:i, oi:0, combo:!!cb,
       aim:aimPath(st.cx,st.cy,st.gx,st.gy,st.a,st.b,st.P0), aimPot:st.P0,
       obj:objPts, objPot,
-      cue, cuePot:st.dist,
+      /* cuePot は再生では「手玉が動くか」の判定にしか使わない */
+      cue:rr.cue.pts, cuePot: rr.cue.pts.length>1 ? Math.max(st.dist,1) : 0,
       sec, remain:remain.slice()
     });
   }
