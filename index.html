@@ -1149,9 +1149,13 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
        ④ 逃げ道を確保                escapeFactor
        ⑤ アングルを作る（12〜35°）   angleWindow
        ⑥ 近いサイドを使う            markSidePicks
+         （穴前 1 ポイントのサイドは無条件で本命 → SIDE_NEAR_*）
        ⑦ 成功率の低いカットは撞かない shotQualityPref
        ⑧ ラインに乗せる              lineOfPosition
        ⑨ 手玉は一方向に回す          circulationPref
+       ⑩ 手玉を長く走らせない        runPref
+       ⑪ スクラッチぎりぎりは通さない scratchPref
+       ⑫ 無理な引きは撞かない        drawPref
      それぞれの理屈と較正値は、各関数の直前のコメントに書いてある。
      なお取り切りの候補にバンク（1 クッションで的玉を入れる筋）は入れていない。
      buildLayout が作る pdata は pocketLine（直球）だけで、バンクを解いているのは
@@ -1168,6 +1172,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
        ・ジャンプ／カーブを封じる（逃げ道 その 2・3）escapeDeny
        ・的玉をレール際へ（角度を殺す・TYPE 05）     obRail
        ・バンクで入る配置は作らない                  SAFE_BANK_VETO
+       ・スクラッチぎりぎり・無理な引きは選ばない    safeExec
      同書の四条件（視界・距離・角度・逃げ道）に一つずつ対応している。
    ========================================================================= */
 
@@ -1193,6 +1198,7 @@ const SQ = Math.SQRT1_2;
      サイド   α = 38°  … 大きく開いている＝浅い角度は奥のジョーが弾き返す
    コーナーはマウス線が長クッションと 45° をなすので、
    鼻先に沿ったジョー先端の位置は 4.50/√2 = 3.182″。サイドは 5.00/2 = 2.50″。 */
+const SCR_NEAR = 2.6;      // スクラッチ「ぎりぎり」とみなす余裕の上限 [inch]（→ simulate）
 const CORNER_MOUTH = 4.50, SIDE_MOUTH = 5.00;
 const CORNER_JAW   = 142,  SIDE_JAW   = 104;      // ジョーの開き角 [度]
 const CORNER_SHELF = 1.75, SIDE_SHELF = 0.19;     // シェルフ（描画に使う）[inch]
@@ -1256,12 +1262,16 @@ POCKETS.forEach(p=>{
   p.slide  = p.corner ? Math.max(p.mhalf - R/p.cosAcc, 0) : 0;
   /* 落ち口（描画・再生で球が消える点）。マウス線より少し奥に置く。 */
   p.dropx = p.mx + p.ax*1.6;  p.dropy = p.my + p.ay*1.6;
+  /* スクラッチのぎりぎり判定（→ simulate）。scrR より近づけば余裕 0 以下、
+     scrR + SCR_NEAR より遠ければ危なくない。 */
+  p.scrR   = p.mhalf + R;
+  p.scrR2  = (p.scrR + SCR_NEAR)*(p.scrR + SCR_NEAR);
 });
 const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.2.8';
+const VERSION = '1.2.9';
 
 /* =========================================================================
    物理定数 —— 「ビリヤード物理学ハンドブック」§00 に準拠
@@ -1704,9 +1714,23 @@ const SIDE_CUT    = 50*Math.PI/180;  // サイドを狙ってよいフリ角の�
 const SIDE_PREF   = 1.25;            // 条件を満たした近いサイドへの上乗せ
 const SIDE_POS_OK = 0.90;            // 途中の球で「ポジションしやすい」とみなす出し成功率
 const SIDE_NV_OK  = 0.75;            // 出し先の価値が、台でいちばん良い位置の何倍以上か
+/* --- 穴前 1 ポイントのサイドは無条件で本命にする（V1.2.9）----------------
+   的玉がサイドの口から 1 ポイント（12.5″）以内に転がっているとき、実戦の
+   選択はほぼ一択でサイドである。的玉の走る距離が 1 ポイントしかないので
+   狙いのずれがまったく拡大せず、フリが 80°近くまで開いても入る。
+   ところが確率モデルはフリ角に強く反応するので、こういう配置でも
+   「遠いコーナーのほうが真っすぐだから」とコーナーを選んでいた。
+   的玉が 3 ポイント以上走るコーナーは、同じ狙いのずれが 3 倍に拡大する。
+   そこで穴前のサイドは SIDE_CUT（50°）の縛りも「遠いコーナーと比べる」手順も
+   通さず、スクラッチしないことだけを条件に本命として押し上げる。
+   9 番（＝最後の一発）は入れれば勝ちなので、上乗せをさらに厚くする。 */
+const SIDE_NEAR_D    = 12.5;             // 「穴前」とみなす的玉→サイドの距離 [inch]
+const SIDE_NEAR_CUT  = 80*Math.PI/180;   // 穴前サイドを狙ってよいフリ角の上限
+const SIDE_NEAR_PREF = 1.90;             // 穴前サイドへの上乗せ
+const SIDE_NEAR_LAST = 1.30;             // 9 番のときの追加倍率
 const SIDE_ANG = new Float64Array(6);   // 各筋のフリ角 [rad]（使い回し）
-const SIDE_OK  = new Uint8Array(6);     // その筋を「近いサイド」として優遇するか
-/* pdata の筋ごとに「近いサイド（＝遠いコーナーのほうがフリが緩い）」を立てる。
+const SIDE_OK  = new Uint8Array(6);     // 0=ふつう 1=近いサイド 2=穴前のサイド
+/* pdata の筋ごとに「サイドを使うべき筋」を立てる。
    list は 1 球ぶんの狙える筋なので最大 6 本。添字は list と 1 対 1。 */
 function markSidePicks(list, cx, cy){
   const n = list.length;
@@ -1717,7 +1741,9 @@ function markSidePicks(list, cx, cy){
     SIDE_OK[i]  = 0;
   }
   for(let i=0;i<n;i++){
-    if(list[i].pk.corner || SIDE_ANG[i] >= SIDE_CUT) continue;
+    if(list[i].pk.corner) continue;
+    if(list[i].d2 < SIDE_NEAR_D && SIDE_ANG[i] < SIDE_NEAR_CUT){ SIDE_OK[i]=2; continue; }
+    if(SIDE_ANG[i] >= SIDE_CUT) continue;
     for(let j=0;j<n;j++){
       /* 遠いコーナーなのにフリはサイドと同じか緩い ＝ サイドを使うべき配置 */
       if(list[j].pk.corner && list[j].d2 > list[i].d2 && SIDE_ANG[j] <= SIDE_ANG[i]){
@@ -1725,6 +1751,29 @@ function markSidePicks(list, cx, cy){
       }
     }
   }
+}
+
+/* --- 無理な引き玉は選ばない（V1.2.9）------------------------------------
+   引きと押しは、同じだけ手玉を動かすのでも成功率がまるで違う。
+     ・押しは自然順回転を伸ばすだけだが、引きは撞点を下げるぶん
+       ミスキュー・カーブ・ジャンプが増える
+     ・引き回転は滑走中に激しく削られる（§07 撞点の寿命）ので、
+       的玉が遠いほど「回転を残すための余分な力」が要る
+     ・その余分な力がそのまま狙いのばらつきになる
+   物理モデルは「引きが抜けること」自体は解いているが、外しやすさは見ていない。
+   そこで 深さ × 距離 × 余分な力 の 3 つで好みを割り引く。
+   実戦で無理と呼ばれる帯 ―― 2 ポイント半より遠い的玉を、目一杯に近い下撞きと
+   目一杯に近い力で引く手 ―― は自動では候補にも入れない（→ forEachShot）。 */
+const DRAW_D0   = 25;      // これ以上離れると「距離のある引き」[inch]
+const DRAW_FAR  = 31.25;   // 無理な引きとみなす的玉までの距離＝2.5 ポイント [inch]
+const DRAW_DEEP = -0.34;   // 無理な引きとみなす撞点（TIPMAX 0.50 の約 7 割）
+const DRAW_PEN  = 0.55;    // 深い引きを長距離・強打で使ったときの好みの下限
+function drawPref(b, d1, P0, p0min){
+  if(b >= -0.06) return 1;                                    // 押し・芯は対象外
+  const depth = clamp(-b/TIPMAX, 0, 1);                       // 撞点の深さ
+  const far   = clamp((d1-DRAW_D0)/DRAW_D0, 0, 1);            // 距離のぶん
+  const hard  = clamp(P0/Math.max(p0min,1)-1.35, 0, 1);       // 引きのための余分な力
+  return 1 - (1-DRAW_PEN)*depth*(0.35 + 0.40*far + 0.25*hard);
 }
 
 /* --- 近すぎる的玉：ダブルヒット／プッシュショットの反則域 ----------------
@@ -1932,12 +1981,16 @@ function erf(x){
 function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
 /* cos から角度（度）へ。カット角・分離角の判定と表示で共用する */
 function angDeg(cos){ return Math.acos(clamp(cos,-1,1))*180/Math.PI; }
+/* 進行方向 d̂ の球が、もう 1 球（中心 cx,cy）に触れるまでの距離。
+   すでに重なっていて、なお近づいているときは 0 ＝「その場で当たる」を返す。
+   旧版はここを一律「当たらない」で片づけていたので、重なった状態から
+   走り出した球は相手を最後まで無視して走り抜けていた（＝球のすり抜け）。 */
 function hitCircle(x,y,dx,dy,tmax,cx,cy,rad){
   const ox=x-cx, oy=y-cy;
-  const c = ox*ox+oy*oy-rad*rad;
-  if(c<=0) return Infinity;
   const b = ox*dx+oy*dy;
-  if(b>0) return Infinity;
+  if(b >= -1e-9) return Infinity;                // 離れていく／真横へ抜ける向き
+  const c = ox*ox+oy*oy-rad*rad;
+  if(c <= -1e-6) return 0;                       // 重なったまま近づいている
   const disc = b*b-c;
   if(disc<0) return Infinity;
   const t = -b-Math.sqrt(disc);
@@ -1962,6 +2015,21 @@ function potHit(x,y,dx,dy,tmax,pk){
   if(t > tmax) return Infinity;                        // この弦では届かない
   const q = (x+dx*t-pk.mx)*pk.tgx + (y+dy*t-pk.my)*pk.tgy;
   return Math.abs(q) <= pk.mhalf ? t : Infinity;       // マウスの中を通ったか
+}
+
+/* --- スクラッチ「ぎりぎり」を避ける（V1.2.9）-----------------------------
+   落ちる向き（φmax 以内）のまま口のすぐ脇を通ったラインは、実際の台では
+   ジョーに当たって落ちてしまうことが多い。ところがスクラッチを
+   「落ちた／落ちない」の二択でしか見ていなかったので、狙いがわずかにずれれば
+   落ちるラインが取り切りにもセーフティーにも平気で混ざっていた。
+   simulate は走らせた道すじの中で「落ちる向きのまま口の中心へどこまで
+   近づいたか」を測り、いちばん狭かった余裕（0 ＝ ぎりぎり）を SIM.scrM に残す。
+   その余裕をここで「ルートの好み」に直す。確率（q0 / imm）には触れない
+   ―― 落ちなければ球は入るし、落ちる手は従来どおり imm 側で潰しているため。 */
+const SCR_PEN  = 0.45;     // 口の端すれすれを通るラインの好み
+function scratchPref(m){
+  if(!(m < SCR_NEAR)) return 1;
+  return SCR_PEN + (1-SCR_PEN)*clamp(m,0,SCR_NEAR)/SCR_NEAR;
 }
 /* 鼻先の面を横切る点が「ポケット pk の口＝クッションが無い区間」に入っているか。
    落ちる球はここを素通りしてマウス線まで進み、落ちない球はジョーに当たって
@@ -2248,7 +2316,11 @@ function railBounce(b, nx, ny){
      必要な値を先に複製しておくこと。SIM.hits も同様。
    ------------------------------------------------------------------------- */
 const SIM = {x:0,y:0,rails:0,scratch:false,hit:false,pts:null,railIdx:null,hits:null,run:0,T:0,
-             dirx:0, diry:0};   // dirx,diry = 止まる（当たる）直前の進行方向（→ lineOfPosition）
+             dirx:0, diry:0,    // dirx,diry = 止まる（当たる）直前の進行方向（→ lineOfPosition）
+             scrM:Infinity,     // scrM = ポケットの口を外した最小の余裕（→ scratchPref）
+             st:null};          // st = 走り終えた（stopT で打ち切った）時点の球の状態
+const SIM_ST = ballSt(0,0,0,0,0,0,0);   // SIM.st の実体（使い回し）
+SIM.st = SIM_ST;
 const NOHITS  = [];
 const MAX_COL = 2;        // 1 手で解く球どうしの衝突はここまで（暴走防止）
 const STOP_V  = 1.0;      // これ以下は止まったとみなす [inch/s]
@@ -2257,6 +2329,18 @@ const SEG_REC = 14;       // 描画・再生：すべり相を刻む弦の数
 /* 探索用。刻みを粗くしても すべり相の終端の位置・速度・回転は解析解のままなので
    落ち着き先はまったく変わらない。粗くなるのは弧の途中での当たり判定だけ。 */
 const SEG_FAST= 2;
+/* 転がり相は直線・等減速なので、走り切るまでを 1 本の弦で厳密に解ける。
+   ところが道すじに残るのは弦の両端だけなので、再生（ptAtTime）はその間を
+   時間について直線で補間してしまう。実際の球は減速しているから、
+   長い転がりでは「描かれる球の位置」が実際より最大 十数インチ 遅れる。
+   これが手玉と的玉がすり抜けて見える最大の原因だった（実測: 3 秒 60″ の
+   転がりで最大 14″ のずれ）。道すじを残すときだけ、転がりを時間で刻み直す。
+   等分するのは距離ではなく時間 ―― 補間の誤差は (a/8)·Δt² で効くので、
+   時間で等分したほうが同じ点数でずっと正確になる。
+   探索（rec = 1）は当たり判定の突き合わせにしか使わないので粗くてよい。
+     描画 0.25s → 誤差 0.03″ ／ 探索 0.60s → 誤差 0.17″（球径の 8%）*/
+const ROLL_DT  = 0.25, ROLL_MAX  = 20;   // 描画・再生
+const ROLL_DTF = 0.60, ROLL_MAXF = 6;    // 探索
 function struckIdx(hits,i){
   for(let h=0;h<hits.length;h++) if(hits[h].i===i) return true;
   return false;
@@ -2298,7 +2382,7 @@ function segTime(b, d, sliding, dtSeg, L){
    これを持っていなかったため、クッションで戻った的玉が手玉を素通りしていた。 */
 function restObst(x, y, tArr){ return {x, y, tArr, rest:true}; }
 const SIMB = ballSt(0,0,0,0,0,0,0);        // simulate 用の使い回し（毎回作らない）
-function simulate(st, balls, rec, resolve){
+function simulate(st, balls, rec, resolve, stopT){
   const b = SIMB;
   b.x=st.x; b.y=st.y; b.vx=st.vx; b.vy=st.vy; b.wvx=st.wvx; b.wvy=st.wvy; b.wz=st.wz||0;
   /* 走り出す位置を台の中へ入れておく。入れ筋の判定（pocketLine / trySafety）は
@@ -2309,12 +2393,15 @@ function simulate(st, balls, rec, resolve){
      台外へゴースト、そのうち 9 割で手玉が最大 48″ 外まで走った）。 */
   b.x=clamp(b.x,R,W-R); b.y=clamp(b.y,R,HT-R);
   if(noEnglish) b.wz = 0;
-  let rails=0, scratch=false, hit=false, run=0, T=0;
+  let rails=0, scratch=false, hit=false, run=0, T=0, scrM=Infinity, cut=false;
   const pts = rec ? [[b.x,b.y,0]] : null;
   const railIdx = rec ? [] : null;
   let hits=null, nCol=0, guard=0;
   let ldx=0, ldy=0;                          // 最後に走った向き（→ SIM.dirx/diry）
-  const nSeg = rec ? SEG_REC : SEG_FAST;
+  /* rec は「道すじを残すか」。true なら描画用に細かく、1 なら探索と同じ粗さのまま
+     道すじだけ残す（shotRun が手玉と的玉を突き合わせるのに使う）。 */
+  const nSeg = rec===true ? SEG_REC : SEG_FAST;
+  const stopAt = stopT===undefined ? Infinity : stopT;
 
   outer:
   while(guard++ < 400){
@@ -2334,9 +2421,16 @@ function simulate(st, balls, rec, resolve){
        摩擦が回転を並進へ変える (2/7)·w のぶんは、
        この後の すべり相がそのまま出してくれる。 */
     if(sp0 < STOP_V && !sliding) break;
-    let hx=0, hy=0, dtSeg=0, n=1;
+    let hx=0, hy=0, dtSeg=0, n=1, rollDt=0;
     if(sliding){ hx=uxs/us; hy=uys/us; dtSeg=us/(3.5*A_SLIDE)/nSeg; n=nSeg; }
-    else       { dtSeg=sp0/A_ROLL; n=1; }
+    else{
+      dtSeg=sp0/A_ROLL;                       // 止まるまでの時間
+      if(rec){
+        n = rec===true ? clamp(Math.ceil(dtSeg/ROLL_DT ),1,ROLL_MAX )
+                       : clamp(Math.ceil(dtSeg/ROLL_DTF),1,ROLL_MAXF);
+        rollDt=dtSeg/n;
+      }
+    }
 
     for(let i=0;i<n;i++){
       const s0=Math.hypot(b.vx,b.vy);
@@ -2346,7 +2440,12 @@ function simulate(st, balls, rec, resolve){
         mx=b.vx*dtSeg-0.5*A_SLIDE*hx*dtSeg*dtSeg;
         my=b.vy*dtSeg-0.5*A_SLIDE*hy*dtSeg*dtSeg;
       } else {
-        const d=s0*s0/(2*A_ROLL);
+        const dStop=s0*s0/(2*A_ROLL);         // 止まるまでの残り距離
+        let d=dStop;
+        if(rollDt>0){
+          const dt=s0*rollDt-0.5*A_ROLL*rollDt*rollDt;
+          if(dt>0 && dt<dStop) d=dt;
+        }
         mx=b.vx/s0*d; my=b.vy/s0*d;
       }
       const L=Math.hypot(mx,my);
@@ -2394,9 +2493,35 @@ function simulate(st, balls, rec, resolve){
         t=tt; kind=2; bi=j;
       }
       if(tPot<t){ t=tPot; kind=3; bi=-1; }
+      /* 指定の時刻でぴたりと止める（→ shotRun：両方が動いている最中の衝突）。
+         その時刻の位置・速度・回転をそのまま次の衝突計算に渡すので、
+         クッションやポケットの処理には入らずここで打ち切る。 */
+      if(stopAt < Infinity && segTime(b,t,sliding,dtSeg,L) > stopAt-T){
+        const rem = stopAt-T;
+        let dS;
+        if(sliding) dS = dtSeg>1e-12 ? L*rem/dtSeg : 0;
+        else { const s0b=Math.hypot(b.vx,b.vy), s1=Math.max(0,s0b-A_ROLL*rem);
+               dS = (s0b*s0b-s1*s1)/(2*A_ROLL); }
+        if(dS < t){ t=dS; kind=0; bi=-1; cut=true; }
+      }
+      /* スクラッチのぎりぎり度（→ scratchPref）は「実際に走った区間」でだけ測る。
+         クッションや他球に手前で止められた筋は、口には近づいていないからである。
+         すでに 0 まで詰まっていれば、それ以上は測らなくてよい。
+         この弦ループは探索でいちばん回るところなので、関数に切り出さず
+         素の式で書いている（切り出すと 1 手あたり 6 回の呼び出しが増え、
+         実測でルート探索が 2 割近く遅くなった）。 */
+      if(scrM>0) for(let j=0;j<6;j++){
+        const pk=POCKETS[j];
+        if(dx*pk.ax + dy*pk.ay < pk.cosPot) continue;      // 落ちる向きではない
+        let u=(pk.mx-b.x)*dx + (pk.my-b.y)*dy;             // 口の中心へ最接近する位置
+        if(u<0) u=0; else if(u>t) u=t;
+        const ex=b.x+dx*u-pk.mx, ey=b.y+dy*u-pk.my, q2=ex*ex+ey*ey;
+        if(q2 < pk.scrR2){ const m=Math.sqrt(q2)-pk.scrR; if(m<scrM) scrM=m; }
+      }
       T += advanceBall(b,dx,dy,t,sliding,hx,hy,dtSeg,L);
       run += t;
       if(rec) pts.push([b.x,b.y,T]);
+      if(cut) break outer;
 
       if(kind===3){ scratch=true; break outer; }
       if(kind===2){
@@ -2432,6 +2557,9 @@ function simulate(st, balls, rec, resolve){
   SIM.rails=rails; SIM.scratch=scratch; SIM.hit=hit;
   SIM.pts=pts; SIM.railIdx=railIdx; SIM.hits=hits||NOHITS; SIM.run=run; SIM.T=T;
   SIM.dirx=ldx; SIM.diry=ldy;
+  SIM.scrM = scratch ? 0 : scrM;
+  SIM_ST.x=SIM.x; SIM_ST.y=SIM.y; SIM_ST.vx=b.vx; SIM_ST.vy=b.vy;
+  SIM_ST.wvx=b.wvx; SIM_ST.wvy=b.wvy; SIM_ST.wz=b.wz;
   SIM.pot=vPot(Math.hypot(b.vx,b.vy));   // 止まった／当たった時点で残っている勢い
   return SIM;
 }
@@ -2504,55 +2632,176 @@ function resolveHits(hits, balls, rec){
   return out;
 }
 
-/* --- 一手ぶんを解く（手玉 → 的玉 → 弾かれた手玉）-------------------------
-   simulate は 1 球ずつしか解けないので、次の順に解いて時間でつなぐ。
-     1) 手玉を最後まで走らせる（他の静止球とは今までどおり衝突する）
+/* --- 手玉と的玉が同時に走っている最中の当たり直し（キス）-----------------
+   1 刻みのあいだは両球とも直線に動くとみなせるので、相対運動も直線になる。
+   その線分が「球 1 個ぶんの円」に入る位置を解けば、刻みが粗くても
+   触れる瞬間を取りこぼさない（kissPaths の sweepMin2 と同じ考え方で、
+   最接近距離ではなく“触れた位置”を返す）。 */
+function sweepHit(p0,p1,q0,q1,rad){
+  const ax=p0[0]-q0[0], ay=p0[1]-q0[1];
+  const bx=(p1[0]-q1[0])-ax, by=(p1[1]-q1[1])-ay;
+  const A=bx*bx+by*by, B=ax*bx+ay*by, C=ax*ax+ay*ay-rad*rad;
+  if(C<=0) return 0;                              // 刻みの頭ですでに重なっている
+  if(A<1e-12 || B>=0) return -1;                  // 動かない／離れていく
+  const disc=B*B-A*C;
+  if(disc<0) return -1;
+  const s=(-B-Math.sqrt(disc))/A;
+  return (s>=0 && s<=1) ? s : -1;
+}
+/* 両球が動いている区間 [0,tEnd] で最初に触れる時刻。触れなければ -1。
+   分離直後はちょうど接しているので、kissPaths と同じくいったん離れてから見る。
+   時刻は必ず増える向きに進むので、ptAtTime の二分探索ではなく
+   道すじの添字を送るだけにしてある（探索でも 1 手ごとに呼ぶため）。 */
+const KISS_SPL = 64;
+const KT_C = [0,0], KT_O = [0,0], KT_C0 = [0,0], KT_O0 = [0,0];
+function ptAdvance(pts, i, t, out){
+  const n=pts.length;
+  while(i<n-1 && pts[i][2] < t) i++;
+  if(i===0 || t<=pts[0][2]){ out[0]=pts[0][0]; out[1]=pts[0][1]; return i; }
+  const A=pts[i-1], B=pts[i], dt=B[2]-A[2];
+  const u = t>=B[2] ? 1 : (dt>1e-9 ? (t-A[2])/dt : 0);
+  out[0]=A[0]+(B[0]-A[0])*u; out[1]=A[1]+(B[1]-A[1])*u;
+  return i;
+}
+function kissTime(cPts, oPts, tEnd){
+  if(!(tEnd > 1e-4)) return -1;
+  const arm2=KISS_ARM*KISS_ARM;
+  let ci=1, oi=1, armed=false;
+  KT_C0[0]=cPts[0][0]; KT_C0[1]=cPts[0][1];
+  KT_O0[0]=oPts[0][0]; KT_O0[1]=oPts[0][1];
+  for(let i=1;i<=KISS_SPL;i++){
+    const t=tEnd*i/KISS_SPL;
+    ci=ptAdvance(cPts, ci, t, KT_C);
+    oi=ptAdvance(oPts, oi, t, KT_O);
+    if(armed){
+      const u=sweepHit(KT_O0,KT_O,KT_C0,KT_C,BD);
+      if(u>=0) return tEnd*(i-1+u)/KISS_SPL;
+    } else {
+      const dx=KT_O[0]-KT_C[0], dy=KT_O[1]-KT_C[1];
+      if(dx*dx+dy*dy > arm2 || i>=2) armed=true;
+    }
+    KT_C0[0]=KT_C[0]; KT_C0[1]=KT_C[1];
+    KT_O0[0]=KT_O[0]; KT_O0[1]=KT_O[1];
+  }
+  return -1;
+}
+/* 道すじが、時刻 tFrom より後に (x,y) の球へ触れうるか。
+   触れないと分かれば「止まった球を席に入れて撞き直す」手間を省ける。 */
+function pathMeets(pts, x, y, tFrom, rad){
+  const r2=rad*rad;
+  for(let i=1;i<pts.length;i++){
+    if(pts[i][2] <= tFrom) continue;
+    const a=pts[i-1], b=pts[i];
+    const ax=a[0]-x, ay=a[1]-y, bx=b[0]-a[0], by=b[1]-a[1];
+    const L2=bx*bx+by*by;
+    let u = L2<1e-12 ? 0 : -(ax*bx+ay*by)/L2;
+    u = u<0?0:(u>1?1:u);
+    const dx=ax+bx*u, dy=ay+by*u;
+    if(dx*dx+dy*dy < r2) return true;
+  }
+  return false;
+}
+
+/* --- 一手ぶんを解く（手玉 ⇄ 的玉）----------------------------------------
+   simulate は 1 球ずつしか解けないので、順に解いて時間でつなぐ。
+     1) 手玉を走らせる（他の静止球とは今までどおり衝突する）
      2) 的玉を走らせる。1) で止まった手玉を restObst として渡すので、
         クッションから戻ってきた的玉は手玉を素通りせずにちゃんと弾く
-     3) 弾かれた手玉をそこから走らせて、手玉の道すじの続きとして足す
-   旧版は 1) と 2) を互いに知らないまま別々に走らせていたので、
-   的玉と手玉がすり抜けていた。
+     3) 2 本の道すじを時刻で突き合わせ、どちらも動いている最中に触れるなら
+        そこまで走らせ直して 2 球衝突を解き、続きを 1) から解き直す
+     4) キスが無ければ、的玉の落ち着き先を席に入れて手玉を撞き直す。
+        止まっているほうを弾いたら、その続きを相手の道すじに足す
+   3)・4) は V1.2.9 で足した。旧版は「的玉が止まった手玉を弾く」しか見ておらず、
+     ・クッションを回って戻ってきた手玉が、先に止まった的玉に追いつく形
+     ・両球が走っている最中にぶつかる形（キス）
+   がまるごとすり抜けていた。手玉と的玉は必ず弾け合う。
+
+   道すじの添字を何度走らせても合わせるため、障害物の並びは
+     others ＋ [ 的玉の席 (IO), 手玉の席 (IC) ]
+   に固定する。自分自身の席には「決して当たらない」印（tArr = ∞）を置く。
+   呼び出し側は返り値の others をそのまま resolveHits に渡せばよい。
      others  … 静止している他の球（手玉・的玉は含まない）
-     rec     … 軌跡を記録する（描画・再生）
+     rec     … 軌跡を細かく残す（描画・再生）。false でも突き合わせ用に
+               粗い軌跡は残すので、探索と再生で同じ答えになる
      o.cueMoves   … 分離後の手玉に勢いがあるか。false なら手玉はゴーストに残る
      o.resolveCue … 手玉が他球に当たったら衝突を解いて走り続ける
      o.resolveObj … 的玉も同じ扱いにする（コンビは当たった時点で止めたいので false）
    返り値は毎回新しいオブジェクト（SIM のような使い回しはしない）。 */
+const NEVER_OBST = restObst(0, 0, Infinity);
+const KISS_MAX = 3;               // キスを解き直す回数の上限（暴走防止）
 function shotRun(cueSt, obSt, others, rec, o){
   /* その場に残る手玉もクッションの内側に置く（simulate の走り出しと同じ扱い） */
   const cx0=clamp(cueSt.x,R,W-R), cy0=clamp(cueSt.y,R,HT-R);
-  const cue = {pts: rec?[[cx0,cy0,0]]:null, railIdx: rec?[]:null,
-               hits:null, x:cx0, y:cy0, T:0,
-               scratch:false, rails:0, hit:false, run:0, pot:0};
-  if(o.cueMoves){
-    const cs = simulate(cueSt, others, rec, o.resolveCue);
-    if(rec){ cue.pts=cs.pts.map(p=>[p[0],p[1],p[2]]); cue.railIdx=cs.railIdx.slice(); }
-    cue.hits = cs.hits.length ? cs.hits.slice() : null;
-    cue.x=cs.x; cue.y=cs.y; cue.T=cs.T; cue.scratch=cs.scratch;
-    cue.rails=cs.rails; cue.hit=cs.hit; cue.run=cs.run; cue.pot=cs.pot;
-  }
-  /* 落ちた手玉は台に居ないので障害物に入れない */
-  const list = cue.scratch ? others : others.concat([restObst(cue.x, cue.y, cue.T)]);
-  const os = simulate(obSt, list, rec, o.resolveObj);
-  const obj = {pts: rec?os.pts.map(p=>[p[0],p[1],p[2]]):null,
-               railIdx: rec?os.railIdx.slice():null,
-               hits: os.hits.length?os.hits.slice():null,
-               x:os.x, y:os.y, T:os.T, scratch:os.scratch, rails:os.rails,
-               hit:os.hit, run:os.run, pot:os.pot};
-  /* 的玉が止まっている手玉を弾いたら、手玉の続きを解く（＝はじける） */
-  const kh = cue.scratch ? null : (obj.hits||[]).find(h => h.i === list.length-1);
-  if(kh){
-    const ks = simulate(kh.st, others, rec, false);
-    if(rec){
-      const base = cue.pts.length;
-      for(const p of ks.pts) cue.pts.push([p[0], p[1], kh.T+p[2]]);
-      for(const ri of ks.railIdx) cue.railIdx.push(base+ri);
+  const IO=others.length, IC=IO+1;
+  const REC = rec ? true : 1;                     // 探索でも粗い軌跡だけは残す
+  const seats=(ob,cu)=>{ const l=others.slice(); l[IO]=ob; l[IC]=cu; return l; };
+  const seatOf=b => b.scratch ? NEVER_OBST : restObst(b.x, b.y, b.T);
+  /* SIM は使い回しなので、次の simulate を呼ぶ前に必要な値を写しておく
+     （pts / railIdx / hits は毎回作り直されるので参照のままでよい）。 */
+  const snap=st=>({pts:st.pts, railIdx:st.railIdx, hits:st.hits, x:st.x, y:st.y, T:st.T,
+                   scratch:st.scratch, rails:st.rails, hit:st.hit, run:st.run,
+                   pot:st.pot, scrM:st.scrM});
+  const stay=st=>({pts:[[st.x,st.y,0]], railIdx:[], hits:NOHITS, x:st.x, y:st.y, T:0,
+                   scratch:false, rails:0, hit:false, run:0, pot:0, scrM:Infinity});
+  /* 走り終えた道すじに、時刻 t0 からの続きをつなぐ */
+  const tail=(d,st,t0)=>{
+    const base=d.pts.length;
+    /* 続きの先頭は「つないだ時点」そのもの。同時刻なら重複するので落とす */
+    for(let i=(Math.abs(t0-d.T)<1e-9?1:0); i<st.pts.length; i++){
+      const q=st.pts[i]; d.pts.push([q[0], q[1], t0+q[2]]);
     }
-    cue.x=ks.x; cue.y=ks.y; cue.T=kh.T+ks.T;
-    cue.scratch=ks.scratch; cue.rails+=ks.rails; cue.run+=ks.run; cue.pot=ks.pot;
-    cue.hit=true;
+    for(const ri of st.railIdx) d.railIdx.push(base+ri);
+    if(st.hits && st.hits.length){
+      const hs=st.hits.map(h=>({i:h.i, st:h.st, T:t0+h.T}));
+      d.hits = d.hits ? d.hits.concat(hs) : hs;
+    }
+    d.x=st.x; d.y=st.y; d.T=t0+st.T; d.scratch=st.scratch;
+    d.rails+=st.rails; d.run+=st.run; d.pot=st.pot;
+    if(st.hit) d.hit=true;
+    if(st.scrM<d.scrM) d.scrM=st.scrM;
+  };
+
+  const cue={pts:[[cx0,cy0,0]], railIdx:[], hits:null, x:cx0, y:cy0, T:0,
+             scratch:false, rails:0, hit:false, run:0, pot:0, scrM:Infinity};
+  const obj={pts:[[obSt.x,obSt.y,0]], railIdx:[], hits:null, x:obSt.x, y:obSt.y, T:0,
+             scratch:false, rails:0, hit:false, run:0, pot:0, scrM:Infinity};
+  let cSt=ballSt(cx0,cy0,cueSt.vx,cueSt.vy,cueSt.wvx,cueSt.wvy,cueSt.wz);
+  let oSt=obSt, t0=0, moves=o.cueMoves;
+
+  for(let pass=0; pass<KISS_MAX; pass++){
+    const cs = moves ? snap(simulate(cSt, others, REC, o.resolveCue)) : stay(cSt);
+    const os = snap(simulate(oSt, seats(NEVER_OBST, seatOf(cs)), REC, o.resolveObj));
+    /* どちらも動いている最中に触れるか（キス） */
+    const tk = pass+1<KISS_MAX ? kissTime(cs.pts, os.pts, Math.min(cs.T, os.T)) : -1;
+    if(tk >= 0){
+      /* 触れる瞬間まで走らせ直し、その状態のまま 2 球衝突を解く。
+         打ち切りより前は相手が席に居ないのと同じなので、席は空でよい。 */
+      const cCut = snap(simulate(cSt, others, REC, o.resolveCue, tk));
+      const cNext = copySt(SIM.st);
+      const oCut = snap(simulate(oSt, seats(NEVER_OBST, NEVER_OBST), REC, o.resolveObj, tk));
+      const oNext = copySt(SIM.st);
+      tail(cue, cCut, t0);  tail(obj, oCut, t0);
+      ballCollide(cNext, oNext);
+      cue.hit=true; obj.hit=true;
+      cSt=cNext; oSt=oNext; t0+=tk; moves=true;
+      continue;
+    }
+    /* 的玉のほうが先に止まる形 ―― 止まった的玉を席に入れて手玉を撞き直す。
+       当たっていなければ 1 本目とまったく同じ結果になる。 */
+    let cFin = cs;
+    if(moves && !cs.scratch && !os.scratch && cs.T > os.T
+       && pathMeets(cs.pts, os.x, os.y, os.T, BD))
+      cFin = snap(simulate(cSt, seats(restObst(os.x,os.y,os.T), NEVER_OBST), REC, o.resolveCue));
+    tail(cue, cFin, t0);  tail(obj, os, t0);
+    /* 止まっていたほうを弾いたら、その続きを足す */
+    const ko = (cFin.hits||NOHITS).find(h => h.i === IO);
+    if(ko) tail(obj, snap(simulate(ko.st,
+                 seats(NEVER_OBST, restObst(cFin.x, cFin.y, cFin.T-ko.T)), REC, false)), t0+ko.T);
+    const kc = cFin.scratch ? null : (os.hits||NOHITS).find(h => h.i === IC);
+    if(kc) tail(cue, snap(simulate(kc.st, others, REC, false)), t0+kc.T);
+    break;
   }
-  return {cue, obj, others:list};
+  return {cue, obj, others:seats(seatOf(obj), seatOf(cue))};
 }
 
 /* --- クラスターを割る（ブレイクアウト）----------------------------------
@@ -3325,7 +3574,12 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
            撞点を手で指定しているときは、本人の指定を消さずにそのまま出す
            （§07 の「撞点の寿命」として警告メッセージで知らせる）。 */
         if(!honorSpin && b < -0.06 && f > -0.06) continue;
+        /* 遠い的玉を目一杯の下撞き＋目一杯の力で引く手は、実戦では撞かない。
+           自動で選ぶときだけ外す（撞点・力を手で指定したときは本人の指定を出す）。 */
+        if(!honorSpin && b < DRAW_DEEP && d1 > DRAW_FAR && P0 > 0.80*PMAX) continue;
         const tipPref = (b < -0.05 && f > -0.05) ? 0.80 : 1;
+        /* 引きは押しより外れやすい ―― 深さ・距離・余分な力で割り引く */
+        const drawP = drawPref(b, d1, P0, p0min);
 
         for(let ia=0; ia<aset.length; ia++){
           const a = aset[ia];
@@ -3357,7 +3611,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
              cuePot はクッションでの減衰も滑走ぶんも含んでいないので、
              クッションを使う手・強い手ほど表示と再生が食い違っていた
              （実測: 最大＋押しの一発で 表示 199″ / 実際 115″）。 */
-          let run = 0, dirx = 0, diry = 0;
+          let run = 0, dirx = 0, diry = 0, scrM = Infinity;
           let brk = 1, brkPref = 1, hitRes = null;
           if(still){ ex=pd.gx; ey=pd.gy; }
           else{
@@ -3369,6 +3623,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
             ex=SIM.x; ey=SIM.y; rails=SIM.rails; scr=SIM.scratch; hitb=SIM.hit;
             run=SIM.run;                      // resolveHits が SIM を上書きする前に取る
             dirx=SIM.dirx; diry=SIM.diry;     // 到達の向き（→ ラインに乗せる・極意⑧）
+            scrM=SIM.scrM;                    // スクラッチのぎりぎり度（→ scratchPref）
             if(hitb && fine && SIM.hits.length){
               const hs=SIM.hits.slice(), cT=SIM.T;   // SIM は使い回しなので先に複製
               /* 弾かれた球も、止まったあとの手玉を素通りしない（描画・再生と同じ扱い） */
@@ -3417,9 +3672,15 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
              sideFac は「遠いコーナーへ振り直させる減点」＝最後の一発の薄さ
              （lastPen）と途中の球のアングル窓（angP）を打ち消して上乗せする。
              どちらも下限があるので 0 除算にはならない。 */
-          const sidePick = !!sideOk && !scr && pos >= SIDE_POS_OK
-                        && nv >= SIDE_NV_OK*nvMax[sIdx];
-          const sideFac  = sidePick ? SIDE_PREF/(lastPen*angP) : 1;
+          /* 穴前のサイド（sideOk = 2）は出しの条件を通さない。
+             的玉が 1 ポイントしか走らないので、どこへ出しても入るからである。 */
+          const sidePick = !sideOk || scr ? 0
+                         : sideOk===2 ? 2
+                         : (pos >= SIDE_POS_OK && nv >= SIDE_NV_OK*nvMax[sIdx] ? 1 : 0);
+          const sideFac  = !sidePick ? 1
+                         : (sidePick===2
+                              ? SIDE_NEAR_PREF*(isLast?SIDE_NEAR_LAST:1)
+                              : SIDE_PREF) / (lastPen*angP);
           /* 成功率の低いカットは撞かない（極意⑦）。
              他に手が無ければ選ばれるよう、下限を残した掛け算で効かせる。 */
           const qP = shotQualityPref(q0, isLast);
@@ -3427,8 +3688,10 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
              最後の一発は次の球が無いので対象外。 */
           const lopP = (fine && !isLast && !still)
                      ? lineOfPosition(k, ex, ey, dirx, diry, run) : 1;
+          /* スクラッチしそうなぎりぎりのラインは、落ちなくても選ばない */
+          const scrP = scratchPref(scrM);
           const pref = imm*pos*lastPen*nearP*hardP*angP*powPref*distPen*tipPref*sideFac*brkPref
-                     * qP*lopP;
+                     * qP*lopP*scrP*drawP;
           const val = pref*nvw;
           if(val<=0) continue;
 
@@ -3519,15 +3782,17 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
           solveImpact(cd.gx, cd.gy, ax, ay, cd.wx, cd.wy, Q1, f, E0);
           const m=CUE.m, fx=CUE.fx, fy=CUE.fy;
           const cuePot=Q1*m*m;
-          let scr=false, ex=cd.gx, ey=cd.gy, run=0;
+          let scr=false, ex=cd.gx, ey=cd.gy, run=0, scrM=Infinity;
           if(cuePot>0.5 && m>0.02){
             simulate(CUE.st,others,false,false);
-            ex=SIM.x; ey=SIM.y; scr=SIM.scratch; run=SIM.run;
+            ex=SIM.x; ey=SIM.y; scr=SIM.scratch; run=SIM.run; scrM=SIM.scrM;
           }
           const imm=q0*powPen*bPen*aPen*(scr?0.03:1);
           /* コンビも「成功率の低い一発は撞かない」（極意⑦）。決まれば上がりだが、
-             外せばそのまま相手の番になるので、素の入れ以上に低い成功率は選ばない。 */
-          const pref=imm*powPref*COMBO_PREF*shotQualityPref(q0, true);
+             外せばそのまま相手の番になるので、素の入れ以上に低い成功率は選ばない。
+             スクラッチのぎりぎり・無理な引きを避けるのは素の入れと同じ。 */
+          const pref=imm*powPref*COMBO_PREF*shotQualityPref(q0, true)
+                    *scratchPref(scrM)*drawPref(b, d1, P0, p0min);
           if(pref<=0) continue;
 
           SI.pd=cd; SI.combo=cd; SI.b=b; SI.a=a; SI.P0=P0; SI.f=f;
@@ -3538,7 +3803,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
           { const fm=Math.hypot(fx,fy);
             SI.ux = fm>1e-6 ? fx/fm : 0; SI.uy = fm>1e-6 ? fy/fm : 0; }
           SI.tx=tx; SI.ty=ty; SI.ax=ax; SI.ay=ay; SI.E0=E0;
-          SI.needRail=false; SI.sidePick=false; SI.pref=pref; SI.brk=1; SI.lop=1;
+          SI.needRail=false; SI.sidePick=0; SI.pref=pref; SI.brk=1; SI.lop=1;
           cb(pref);                     // 決まれば取り切り完了なので nv は掛けない
         }
       }
@@ -4280,6 +4545,8 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
   const lim=bridgeLim(cx,cy);
   if(b> TIPMAX*Math.min(1,lim+0.40)+1e-9 || b< -TIPMAX*lim-1e-9) return false;
   if(Math.abs(a)>TIPMAX*lim+1e-9 || Math.hypot(a,b)>TIPMAX+1e-9) return false;
+  /* 遠い的玉を目一杯の下撞き＋目一杯の力で引く守りは、実戦では撞かない */
+  if(b < DRAW_DEEP && t > DRAW_FAR && P0 > 0.80*PMAX) return false;
 
   /* 衝突時の手玉の状態。的玉に渡る勢いも手玉が走る距離も、
      ここで出る「衝突時のポテンシャル Q1」から分け合う。
@@ -4371,6 +4638,7 @@ function trySafety(cx,cy,target,others,th,b,a,P0){
   SF.bankQ=op.bankQ; SF.bankPi=op.bankPi; SF.brx=op.brx; SF.bry=op.bry;
   SF.bankNA=op.bankNA; SF.threat=op.threat; SF.tight=tight;
   SF.frz=tg.frz; SF.gapRaw=tg.gap; SF.cRun=cRun; SF.oRun=oRun; SF.obRail=obRail;
+  SF.scrM=rr.cue.scrM;
   SF.hitFull=op.hitFull; SF.hide=hide;
   SF.score=sc; SF.scoreOpp=scOpp;
   SF.good=good; SF.cuePot=cuePot; SF.objPot=objPot; SF.ctrl=ctrl;
@@ -4388,6 +4656,7 @@ function snapSafety(cx,cy,target){
     bankQ:SF.bankQ, bankPi:SF.bankPi, brx:SF.brx, bry:SF.bry, bankNA:SF.bankNA,
     threat:SF.threat, tight:SF.tight, good:SF.good, hitFull:SF.hitFull, hide:SF.hide,
     frz:SF.frz, gapRaw:SF.gapRaw, cRun:SF.cRun, oRun:SF.oRun, obRail:SF.obRail,
+    scrM:SF.scrM,
     cuePot:SF.cuePot, objPot:SF.objPot, ctrl:SF.ctrl,
     spd:SF.spd, pw:SF.pw, score:SF.score, scoreOpp:SF.scoreOpp};
 }
@@ -4578,11 +4847,16 @@ const SAFE_W = {
    旧版は取り切り側に aPen があるのに、セーフティー側には捻りの減点が
    一つも無かった（実測: 取り切りは 325 手中 0.9% しか捻らないのに、
    セーフティーは 43〜52% が捻る）。セーフティーは失敗したらフリーボールを渡すので、
-   取り切り以上に素直に打ちたい。捻りと極端に薄い当ては、それ自体が実行難度。 */
+   取り切り以上に素直に打ちたい。捻りと極端に薄い当ては、それ自体が実行難度。
+   V1.2.9 —— 取り切りと同じく「スクラッチぎりぎりのライン」と「無理な引き」も
+   ここで割り引く。守りは外せばフリーボールを渡すので、取り切り以上に
+   ぎりぎりの筋を選ぶ理由が無い。 */
 const SAFE_THIN0 = 45*Math.PI/180, SAFE_THIN_W = 40*Math.PI/180;
 function safeExec(c){
   const thin = Math.max(0, Math.abs(c.th) - SAFE_THIN0)/SAFE_THIN_W;
-  return 1 - 0.55*c.a*c.a - (Math.abs(c.a)>0.05?0.10:0) - 0.18*thin*thin;
+  return (1 - 0.55*c.a*c.a - (Math.abs(c.a)>0.05?0.10:0) - 0.18*thin*thin)
+       * scratchPref(c.scrM===undefined ? Infinity : c.scrM)
+       * drawPref(c.b, c.t, c.P0, c.t+4);
 }
 /* --- 相手の失敗率重視で「バンクを残さない」---------------------
    threat は直球とバンクの高いほうしか見ないので、直球のほうが高い手では
@@ -6693,8 +6967,12 @@ function renderPanel(){
     }
     /* 「近いサイドを使う」。遠いコーナーより角度はきついが距離が短い */
     if(s.sidePick)
-      ws.push(`ℹ ${s.n}番は近い${pocketName(s.pi)}を狙います（フリ ${Math.round(angDeg(s.cosT))}°）。`
-        + `遠いコーナーのほうが角度は緩みますが、的玉の走る距離が短いサイドのほうが確実です`
+      ws.push(`ℹ ${s.n}番は${s.sidePick===2?'穴前の':'近い'}${pocketName(s.pi)}を狙います`
+        + `（フリ ${Math.round(angDeg(s.cosT))}°）。`
+        + (s.sidePick===2
+            ? `的玉の走りが 1 ポイント以内なので、フリが開いても狙いのずれが拡大しません。`
+              + `遠いコーナーが真っすぐに見えても、ここはサイドが本命です`
+            : `遠いコーナーのほうが角度は緩みますが、的玉の走る距離が短いサイドのほうが確実です`)
         + `（スクラッチしない筋だけを候補にしています）。`);
     if(s.close)
       ws.push(`⚠ ${s.n}番は手玉との隙間が ${Math.max(0,s.d1-BD).toFixed(1)}″しかありません。引きや強い撞点はダブルヒットの反則になります。`);
@@ -6770,7 +7048,7 @@ function renderPanel(){
             ${tipOverride[s.k]?'<span class="tag e">撞点 手動</span>':''}
             ${powOverride[s.k]?`<span class="tag e">力加減 ${POWLBL[powOverride[s.k]]}</span>`:''}
             <span class="tag ${s.d1<=NEAR_PT?'s':'w'}">${s.d1<=NEAR_PT?'2ポイント以内':'2ポイント超'}</span>
-            ${s.sidePick?'<span class="tag s">近いサイドを使う</span>':''}
+            ${s.sidePick?`<span class="tag s">${s.sidePick===2?'穴前はサイドへ':'近いサイドを使う'}</span>`:''}
             ${s.hard>HARD_TAG?'<span class="tag w">難所</span>':''}
             ${s.slide>0.05?'<span class="tag d">土手に沿わせる</span>':''}
             ${s.moved?'<span class="tag d">前の手で動いた位置</span>':''}
