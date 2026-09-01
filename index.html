@@ -484,6 +484,30 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
         </div>
       </div>
       <div class="sec">
+        <h2>操作</h2>
+        <div class="row">
+          <button class="act tone t-info ghost" id="bNew">新しい配置</button>
+          <button class="act tone t-go" id="bAuto">手玉を置く</button>
+          <button class="act tone t-danger ghost" id="bClear">手玉を外す</button>
+        </div>
+      </div>
+      <div class="sec">
+        <h2>再生 — 実際の球の動き</h2>
+        <div class="row">
+          <button class="act tone t-play" id="bPlay">▶ 再生</button>
+          <button class="act tone t-step" id="bStep1">▶ 一手再生</button>
+          <button class="act tone t-danger" id="bStop">■ 停止</button>
+        </div>
+        <div class="row" style="margin-top:6px" id="spds">
+          <button class="seg" data-s="0.4">遅い</button>
+          <button class="seg on" data-s="0.8">普通</button>
+          <button class="seg" data-s="1.2">早い</button>
+        </div>
+        <label class="chk" style="width:100%;margin-top:7px">
+          <input type="checkbox" id="cTrail" checked>通った軌跡を残す</label>
+        <div class="tipnote" id="animNote">手玉を置くと再生できます。</div>
+      </div>
+      <div class="sec">
         <h2>配置の難易度</h2>
         <div class="row" id="diffs">
           <button class="seg on" data-d="easy">やさしい</button>
@@ -509,30 +533,6 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
           <button class="seg" data-c="slow">重い</button>
         </div>
         <div class="tipnote" id="condNote" style="margin-top:7px"></div>
-      </div>
-      <div class="sec">
-        <h2>操作</h2>
-        <div class="row">
-          <button class="act tone t-info ghost" id="bNew">新しい配置</button>
-          <button class="act tone t-go" id="bAuto">手玉を置く</button>
-          <button class="act tone t-danger ghost" id="bClear">手玉を外す</button>
-        </div>
-      </div>
-      <div class="sec">
-        <h2>再生 — 実際の球の動き</h2>
-        <div class="row">
-          <button class="act tone t-play" id="bPlay">▶ 再生</button>
-          <button class="act tone t-step" id="bStep1">▶ 一手再生</button>
-          <button class="act tone t-danger" id="bStop">■ 停止</button>
-        </div>
-        <div class="row" style="margin-top:6px" id="spds">
-          <button class="seg" data-s="0.4">遅い</button>
-          <button class="seg on" data-s="0.8">普通</button>
-          <button class="seg" data-s="1.2">早い</button>
-        </div>
-        <label class="chk" style="width:100%;margin-top:7px">
-          <input type="checkbox" id="cTrail" checked>通った軌跡を残す</label>
-        <div class="tipnote" id="animNote">手玉を置くと再生できます。</div>
       </div>
       <div class="sec">
         <h2>表示</h2>
@@ -606,7 +606,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
           <button class="act sm" id="tipAutoAll">全て自動に</button>
         </div>
         <label class="chk" style="width:100%;margin-top:8px">
-          <input type="checkbox" id="cNoEng">捻りを一切使わない（ノーイングリッシュ）</label>
+          <input type="checkbox" id="cNoEng">捻り一切なし（ノーイングリッシュ）</label>
       </div>
       <div id="steps"><div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。</div></div>
       <div class="sec" style="border-bottom:none;">
@@ -649,18 +649,25 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       練習の方針を考える材料として使ってください。</p>
 
       <h3>2. 基本の流れ</h3>
+      <p>右（スマホは下）のパネルは<b>使う順に上から並んでいます</b>。
+      <b>ゲーム → 操作 → 再生 → 配置の難易度 → テーブルコンディション → 表示 → 撞点</b>の順です。
+      よく使う<b>操作</b>と<b>再生</b>を上に置いてあるので、
+      配置を出す・手玉を置く・動きを見る、までスクロールなしで回せます。</p>
       <ol>
-        <li><b>球数を選ぶ</b> — 3球(7-9) / 4球(6-9) / 6球(4-9)</li>
-        <li><b>取り切り</b>（橙）か<b>セーフティー</b>（青）を選ぶ</li>
-        <li><b>配置を決める</b> — <b>新しい配置</b>でランダムに出す。
+        <li><b>球数を選ぶ</b>（ゲーム）— 3球(7-9) / 4球(6-9) / 6球(4-9)</li>
+        <li><b>取り切り</b>（橙）か<b>セーフティー</b>（青）を選ぶ（ゲーム）</li>
+        <li><b>配置を決める</b>（操作）— <b>新しい配置</b>でランダムに出す。
             手玉を置く前なら<b>的玉をドラッグで自由に動かせます</b>
             （黄色い点滅リングが出ている間が編集できる状態）</li>
-        <li><b>手玉を置く</b> — テーブルの空いた所をタップ／クリック。
+        <li><b>手玉を置く</b>（操作）— テーブルの空いた所をタップ／クリック。
             点滅マーカーが推奨位置で、<b>手玉を置く</b>ボタンでそこへ置けます</li>
-        <li><b>手順を見る／再生する</b> — 右（スマホは下）のパネルに手順カードが出ます。
+        <li><b>再生する</b>（再生）— <b>▶ 再生</b>で計算どおりの球の動きが流れます</li>
+        <li><b>手順を見る</b> — パネルの下のほうに手順カードが出ます。
             カードをタップするとその一手だけを詳しく表示します</li>
       </ol>
-      <p class="note"><b>手玉を外す</b>を押すと、また的玉を動かせる状態に戻ります。</p>
+      <p class="note"><b>手玉を外す</b>を押すと、また的玉を動かせる状態に戻ります。
+      <b>配置の難易度・型</b>や<b>テーブルコンディション</b>は、
+      いちど決めたらそのまま使う設定なので、操作・再生の下に置いてあります。</p>
 
       <h3>3. ボタンの色の意味</h3>
       <p>よく使うボタンは<b>役割ごとに色を分けて</b>います。色だけで役割が分かるようにしてあります。</p>
@@ -693,50 +700,22 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
                 各球のシュート率と、次の球への出しやすさを両方見て組み立てます。</td></tr>
         <tr><th>セーフティー</th>
             <td>最小番号の球に当てたうえで、<b>相手に入れられない形</b>を作る一手を探します。
-                選ぶと<b>セーフティーの方針</b>（2 つ）が下に出ます。くわしくは「10. セーフティー」。</td></tr>
+                選ぶと<b>セーフティーの方針</b>（2 つ）が下に出ます。くわしくは「11. セーフティー」。</td></tr>
       </table>
 
-      <h3>5. 配置の難易度と型</h3>
-      <p>練習したい形を狙って出せます。</p>
+      <h3>5. 操作 — 配置と手玉</h3>
+      <p>盤面そのものを動かす 3 つのボタンです。<b>「ゲーム」のすぐ下</b>に置いてあります。</p>
       <table class="ht">
-        <tr><th>やさしい</th><td>球間 4 個分・クッションから 4.4″・ポケットから 9.5″。
-            難所が出ないので<b>ルートの読み方を覚える</b>のに向きます。</td></tr>
-        <tr><th>ふつう</th><td>球間 2 個分・クッションから 2″・ポケットから 5″。
-            <b>土手ぎわ・ポケット際・難所</b>が出ます。</td></tr>
-        <tr><th>実戦</th><td>球間はほぼ接触まで・<b>クッションにフローズン可</b>・ポケットから 2.5″。
-            <b>クラスター・土手ベタ・フタ</b>が出ます。難しい代わりに、
-            実戦でいちばん判断が要る形を練習できます。</td></tr>
+        <tr><th><span style="color:var(--safe-line)">■</span> 新しい配置</th>
+            <td>いまの球数・難易度・型で<b>配置を出し直します</b>（PC は <b>R</b> キー）。
+                手玉は外れた状態になるので、そのまま的玉をドラッグして形を作れます。</td></tr>
+        <tr><th><span style="color:var(--go-line)">■</span> 手玉を置く</th>
+            <td>点滅マーカーの<b>推奨位置に手玉を置きます</b>（PC は <b>A</b> キー）。
+                盤面の空いた所をタップ／クリックすれば、好きな位置にも置けます。</td></tr>
+        <tr><th><span style="color:var(--danger-line)">■</span> 手玉を外す</th>
+            <td>手玉を台から外し、<b>また的玉を動かせる状態</b>に戻します。</td></tr>
       </table>
-      <p><b>配置の型</b>は難易度の制約より優先されます。</p>
-      <table class="ht">
-        <tr><th>ランダム</th><td>難易度の制約だけでランダムに置きます。</td></tr>
-        <tr><th>ブレイク後</th><td>球が片側の半面に寄り、1 球はサイド寄りの土手ぎわに残ります。</td></tr>
-        <tr><th>クラスター</th><td><b>2 球を必ず 1 球分以内</b>に置きます。
-            「割るか、後回しにするか」の判断が要ります。</td></tr>
-        <tr><th>土手ベタ</th><td>1 球を<b>クッションにフローズン</b>で置きます。
-            ブリッジと撞点が制限される球の入れ方 ——
-            <b>土手に沿わせてコーナーへ落とす</b>筋の練習になります
-            （→「12c. 土手ベタの狙い方」）。</td></tr>
-        <tr><th>フタ</th><td>1 球目のポケット前に他の球を置きます。
-            <b>別のポケットを探す／先に片付ける</b>判断になります。</td></tr>
-        <tr><th>終盤難所</th><td>最後の 2 球をわざと難しくします。
-            「難所は中盤で処理」がどう効くかを確かめる用です。</td></tr>
-      </table>
-      <p class="note">難易度を緩めると<b>まったく撞けない配置</b>もできてしまうので、
-      <b>全球に狙えるポケットが 1 つ以上あること</b>を確かめてから配置を出しています。
-      それでも「実戦」では取り切れないルートが出ることがあります。</p>
-
-      <h3>6. テーブルコンディション</h3>
-      <p>行きつけの台に合わせて選ぶと、ルート・撞点・力加減・セーフティーのすべてが計算し直されます。</p>
-      <table class="ht">
-        <tr><th>標準</th><td>基準。入射 30°のクッションは <b>33.4°</b> で出ます。</td></tr>
-        <tr><th>新ラシャ</th><td>よく走り、クッションも生きる（入射 30°→ <b>34.8°</b>）。
-            転がりは素直だが<b>スローが大きい</b>。出しは長めに出ます。</td></tr>
-        <tr><th>重い</th><td>球が走らずクッションも死ぬ（入射 30°→ <b>31.6°</b>）。
-            <b>引きがすぐ抜ける</b>ので押し中心・強めの力加減に。</td></tr>
-      </table>
-
-      <h3>7. 再生 — 実際の球の動きを見る</h3>
+      <h3>6. 再生 — 実際の球の動きを見る</h3>
       <p><b>▶ 再生</b>（緑・PC は <b>Space</b> キー）で、計算したルートを
       <b>実際の球の動きとして再現</b>します。手玉が的玉に当たり、的玉がポケットへ、
       手玉が次の球の位置へ転がっていく様子が、そのまま順番に流れます。</p>
@@ -756,7 +735,47 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       <p class="note">再生は<b>計算どおりに撞けた場合</b>の動きです。実際はストロークのぶれがあるので、
       パネルの「シュート率」「成立率」と合わせて見てください。</p>
 
-      <h3>8. 表示 — 何を盤面に出すか</h3>
+      <h3>7. 配置の難易度と型</h3>
+      <p>練習したい形を狙って出せます。</p>
+      <table class="ht">
+        <tr><th>やさしい</th><td>球間 4 個分・クッションから 4.4″・ポケットから 9.5″。
+            難所が出ないので<b>ルートの読み方を覚える</b>のに向きます。</td></tr>
+        <tr><th>ふつう</th><td>球間 2 個分・クッションから 2″・ポケットから 5″。
+            <b>土手ぎわ・ポケット際・難所</b>が出ます。</td></tr>
+        <tr><th>実戦</th><td>球間はほぼ接触まで・<b>クッションにフローズン可</b>・ポケットから 2.5″。
+            <b>クラスター・土手ベタ・フタ</b>が出ます。難しい代わりに、
+            実戦でいちばん判断が要る形を練習できます。</td></tr>
+      </table>
+      <p><b>配置の型</b>は難易度の制約より優先されます。</p>
+      <table class="ht">
+        <tr><th>ランダム</th><td>難易度の制約だけでランダムに置きます。</td></tr>
+        <tr><th>ブレイク後</th><td>球が片側の半面に寄り、1 球はサイド寄りの土手ぎわに残ります。</td></tr>
+        <tr><th>クラスター</th><td><b>2 球を必ず 1 球分以内</b>に置きます。
+            「割るか、後回しにするか」の判断が要ります。</td></tr>
+        <tr><th>土手ベタ</th><td>1 球を<b>クッションにフローズン</b>で置きます。
+            ブリッジと撞点が制限される球の入れ方 ——
+            <b>土手に沿わせてコーナーへ落とす</b>筋の練習になります
+            （→「13c. 土手ベタの狙い方」）。</td></tr>
+        <tr><th>フタ</th><td>1 球目のポケット前に他の球を置きます。
+            <b>別のポケットを探す／先に片付ける</b>判断になります。</td></tr>
+        <tr><th>終盤難所</th><td>最後の 2 球をわざと難しくします。
+            「難所は中盤で処理」がどう効くかを確かめる用です。</td></tr>
+      </table>
+      <p class="note">難易度を緩めると<b>まったく撞けない配置</b>もできてしまうので、
+      <b>全球に狙えるポケットが 1 つ以上あること</b>を確かめてから配置を出しています。
+      それでも「実戦」では取り切れないルートが出ることがあります。</p>
+
+      <h3>8. テーブルコンディション</h3>
+      <p>行きつけの台に合わせて選ぶと、ルート・撞点・力加減・セーフティーのすべてが計算し直されます。</p>
+      <table class="ht">
+        <tr><th>標準</th><td>基準。入射 30°のクッションは <b>33.4°</b> で出ます。</td></tr>
+        <tr><th>新ラシャ</th><td>よく走り、クッションも生きる（入射 30°→ <b>34.8°</b>）。
+            転がりは素直だが<b>スローが大きい</b>。出しは長めに出ます。</td></tr>
+        <tr><th>重い</th><td>球が走らずクッションも死ぬ（入射 30°→ <b>31.6°</b>）。
+            <b>引きがすぐ抜ける</b>ので押し中心・強めの力加減に。</td></tr>
+      </table>
+
+      <h3>9. 表示 — 何を盤面に出すか</h3>
       <table class="ht">
         <tr><th>全ステップ</th><td>選んでいる一手以外のラインも薄く重ねて出します。
             外すと<b>いまの一手だけ</b>になり、線が減って見やすくなります。</td></tr>
@@ -769,7 +788,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
             色の濃さで出します。<b>出しの目標を面でつかむ</b>のに使えます。</td></tr>
       </table>
 
-      <h3>9. 撞点（どうてん）と力加減</h3>
+      <h3>10. 撞点（どうてん）と力加減</h3>
       <p>白いボールの図が撞点コントロールです（上＝押し／下＝引き／左右＝捻り）。
       指定した手は「手動」になり、そこから先のルートが計算し直されます。
       設定のしかたは 3 通りあります。</p>
@@ -841,7 +860,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       <b>クッション反射はいちばん読みにくい</b>ところ（撞点・力加減・ラシャの当たりで角度が動く）なので、
       捻りを残して回す出しは<b>止めたい場所への精度を割り引いて</b>評価します。
       捻りは並進よりずっと長生きするので、<b>弱く撞くほど反射角は大きく動きます</b>。<br>
-      <b>「捻りを一切使わない（ノーイングリッシュ）」</b>にチェックを入れると、
+      <b>「捻り一切なし（ノーイングリッシュ）」</b>にチェックを入れると、
       ルート探索・セーフティー・再生のすべてで左右の撞点が<b>芯に固定</b>されます。
       なお、クッションに擦れて手玉が拾う横回転は物理現象なので止まりません
       （撞いて入れた捻りだけを封じます）。
@@ -849,7 +868,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       上下の微調整ボタンだけが使えます。上下も自動で選ばせたいときは
       <b>「全て自動に」</b>を押してください。</p>
 
-      <h3>10. セーフティー</h3>
+      <h3>11. セーフティー</h3>
       <p>最小番号の球（3球なら7番／4球なら6番／6球なら4番）に当てたうえで、
       相手に<b>「球の陰に隠す（スヌーク）」</b>か<b>「入れられる筋を残さない」</b>のどちらかを狙います。</p>
       <p><b>相手の残り手は、直球（カット）だけでなく 1 クッションのバンクまで洗い出します。</b>
@@ -915,7 +934,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
             バンクを<b style="color:#fbbf24">黄</b>のラインと確率で表示します</li>
       </ul>
 
-      <h3>11. テーブル上の線の意味</h3>
+      <h3>12. テーブル上の線の意味</h3>
       <ul class="leg">
         <li><i style="border-color:#ffffff99"></i><b>狙いライン</b>（白・実線）手玉からゴーストボールへ</li>
         <li><i style="border-color:#ffd166;border-top-style:dashed"></i><b>的玉ライン</b>（黄・破線）的玉からポケットへ</li>
@@ -938,7 +957,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       その横に<b>「次のフリ ○°」</b>が出るので、真っすぐに出していないかがその場で分かります。
       セーフティーでは「手」「的」のマークが、それぞれの球の落ち着き先です。</p>
 
-      <h3>12. 数字の読み方 — A級（上級アマチュア）水準</h3>
+      <h3>13. 数字の読み方 — A級（上級アマチュア）水準</h3>
       <p>表示している％は<b>プロではなく A級</b>の実力で見た値です。次の点を基準に較正しています。</p>
       <table class="ht">
         <tr><th>1 ポイント・フリ 10°未満</th><td><b>100%</b>（この範囲だけは落とさない）</td></tr>
@@ -985,7 +1004,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
             目指します。1 ポイント = 12.5″＝ダイヤ 1 個ぶんです</li>
       </ul>
 
-      <h3>12b. ルートの選び方 — 9ボールの試合を想定しています</h3>
+      <h3>13b. ルートの選び方 — 9ボールの試合を想定しています</h3>
       <p>このアプリが選ぶのは「理屈のうえで繋がるルート」ではなく、
       <b>試合でその通りに撞ける（＝再現できる）ルート</b>です。同じくらいの確率の手が並んだときは、
       次の順で選びます。</p>
@@ -1010,9 +1029,29 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
                 最後まで繋がらない</b>ときだけです。
                 <b>土手ベタの球を土手から離すために当てにいくことはしません</b>
                 （下の「土手ベタの球」を参照）。</td></tr>
+        <tr><th>⑤ スクラッチ<br>しない</th>
+            <td><b>手玉が落ちる筋はルートに入れません。</b>入れても手玉を落とせば
+                その時点で相手の番になるので、繋がる手が 1 本でもあるかぎり選びません
+                （どう撞いても落ちる配置でだけ残り、その手には<b>スクラッチ注意</b>が付きます）。
+                <b>落ちなくても口の端すれすれを通るライン</b>も、狙いのわずかなずれで
+                落ちてしまうので同じように避けます。</td></tr>
+        <tr><th>⑥ ロング<br>シュートは<br>撞かない</th>
+            <td>狙いのずれは<b>的玉が走る距離ぶんそのまま拡大する</b>ので、
+                同じフリ角でも台の端から端へ入れる筋は実戦では入りません。
+                <b>的玉→ポケットが 3 ポイント（37.5″）以内</b>に収まる筋を選び、
+                そこから連続的に減点します。<b>手玉→的玉が 2 ポイント以内</b>（①）と
+                合わせて、<b>近くから・短く入れる</b>組み立てになります。</td></tr>
+        <tr><th>⑦ 近いサイドを<br>使う</th>
+            <td>遠いコーナーのほうがフリが緩く見えても、<b>フリ 60°までなら
+                近いサイド</b>のほうが確実です（的玉の走る距離が短いぶん、
+                狙いのずれが拡大しないため）。とくに<b>的玉がサイドから
+                1.5 ポイント以内</b>にあるときは、フリが大きく開いていても
+                サイドが本命になります。カードには<b>近いサイドを使う</b>が付きます。</td></tr>
       </table>
+      <p class="note">①〜⑦ は<b>ルートの好み</b>であって、画面に出るシュート率そのものは動かしません。
+      同じくらいの確率の手が並んだときに、どれを選ぶかを決めています。</p>
 
-      <h3>12c. 土手ベタ（クッションに付いた球）の狙い方</h3>
+      <h3>13c. 土手ベタ（クッションに付いた球）の狙い方</h3>
       <p>クッションにぴったり付いた球は、<b>ポケットの口の中央ではなく
       「土手側のジョーぎわ」を狙い、土手に沿わせて落とします</b>。
       口の中央へ向けると球が土手から離れる向きになり、ポケットが受けられる角度を超えてしまうためです。
@@ -1027,7 +1066,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
             土手ベタは「入る球」であって、割るべきトラブルではありません</li>
       </ul>
 
-      <h3>13. 手順カードのタグ</h3>
+      <h3>14. 手順カードのタグ</h3>
       <p>そのルートが<b>どういう考え方で選ばれたか</b>がタグで分かります。主なものです。</p>
       <table class="ht">
         <tr><th>◎ アングル良好</th><td>次のフリが 12〜35°に収まっている＝手玉を動かす手段が残る位置。</td></tr>
@@ -1039,11 +1078,15 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
             すでに狙える球をさらに開けるためには当てにいきません。</td></tr>
         <tr><th>土手に沿わせる</th><td>クッションに付いた球を、口の中央ではなく
             <b>土手側のジョーぎわ</b>へ土手に沿わせて落とす筋。実質半分の口を使うので
-            シュート率もそのぶん下げています（→「12c. 土手ベタの狙い方」）。</td></tr>
+            シュート率もそのぶん下げています（→「13c. 土手ベタの狙い方」）。</td></tr>
         <tr><th>前の手で動いた位置</th><td>その球が<b>前の手で手玉に弾かれて動いている</b>ときに付きます。
             カードの距離・カット角・シュート率は<b>動いたあとの位置</b>で計算しています。</td></tr>
         <tr><th>近いサイドを使う</th><td>遠いコーナーのほうがフリは緩いが、
-            <b>狙いのずれは的玉の走る距離ぶん拡大する</b>ので近いサイドを選んだ手。</td></tr>
+            <b>狙いのずれは的玉の走る距離ぶん拡大する</b>ので近いサイドを選んだ手。
+            <b>フリ 60°まで</b>が対象で、的玉がサイドから<b>1.5 ポイント以内</b>のときは
+            フリがさらに開いていてもサイドが本命になります。</td></tr>
+        <tr><th>スクラッチ注意</th><td>手玉が落ちてしまう手。<b>どう撞いても落ちる配置</b>でしか
+            出ません（落ちない筋があるかぎり、そちらを選ぶため）。</td></tr>
         <tr><th>通り道ギリギリ</th><td>狙い筋のすき間が球 1/4 個分を切っている＝キス覚悟の筋。</td></tr>
         <tr><th>土手に張り付き</th><td>手玉がクッション際に止まる出し。次のブリッジと撞点が制限されます。</td></tr>
         <tr><th>ダブルヒット注意</th><td>的玉が近すぎて、引きや強い撞点が反則になる配置。</td></tr>
@@ -1056,7 +1099,7 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       ロングセーフティー／○クッションで手玉を送る／ほぼ確実にファウル／
       遠めの○番の裏に隠す／返しも作らせない／攻めた振り</b>などが出ます。</p>
 
-      <h3>14. テーマと向き</h3>
+      <h3>15. テーマと向き</h3>
       <p>ヘッダーの<b>◐ テーマ</b>ボタン（PC なら <b>T</b> キー）で、下の 4 種類が順番に切り替わります。
       選んだテーマは次回も引き継がれます。</p>
       <table class="ht">
@@ -1071,12 +1114,12 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       <p><b>ビリヤードテーブル（ラシャ・木枠・球）の色はテーマで変わりません。</b>
       切り替わるのは背景・パネル・文字などの UI 部分だけです。</p>
 
-      <h3>15. ショートカット（PC）</h3>
+      <h3>16. ショートカット（PC）</h3>
       <p><b>R</b> 新しい配置 ／ <b>A</b> 手玉を置く ／ <b>V</b> 縦横切替 ／
       <b>Space</b> 再生・停止 ／ <b>T</b> テーマ切替 ／
       <b>←</b> <b>→</b> ステップ送り ／ <b>?</b> この説明 ／ <b>Esc</b> 閉じる</p>
 
-      <h3>16. ご注意</h3>
+      <h3>17. ご注意</h3>
       <p>計算は物理モデルによる<b>目安</b>です。実際の台・球・キューの状態や、
       プレイヤーの技量によって結果は変わります。練習の方針を考える材料としてお使いください。</p>
     </div>
@@ -1198,7 +1241,7 @@ const SQ = Math.SQRT1_2;
      サイド   α = 38°  … 大きく開いている＝浅い角度は奥のジョーが弾き返す
    コーナーはマウス線が長クッションと 45° をなすので、
    鼻先に沿ったジョー先端の位置は 4.50/√2 = 3.182″。サイドは 5.00/2 = 2.50″。 */
-const SCR_NEAR = 2.6;      // スクラッチ「ぎりぎり」とみなす余裕の上限 [inch]（→ simulate）
+const SCR_NEAR = 3.4;      // スクラッチ「ぎりぎり」とみなす余裕の上限 [inch]（→ simulate）
 const CORNER_MOUTH = 4.50, SIDE_MOUTH = 5.00;
 const CORNER_JAW   = 142,  SIDE_JAW   = 104;      // ジョーの開き角 [度]
 const CORNER_SHELF = 1.75, SIDE_SHELF = 0.19;     // シェルフ（描画に使う）[inch]
@@ -1250,6 +1293,7 @@ POCKETS.forEach(p=>{
   p.mx = p.x + p.ax*mo;  p.my = p.y + p.ay*mo;
   p.tgx = -p.ay;         p.tgy = p.ax;          // マウス線に沿った向き
   p.jawA = p.corner ? CJ_A : SJ_A;              // ジョー面がマウス線となす角
+  p.jawC = Math.cos(p.jawA);  p.jawS = Math.sin(p.jawA);
   p.shelf= p.corner ? CORNER_SHELF : SIDE_SHELF;
   p.accPot = potAccMax(p.mouth, p.jawA);        // 落ちる向きの上限 [rad]
   p.cosPot = Math.cos(p.accPot);
@@ -1271,7 +1315,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.2.9';
+const VERSION = '1.3.0';
 
 /* =========================================================================
    物理定数 —— 「ビリヤード物理学ハンドブック」§00 に準拠
@@ -1580,21 +1624,40 @@ function spinLive(wz, v){
 const LAST_CUT = 30;
 function lastShotPref(cosT){
   const deg = angDeg(cosT);
-  return deg <= LAST_CUT ? 1 : Math.max(0.22, 0.86 - (deg-LAST_CUT)*0.020);
+  return deg <= LAST_CUT ? 1 : Math.max(0.18, 0.86 - (deg-LAST_CUT)*0.026);
 }
 
 /* --- 出しは「的玉から 2 ポイント以内」を目指す ---------------------------
    1 ポイント = 12.5″。遠くから撞くほど狙いもストロークも精度が落ちるので、
    実戦の組み立てと同じく、次の的玉まで 2 ポイント（25″）に収まる出しを優遇する。
    最後の一発はミスの代償が最大なので、ここをとくに強く効かせる。 */
+/* V1.3.0 —— 途中の球の効きを 0.0090 → 0.0150、下限も 0.45 → 0.34 に上げた。
+   旧版は「2 ポイント以内が理想」と言いながら、超過 20″ でも 0.82 しか削って
+   いなかったので、少し良い出し先があるだけで平気で 3〜4 ポイント離れていた。 */
 const NEAR_PT = 25.0;     // 2 ポイント
-const NEAR_K  = 0.0090;   // 超過 1″ あたりの減点（途中の球）
-const NEAR_KL = 0.0300;   // 最後の一発は 3 倍以上きつく効かせる
+const NEAR_K  = 0.0200;   // 超過 1″ あたりの減点（途中の球）
+const NEAR_KL = 0.0300;   // 最後の一発はさらにきつく効かせる
 function nearPref(d1, isLast){
   if(d1 <= NEAR_PT) return 1;
   const over = d1 - NEAR_PT;
   return isLast ? Math.max(0.15, 1 - NEAR_KL*over)
-                : Math.max(0.45, 1 - NEAR_K *over);
+                : Math.max(0.34, 1 - NEAR_K *over);
+}
+
+/* --- ロングシュートは選ばない（V1.3.0）----------------------------------
+   狙いのわずかなずれは、的玉が走る距離ぶんそのまま拡大する。同じフリ角でも
+   台の端から端へ入れる筋は実戦では入らないので、的玉→ポケットが長い手は
+   ルートとして選ばない。3 ポイント（37.5″）までを無罰とし、そこから連続的に
+   減点する。最後の一発は外した代償が最大なので倍以上きつく効かせる。
+   ＝「手玉→的玉」を見る nearPref と対になる、筋の後ろ半分ぶんの好み。 */
+const LONG_D2 = 37.5;     // 3 ポイント
+const LONG_K  = 0.0090;   // 超過 1″ あたりの減点（途中の球）
+const LONG_KL = 0.0190;   // 最後の一発
+function longPref(d2, isLast){
+  if(d2 <= LONG_D2) return 1;
+  const over = d2 - LONG_D2;
+  return isLast ? Math.max(0.30, 1 - LONG_KL*over)
+                : Math.max(0.48, 1 - LONG_K *over);
 }
 
 /* --- 実戦の極意 ①「厚み 9 割・力 1 割」---------------------------------
@@ -1687,7 +1750,7 @@ function angleWindow(cosT, isLast){
   if(isLast) return 1;
   const deg = angDeg(cosT);
   if(deg < ANG_LO) return 0.72 + 0.28*(deg/ANG_LO);       // 真っすぐは 3 割弱の減点
-  if(deg > ANG_HI) return Math.max(0.45, 1 - (deg-ANG_HI)*0.022);
+  if(deg > ANG_HI) return Math.max(0.32, 1 - (deg-ANG_HI)*0.034);
   return 1;
 }
 
@@ -1707,10 +1770,12 @@ function angleWindow(cosT, isLast){
    （最後の一発の薄さ lastShotPref ／ 途中の球のアングル窓 angleWindow）を
    打ち消してから上乗せする。この 2 つが「遠いコーナーのほうが緩い」配置で
    サイドを外していた本体だから。 */
-/* 上限は当初 60°で入れたが、60°ぎりぎり（実測 59°）の手まで拾うと
-   遠いコーナーがほぼ真っすぐな配置でシュート率を 5 ポイント落としていた。
-   取り切り率が上がったのは 34〜48°の帯なので、50°で切る。 */
-const SIDE_CUT    = 50*Math.PI/180;  // サイドを狙ってよいフリ角の上限
+/* 上限は 50°→ 60°（V1.3.0）。50°で切っていたのは、60°ぎりぎりの手まで拾うと
+   遠いコーナーがほぼ真っすぐな配置でシュート率を落としていたからだが、
+   その取りこぼしは「近いサイドを選ぶ条件」（pos・nv の両方を通す）と
+   下のロングシュート減点で潰せている。60°は上級者が「自信のある角度」として
+   近いサイドへ振る帯そのもので、ここを切ると実戦の選択と食い違う。 */
+const SIDE_CUT    = 60*Math.PI/180;  // サイドを狙ってよいフリ角の上限
 const SIDE_PREF   = 1.25;            // 条件を満たした近いサイドへの上乗せ
 const SIDE_POS_OK = 0.90;            // 途中の球で「ポジションしやすい」とみなす出し成功率
 const SIDE_NV_OK  = 0.75;            // 出し先の価値が、台でいちばん良い位置の何倍以上か
@@ -1724,8 +1789,18 @@ const SIDE_NV_OK  = 0.75;            // 出し先の価値が、台でいちば�
    そこで穴前のサイドは SIDE_CUT（50°）の縛りも「遠いコーナーと比べる」手順も
    通さず、スクラッチしないことだけを条件に本命として押し上げる。
    9 番（＝最後の一発）は入れれば勝ちなので、上乗せをさらに厚くする。 */
-const SIDE_NEAR_D    = 12.5;             // 「穴前」とみなす的玉→サイドの距離 [inch]
+/* V1.3.0 —— 「穴前」の幅を 1 ポイント → 1.5 ポイントに広げた。1 ポイントちょうどで
+   段差を付けると、13″ の球がとつぜんコーナー狙いに戻ってしまう。代わりに
+   許すフリ角を距離で連続的に絞り、1 ポイントで 80°、1.5 ポイントで 60°
+   （＝ SIDE_CUT と同じ）まで落として、下の「近いサイド」の条件へなめらかに繋ぐ。 */
+const SIDE_NEAR_D    = 18.75;            // 「サイドが近い」とみなす的玉→サイドの距離＝1.5 ポイント
+const SIDE_NEAR_D0   = 12.5;             // 穴前（1 ポイント）
 const SIDE_NEAR_CUT  = 80*Math.PI/180;   // 穴前サイドを狙ってよいフリ角の上限
+function sideNearCut(d2){
+  if(d2 <= SIDE_NEAR_D0) return SIDE_NEAR_CUT;
+  return SIDE_NEAR_CUT + (SIDE_CUT-SIDE_NEAR_CUT)*
+         (d2-SIDE_NEAR_D0)/(SIDE_NEAR_D-SIDE_NEAR_D0);
+}
 const SIDE_NEAR_PREF = 1.90;             // 穴前サイドへの上乗せ
 const SIDE_NEAR_LAST = 1.30;             // 9 番のときの追加倍率
 const SIDE_ANG = new Float64Array(6);   // 各筋のフリ角 [rad]（使い回し）
@@ -1742,7 +1817,7 @@ function markSidePicks(list, cx, cy){
   }
   for(let i=0;i<n;i++){
     if(list[i].pk.corner) continue;
-    if(list[i].d2 < SIDE_NEAR_D && SIDE_ANG[i] < SIDE_NEAR_CUT){ SIDE_OK[i]=2; continue; }
+    if(list[i].d2 < SIDE_NEAR_D && SIDE_ANG[i] < sideNearCut(list[i].d2)){ SIDE_OK[i]=2; continue; }
     if(SIDE_ANG[i] >= SIDE_CUT) continue;
     for(let j=0;j<n;j++){
       /* 遠いコーナーなのにフリはサイドと同じか緩い ＝ サイドを使うべき配置 */
@@ -2026,31 +2101,93 @@ function potHit(x,y,dx,dy,tmax,pk){
    近づいたか」を測り、いちばん狭かった余裕（0 ＝ ぎりぎり）を SIM.scrM に残す。
    その余裕をここで「ルートの好み」に直す。確率（q0 / imm）には触れない
    ―― 落ちなければ球は入るし、落ちる手は従来どおり imm 側で潰しているため。 */
-const SCR_PEN  = 0.45;     // 口の端すれすれを通るラインの好み
+const SCR_PEN  = 0.28;     // 口の端すれすれを通るラインの好み
 function scratchPref(m){
   if(!(m < SCR_NEAR)) return 1;
   return SCR_PEN + (1-SCR_PEN)*clamp(m,0,SCR_NEAR)/SCR_NEAR;
 }
 /* 鼻先の面を横切る点が「ポケット pk の口＝クッションが無い区間」に入っているか。
-   落ちる球はここを素通りしてマウス線まで進み、落ちない球はジョーに当たって
-   戻る（ジョー面はマウス線の外側にあるので、鼻先の面で近似する）。
+   入り筋を引くとき（→ railFreeToMouth）に、的玉がポケットへ向かう途中で
+   鼻先の面を越える筋を許すために使う。
 
-   ジョー先端は刃のようにとがっているので、球の中心が先端から R 以内で
-   鼻先の面を横切る場合、当たっているのは「面」ではなく「先端の角」である。
-   このとき接触の法線は 先端 → 球心 の向き（＝ほぼ進行方向）になるので、
-   球は台へ跳ね返されずポケットへ吸い込まれる。旧版は鼻先の面をそのまま
-   延長していてここを R ぶん狭く見ており、口へ入る球を弾き返していた
-   （実測: コーナーへフリ 26°で入れる球が全滅。的玉がジョーに蹴られて
-   台へ戻るのに、ルート上は「入った」ことになって次の球へ進んでいた）。
-
-   判定を「どのポケットの口か」まで含めているのは、口の素通りを許すのは
-   その球がいま入ろうとしているポケットだけ、という当たり前を守るため
-   （鼻先を走る球が、遠くのポケット目がけて飛んでいるという理由で
-   手前のクッションをすり抜ける、という抜けをここで塞いでいる）。 */
+   幅を R ぶん広く取るのは、ジョー先端が刃のようにとがっているため。
+   球の中心が先端から R 以内で鼻先の面を横切る場合、当たっているのは
+   「面」ではなく「先端の角」で、接触の法線は 先端 → 球心 の向き
+   （＝ほぼ進行方向）になるので、球は台へ返らずポケットへ吸い込まれる。
+   旧版は鼻先の面をそのまま延長していてここを R ぶん狭く見ており、
+   口へ入る球を弾き返していた（実測: コーナーへフリ 26°で入れる球が全滅）。 */
 const MOUTH_R = R;
 function inMouth(pk, x, y){
   const h = (pk.corner ? CJT : SJT) + MOUTH_R;
   return Math.abs(x-pk.x) < h && Math.abs(y-pk.y) < h;
+}
+
+/* --- ポケットの口に当たった球（V1.3.0）-----------------------------------
+   鼻先の面のうち「口」の区間にはクッションが無い。旧版はそこを
+     ・落ちる向きの球が向かっているポケット（gate）
+   のときだけ素通りさせていたので、それ以外の球 —— 口を横切って走る球や、
+   落ちる向きから外れて口へ入った球 —— は、存在しないクッションで
+   跳ね返っていた（実測: 55 万本の走行のうち 2.2% に、鼻先の面に触れても
+   いない位置での反射が混ざっていた。うち 490 本は球心がすでにマウス線より
+   奥＝ポケットの中に居るのに台へ戻っており、本来はスクラッチである）。
+
+   口に当たる筋は、クッションではなく ジョー（口の両側の斜めの面）で解く。
+     ・先端の角 …… 半径 R の丸として扱う。球がマウスを通れる限界
+                    cos φ ≥ 球径/マウス幅 は、この 2 つの丸のすき間そのもの
+     ・面     …… 先端から奥へ伸びる平面。球心は R 手前で受け止められる。
+                    奥の面に外側から当たる限界 φ < 90° − α もここから出る
+   ＝ potAccMax（落ちる向きの上限）と同じ幾何を、当たり判定の側からも持つ。 */
+/* クッション 1 枚ぶんの「口」。鼻先に沿った座標を渡すと、そこが口なら
+   そのポケットを返す（＝そこに鼻先の面は無いので当たらない）。
+   境目はジョー先端そのもの。先端まわりの丸み（球心は先端から R 以内に
+   入れない）は、この先の jawHit の先端の角が受け持つ。 */
+function mouthLong(y, lo, hi){                       // 長クッション（x = R / W−R）
+  return y < CJT ? lo : (y > HT-CJT ? hi : null);
+}
+function mouthShort(x, lo, mid, hi){                 // 短クッション（y = R / HT−R）
+  return x < CJT ? lo : (x > W-CJT ? hi : (Math.abs(x-W/2) < SJT ? mid : null));
+}
+/* ジョーに当たるまでの距離と、その接触の内向き法線。JAW に書いて返す。 */
+const JAW = {nx:0, ny:0};
+function jawHit(x, y, dx, dy, tmax, pk){
+  let bt=tmax, bnx=0, bny=0;
+  for(let sg=-1; sg<=1; sg+=2){
+    const tx=pk.mx + sg*pk.tgx*pk.mhalf, ty=pk.my + sg*pk.tgy*pk.mhalf;   // 先端
+    const tt=hitCircle(x,y,dx,dy,bt,tx,ty,R);
+    if(tt<bt){
+      const px=x+dx*tt-tx, py=y+dy*tt-ty, m=Math.hypot(px,py);
+      /* 球心が先端そのものに乗っている（法線が決まらない）ときは弾かない。
+         そのまま走らせれば口の奥まで進むので、落ちた扱いになる（→ lost）。 */
+      if(m>1e-9){ bt=tt; bnx=px/m; bny=py/m; }
+    }
+    /* 面。f̂ = 先端から奥へ ／ n̂ = 口の内側へ向く法線 */
+    const fx=sg*pk.jawC*pk.tgx + pk.jawS*pk.ax, fy=sg*pk.jawC*pk.tgy + pk.jawS*pk.ay;
+    const nx=-sg*pk.jawS*pk.tgx + pk.jawC*pk.ax, ny=-sg*pk.jawS*pk.tgy + pk.jawC*pk.ay;
+    const gd=dx*nx+dy*ny;
+    if(gd > -1e-9) continue;                                   // 面から離れていく
+    const t2=((x-tx)*nx + (y-ty)*ny - R)/(-gd);
+    if(t2<0 || t2>=bt) continue;
+    if((x+dx*t2-tx)*fx + (y+dy*t2-ty)*fy < 0) continue;        // 先端より手前は角の担当
+    bt=t2; bnx=nx; bny=ny;
+  }
+  JAW.nx=bnx; JAW.ny=bny;
+  return bt;
+}
+/* もう台には戻れない位置か（＝落ちた）。
+     ・球心がマウス線より奥 ＝ 棚の上。そこに球が乗ったままになる場所は無い
+     ・鼻先の面より外に出ているのに、どのポケットの口の中でもない
+       ＝ 口を通り抜けて棚へ落ちている
+   口の中でジョーに弾かれる球は鼻先の面をわずかに越えるので、そこは通す。 */
+function lost(x, y){
+  let inMouthNow=false;
+  for(let j=0;j<6;j++){
+    const pk=POCKETS[j];
+    const s=(x-pk.mx)*pk.ax + (y-pk.my)*pk.ay;
+    const q=Math.abs((x-pk.mx)*pk.tgx + (y-pk.my)*pk.tgy);
+    if(s>=0){ if(q<=pk.mhalf) return true; }
+    else if(q<=pk.mhalf+R && s>-(pk.mhalf+R)) inMouthNow=true;
+  }
+  return !inMouthNow && (x<R || x>W-R || y<R || y>HT-R);
 }
 function segClearM(ax,ay,bx,by,balls,rad){
   const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy, r2=rad*rad;
@@ -2458,32 +2595,44 @@ function simulate(st, balls, rec, resolve, stopT){
          そのものではなく どちら向きから入ってきたか で決まるので、
          最後に走った弦の向きをそのまま残しておく（弦ごとに 2 代入だけ）。 */
       ldx=dx; ldy=dy;
-      /* この弦の上で最初に起きること（ポケット／クッション／球）--------------
+      /* この弦の上で最初に起きること（ポケット／クッション・ジョー／球）------
          ポケットを先に見る。実際の台ではポケットの口にクッションが無いので、
-         落ちる向きで口に入った球は鼻先の面を素通りしてマウス線まで進む。
-         落ちない向き（浅すぎる球・土手に沿って走る球）は口の位置でも
-         ジョーに当たって台へ戻るので、鼻先の面をそのまま残す。 */
+         落ちる向きで口に入った球は鼻先の面を素通りしてマウス線まで進む。 */
       let t=L, kind=0, nx=0, ny=0, bi=-1;
-      /* 口を素通りしてよいのは「いま入ろうとしているポケット」だけ。
-         その判定は弦の長さに依らない形（tmax なし）で取る —— 弦を刻んだ
+      /* 落ちる判定は弦の長さに依らない形（tmax なし）で取る —— 弦を刻んだ
          都合でマウス線が次の弦に回っただけの球まで、鼻先で弾き返して
          いたため（実測: サイドの口に置いた球を撞くと、口の中で
          クッションに当たって台へ戻る手が 0.05% 残っていた）。 */
-      let tPot=Infinity, gate=null, tGate=Infinity;
+      let tPot=Infinity, tGate=Infinity, gate=null;
       for(let j=0;j<6;j++){
         const tt=potHit(b.x,b.y,dx,dy,Infinity,POCKETS[j]);
         if(tt<tGate){ tGate=tt; gate=POCKETS[j]; }
       }
       if(tGate<=L) tPot=tGate;                         // この弦の中で落ちる
-      /* Math.max(…,0) …… クッション面までの距離が負になるのは、球がすでに
-         その面を越えているとき。以前はそこを「当たらない」として捨てていたが、
-         それだと外に出た球は二度とクッションに触れず台の外まで走ってしまう。
-         0 に丸めてその場で弾き返し、口の中まで入り込んだ球だけは
-         inMouth で除外する（ポケットの口にはクッションが無い）。 */
-      if(dx>1e-9){ const tt=Math.max((W-R-b.x)/dx,0); if(tt<t && !(gate&&inMouth(gate,W-R,b.y+dy*tt))){t=tt;kind=1;nx=-1;ny=0;} }
-      else if(dx<-1e-9){ const tt=Math.max((R-b.x)/dx,0); if(tt<t && !(gate&&inMouth(gate,R,b.y+dy*tt))){t=tt;kind=1;nx=1;ny=0;} }
-      if(dy>1e-9){ const tt=Math.max((HT-R-b.y)/dy,0); if(tt<t && !(gate&&inMouth(gate,b.x+dx*tt,HT-R))){t=tt;kind=1;nx=0;ny=-1;} }
-      else if(dy<-1e-9){ const tt=Math.max((R-b.y)/dy,0); if(tt<t && !(gate&&inMouth(gate,b.x+dx*tt,R))){t=tt;kind=1;nx=0;ny=1;} }
+      /* クッション。Math.max(…,0) …… クッション面までの距離が負になるのは、
+         球がすでにその面を越えているとき。以前はそこを「当たらない」として
+         捨てていたが、それだと外に出た球は二度とクッションに触れず台の外まで
+         走ってしまう。0 に丸めてその場で弾き返す。
+         当たった先が「口」＝クッションの無い区間なら、そのクッションは無視して
+         代わりにジョー（先端の角と 2 枚の面）で解く（→ jawHit）。 */
+      let mp=null, mq;
+      if(dx>1e-9){ const tt=Math.max((W-R-b.x)/dx,0);
+        if(tt<t){ mq=mouthLong(b.y+dy*tt, POCKETS[2], POCKETS[5]);
+                  if(mq) mp=mq; else {t=tt;kind=1;nx=-1;ny=0;} } }
+      else if(dx<-1e-9){ const tt=Math.max((R-b.x)/dx,0);
+        if(tt<t){ mq=mouthLong(b.y+dy*tt, POCKETS[0], POCKETS[3]);
+                  if(mq) mp=mq; else {t=tt;kind=1;nx=1;ny=0;} } }
+      if(dy>1e-9){ const tt=Math.max((HT-R-b.y)/dy,0);
+        if(tt<t){ mq=mouthShort(b.x+dx*tt, POCKETS[3], POCKETS[4], POCKETS[5]);
+                  if(mq) mp=mq; else {t=tt;kind=1;nx=0;ny=-1;} } }
+      else if(dy<-1e-9){ const tt=Math.max((R-b.y)/dy,0);
+        if(tt<t){ mq=mouthShort(b.x+dx*tt, POCKETS[0], POCKETS[1], POCKETS[2]);
+                  if(mq) mp=mq; else {t=tt;kind=1;nx=0;ny=1;} } }
+      /* いま落ちようとしているポケット（gate）のジョーは見ない。先端は刃のように
+         とがっているので、そこへ触れても接触の法線はほぼ進行方向になり、
+         球は台へ返らずそのまま吸い込まれるからである。 */
+      if(mp && mp!==gate){ const tj=jawHit(b.x,b.y,dx,dy,t,mp);
+                           if(tj<t){ t=tj; kind=1; nx=JAW.nx; ny=JAW.ny; } }
       for(let j=0;j<balls.length;j++){
         if(hits && struckIdx(hits,j)) continue;        // 弾いた球はもうそこに居ない
         const o=balls[j], tt=hitCircle(b.x,b.y,dx,dy,t,o.x,o.y,BD);
@@ -2522,6 +2671,10 @@ function simulate(st, balls, rec, resolve, stopT){
       run += t;
       if(rec) pts.push([b.x,b.y,T]);
       if(cut) break outer;
+      /* 鼻先の面より外へ出た球は、口を通ってポケットへ落ちている。
+         その場でクッションに弾き返すと、台の外に存在しない壁ができる
+         （実測: 55 万本の 1.9% に、どの境界にも触れていない反射が混ざっていた）。 */
+      if((b.x<R || b.x>W-R || b.y<R || b.y>HT-R) && lost(b.x,b.y)){ scratch=true; break outer; }
 
       if(kind===3){ scratch=true; break outer; }
       if(kind===2){
@@ -2548,11 +2701,11 @@ function simulate(st, balls, rec, resolve, stopT){
     /* すべり相を最後まで走りきった：数値ドリフトを残さないよう転がりへスナップ */
     if(sliding){ b.wvx=b.vx; b.wvy=b.vy; }
   }
-  /* 鼻先の面より外で止まったということは、ポケットの口の中＝棚の上に居る。
-     そこに球が乗ったままになる場所は無いので落ちたものとして扱う。
-     （落ち着き先だけクッション面へ丸めていたので、口へ転がり込んだ球が
-       画面の上でだけ土手まで戻る、という食い違いが残っていた） */
-  if(!scratch && (b.x<R || b.x>W-R || b.y<R || b.y>HT-R)) scratch=true;
+  /* 止まった場所がポケットの口の中＝棚の上なら、そこに球が乗ったままになる
+     場所は無いので落ちたものとして扱う。鼻先の面より外（台の外）に加えて、
+     球心がマウス線より奥に入っている場合も見る —— コーナーの口の中は
+     x も y も鼻先の内側なので、範囲だけの判定では拾えなかった。 */
+  if(!scratch && (b.x<R || b.x>W-R || b.y<R || b.y>HT-R || lost(b.x,b.y))) scratch=true;
   SIM.x=clamp(b.x,R,W-R); SIM.y=clamp(b.y,R,HT-R);
   SIM.rails=rails; SIM.scratch=scratch; SIM.hit=hit;
   SIM.pts=pts; SIM.railIdx=railIdx; SIM.hits=hits||NOHITS; SIM.run=run; SIM.T=T;
@@ -2992,7 +3145,7 @@ let Vb = [];
 let plan = null, selStep = 0, bestSpot = null, bestSpotVal = 0;
 let tipOverride = {};      // { ステップ番号: {a,b} } — 手動で指定した撞点
 let powOverride = {};      // { ステップ番号: 'soft'|'mid'|'hard'|'max' } — 手動の力加減
-let noEnglish = false;     // 捻りを一切使わない
+let noEnglish = false;     // 捻り一切なし
 let gameMode = 'run';      // 'run' = 取り切り / 'safe' = セーフティー
 let safePref = 'mine';     // セーフティーの方針: 'mine'=自分の成功率重視 / 'opp'=相手の失敗率重視
 let safety = null, safeSpot = null;
@@ -3541,6 +3694,8 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
     /* 手玉が的玉から 2 ポイント以内か（＝この球をここから撞きたいか）。
        前の一手の出し先を選ぶときに、この値ぶん価値が上下する。 */
     const nearP = nearPref(d1, isLast);
+    /* 的玉が 3 ポイント以上走る筋（ロングシュート）は選ばない */
+    const longP = longPref(pd.d2, isLast);
     /* 難所の球は「近く・厚く」入れているときだけ価値を認める */
     const hardP = isLast ? 1 : hardPref(k, cosT, d1);
     /* アングルを作る ― 真っすぐすぎる球（＝力でしか出せない球）を減点する */
@@ -3624,6 +3779,9 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
             run=SIM.run;                      // resolveHits が SIM を上書きする前に取る
             dirx=SIM.dirx; diry=SIM.diry;     // 到達の向き（→ ラインに乗せる・極意⑧）
             scrM=SIM.scrM;                    // スクラッチのぎりぎり度（→ scratchPref）
+            /* スクラッチする手は撞かない。1 本も残らなかったときだけ
+               enumShots が縛りを外して撞き直す（→ noScratch）。 */
+            if(scr && noScratch) continue;
             if(hitb && fine && SIM.hits.length){
               const hs=SIM.hits.slice(), cT=SIM.T;   // SIM は使い回しなので先に複製
               /* 弾かれた球も、止まったあとの手玉を素通りしない（描画・再生と同じ扱い） */
@@ -3690,14 +3848,14 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
                      ? lineOfPosition(k, ex, ey, dirx, diry, run) : 1;
           /* スクラッチしそうなぎりぎりのラインは、落ちなくても選ばない */
           const scrP = scratchPref(scrM);
-          const pref = imm*pos*lastPen*nearP*hardP*angP*powPref*distPen*tipPref*sideFac*brkPref
-                     * qP*lopP*scrP*drawP;
+          const pref = imm*pos*lastPen*nearP*longP*hardP*angP*powPref*distPen*tipPref
+                     * sideFac*brkPref*qP*lopP*scrP*drawP;
           const val = pref*nvw;
           if(val<=0) continue;
 
           SI.pd=pd; SI.b=b; SI.a=a; SI.P0=P0; SI.f=f; SI.combo=null;
           SI.dist=cuePot; SI.run=run; SI.ex=ex; SI.ey=ey; SI.rails=rails;
-          SI.scr=scr; SI.hit=hitb; SI.q0=q0; SI.imm=imm; SI.pos=pos; SI.gap=gap;
+          SI.scr=scr; SI.scrM=scrM; SI.hit=hitb; SI.q0=q0; SI.imm=imm; SI.pos=pos; SI.gap=gap;
           SI.spd=spd; SI.pw=pw; SI.hitRes=hitRes; SI.close=(d1 < BD+DHIT_GAP);
           SI.brk=brkPref;
           SI.cosT=cosT; SI.sinT=sinT; SI.d1=d1;
@@ -3786,6 +3944,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
           if(cuePot>0.5 && m>0.02){
             simulate(CUE.st,others,false,false);
             ex=SIM.x; ey=SIM.y; scr=SIM.scratch; run=SIM.run; scrM=SIM.scrM;
+            if(scr && noScratch) continue;
           }
           const imm=q0*powPen*bPen*aPen*(scr?0.03:1);
           /* コンビも「成功率の低い一発は撞かない」（極意⑦）。決まれば上がりだが、
@@ -3797,7 +3956,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
 
           SI.pd=cd; SI.combo=cd; SI.b=b; SI.a=a; SI.P0=P0; SI.f=f;
           SI.dist=cuePot; SI.run=run; SI.ex=ex; SI.ey=ey; SI.rails=0;
-          SI.scr=scr; SI.hit=false; SI.q0=q0; SI.imm=imm; SI.pos=1; SI.gap=gap;
+          SI.scr=scr; SI.scrM=scrM; SI.hit=false; SI.q0=q0; SI.imm=imm; SI.pos=1; SI.gap=gap;
           SI.spd=spd; SI.pw=pw; SI.hitRes=null; SI.close=(d1 < BD+DHIT_GAP);
           SI.cosT=cosT; SI.sinT=sinT; SI.d1=d1;
           { const fm=Math.hypot(fx,fy);
@@ -3825,7 +3984,21 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
      コンビ狙いに引っ張られて出しの評価が壊れる。
    ・コンビは「いまこの場でやるかどうか」の判断なので、
      仕上げのルート探索（fine）でだけ候補に加え、findPlan で全球取り切りと比べる。 */
+/* --- スクラッチしないラインを必ず選ぶ（V1.3.0）---------------------------
+   旧版はスクラッチする手にも 0.03 の好みを残していたので、他が悪い配置では
+   「入れた勢いでそのまま落ちる」手がルートに混ざっていた。手玉を落とせば
+   その時点で相手の番になるのだから、繋がる手が 1 本でもあるかぎり選ばない。
+   まず全部スクラッチ抜きで列挙し、それで一手も成立しないときだけ
+   縛りを外して撞き直す（＝ルートが途切れることは無い）。 */
+let noScratch = true;
 function enumShots(k, cx, cy, fine, cb, useOv){
+  let n = 0;
+  enumRaw(k, cx, cy, fine, v=>{ n++; cb(v); }, useOv);
+  if(n) return;
+  noScratch = false;
+  try{ enumRaw(k, cx, cy, fine, cb, useOv); } finally{ noScratch = true; }
+}
+function enumRaw(k, cx, cy, fine, cb, useOv){
   const man = useOv!==false;
   const ov  = man ? tipOverride[k] : null;
   const pw  = man ? powOverride[k] : null;
@@ -3999,7 +4172,7 @@ function snapStep(k,cx,cy){
     bx:SI.pd.B.x, by:SI.pd.B.y, n:SI.pd.B.n, d1:SI.d1, d2:SI.pd.d2,
     b:SI.b, a:SI.a, P0:SI.P0, f:SI.f, spd:SI.spd, pw:SI.pw, close:SI.close,
     dist:SI.dist, run:SI.run, ex:SI.ex, ey:SI.ey, rails:SI.rails, gap:SI.gap,
-    scr:SI.scr, hitb:SI.hit, hitRes:SI.hitRes, q:SI.imm, q0:SI.q0, pos:SI.pos,
+    scr:SI.scr, scrM:SI.scrM, hitb:SI.hit, hitRes:SI.hitRes, q:SI.imm, q0:SI.q0, pos:SI.pos,
     slide:Math.abs(SI.pd.slide||0),   // 狙い点をマウス線上でずらした量（土手ベタ）
     brk:SI.brk,
     sidePick:SI.sidePick, lop:SI.lop,
@@ -6938,7 +7111,8 @@ function renderPanel(){
     ws.push(`ℹ ${lopWorst.n}番の後、手玉は次の球の<b>ポジションライン</b>（的玉とポケットを結ぶ線の、手玉側への延長）を横切る向きから入ります。この向きだと強弱のわずかな誤差がそのままフリ角の変動になるので、この一手は距離より<b>入る向き</b>を合わせてください。ラインに沿って入る筋は、この配置では作れませんでした。`);
   const rollOnly=[], drawGone=[];
   for(const s of plan.steps){
-    if(s.scr) ws.push(`⚠ ${s.n}番の後、スクラッチの危険。`);
+    if(s.scr) ws.push(`⚠ ${s.n}番の後、<b>手玉が落ちます</b>。スクラッチする筋はルートに入れない組み立てですが、この配置ではどう撞いても落ちない筋がありませんでした。ここは出しをあきらめて、入れたあとに手玉が止まる所を優先してください。`);
+    else if(s.scrM!==undefined && s.scrM < SCR_NEAR) ws.push(`⚠ ${s.n}番の後、手玉がポケットの口の端を <b>${Math.max(0,s.scrM).toFixed(1)}″</b> の余裕で通ります。狙いがわずかにずれるとジョーに当たって落ちるので、力加減を強めるか弱めて口から離してください。`);
     /* 成功率の低いカットは撞かない組み立てにしているので、
        残っているということは他に繋がる筋が無かったということ。 */
     if(s.q0 < SHOTQ_TAG)
