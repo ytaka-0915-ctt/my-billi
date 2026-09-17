@@ -605,8 +605,11 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
           <button class="act sm" id="tipAuto">この手を自動に</button>
           <button class="act sm" id="tipAutoAll">全て自動に</button>
         </div>
-        <label class="chk" style="width:100%;margin-top:8px">
-          <input type="checkbox" id="cNoEng">捻り一切なし（ノーイングリッシュ）</label>
+        <div class="subh">捻り一切なし（ノーイングリッシュ）</div>
+        <label class="chk" style="width:100%">
+          <input type="checkbox" id="cNoEngOne"><span id="noEngOneLbl">この手だけ捻り無し</span></label>
+        <label class="chk" style="width:100%">
+          <input type="checkbox" id="cNoEngAll">全ての手を捻り無し</label>
       </div>
       <div id="steps"><div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。</div></div>
       <div class="sec" style="border-bottom:none;">
@@ -860,13 +863,24 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
       <b>クッション反射はいちばん読みにくい</b>ところ（撞点・力加減・ラシャの当たりで角度が動く）なので、
       捻りを残して回す出しは<b>止めたい場所への精度を割り引いて</b>評価します。
       捻りは並進よりずっと長生きするので、<b>弱く撞くほど反射角は大きく動きます</b>。<br>
-      <b>「捻り一切なし（ノーイングリッシュ）」</b>にチェックを入れると、
-      ルート探索・セーフティー・再生のすべてで左右の撞点が<b>芯に固定</b>されます。
+      <b>「捻り一切なし（ノーイングリッシュ）」</b>は<b>この手だけ</b>と<b>全ての手</b>の
+      2 つを用意しています。チェックを入れると、その手（または全ての手）の撞点が
+      <b>球の中心（芯）＝中心撞き</b>に固定されます。左右（捻り）だけでなく
+      <b>上下（押し／引き）も 0</b> になり、ルート探索・セーフティー・描画・再生の
+      すべてが<b>中心撞きのライン</b>で計算し直されます。
+      手で入れてあった撞点の指定は捨てて自動（＝芯）に戻します（力加減の指定は残ります）。
+      チェックが入っている間は、撞点コントロールのドラッグと ▲▼◀▶ は効きません。<br>
+      <b>「この手だけ」が掛かるのは、撞点パネルでいま選んでいる一手です。</b>
+      どの手に掛かるかはチェックの文字に<b>（2球目・5番）</b>のように出るので、
+      別の手に掛けたいときは<b>◀ ▶</b>で撞く球を切り替えてからチェックしてください。<br>
+      2 つのチェックは<b>排他</b>です。片方を入れるともう片方は外れます
+      （どちらか一方だけ、または両方なし）。<br>
       なお、クッションに擦れて手玉が拾う横回転は物理現象なので止まりません
-      （撞いて入れた捻りだけを封じます）。
-      チェックした時点で<b>全ステップの撞点はまとめて中心（芯）にリセット</b>され、
-      上下の微調整ボタンだけが使えます。上下も自動で選ばせたいときは
-      <b>「全て自動に」</b>を押してください。</p>
+      （撞いて入れた回転だけを封じます）。
+      捻り無しにした手は、手順カードに<b>「捻り無し」</b>タグが出て、
+      撞点の図も<b>必ず球の中心</b>に来ます。<br>
+      <b>押し引きまで封じるので、その手から先のルートは繋がりにくくなります。</b>
+      途中で撞ける球が無くなったときは、チェックを外すか「この手だけ」に絞ってください。</p>
 
       <h3>11. セーフティー</h3>
       <p>最小番号の球（3球なら7番／4球なら6番／6球なら4番）に当てたうえで、
@@ -1094,6 +1108,10 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
             上撞きは速度の足しにしかなっていない、という意味。</td></tr>
         <tr><th>引きが抜ける</th><td>引き撞点なのに、的玉に届く前に引き回転が抜けてしまう手。
             力加減を「強」「最大」にしてみてください。</td></tr>
+        <tr><th>捻り無し</th><td>その手で<b>捻り一切なし（ノーイングリッシュ）＝中心撞き</b>を指定している、
+            という意味。「この手だけ」と「全ての手」のどちらで指定しても付きます。</td></tr>
+        <tr><th>的玉が他球を動かす</th><td>手玉ではなく、<b>クッションから戻ってきた的玉</b>が
+            他の球に当たって動かす手。次の一手はその動いたあとの配置で組み立てます。</td></tr>
       </table>
       <p>セーフティー側では<b>球の陰に隠す（スヌーク）／厚みを消す／密着させる／
       ロングセーフティー／○クッションで手玉を送る／ほぼ確実にファウル／
@@ -1315,7 +1333,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.3.0';
+const VERSION = '1.3.1';
 
 /* =========================================================================
    物理定数 —— 「ビリヤード物理学ハンドブック」§00 に準拠
@@ -2529,7 +2547,6 @@ function simulate(st, balls, rec, resolve, stopT){
      手玉が台をはみ出して走り去っていた（実測: 実戦の入れ筋の 2% が
      台外へゴースト、そのうち 9 割で手玉が最大 48″ 外まで走った）。 */
   b.x=clamp(b.x,R,W-R); b.y=clamp(b.y,R,HT-R);
-  if(noEnglish) b.wz = 0;
   let rails=0, scratch=false, hit=false, run=0, T=0, scrM=Infinity, cut=false;
   const pts = rec ? [[b.x,b.y,0]] : null;
   const railIdx = rec ? [] : null;
@@ -2739,7 +2756,7 @@ const IMP_OB  = ballSt(0,0,0,0,0,0,0);
 const CUE = {st:IMP_CUE, ob:IMP_OB, fx:0, fy:0, m:0, thr:0};
 function solveImpact(gx,gy,dx,dy,nx,ny,Q,f,wz){
   const v=potV(Q), c=IMP_CUE, o=IMP_OB;
-  c.x=gx; c.y=gy; c.vx=v*dx; c.vy=v*dy; c.wvx=f*v*dx; c.wvy=f*v*dy; c.wz=noEnglish?0:wz;
+  c.x=gx; c.y=gy; c.vx=v*dx; c.vy=v*dy; c.wvx=f*v*dx; c.wvy=f*v*dy; c.wz=wz;
   o.x=gx+nx*BD; o.y=gy+ny*BD; o.vx=0; o.vy=0; o.wvx=0; o.wvy=0; o.wz=0;
   ballCollide(c,o);
   CUE.thr = Math.atan2(o.vx*(-ny)+o.vy*nx, o.vx*nx+o.vy*ny);
@@ -2783,6 +2800,13 @@ function resolveHits(hits, balls, rec){
               pts: rec ? s.pts.map(p=>[p[0],p[1],p[2]]) : null});
   }
   return out;
+}
+/* shotRun の結果から「手玉・的玉に弾かれた球」をまとめて解く。
+   h.i は shotRun が使った並び（others ＋ 的玉の席・手玉の席）の添字で返る。
+   席は restObst なので resolveHits がそこで打ち切り、返ってくるのは
+   必ず others の中の球だけになる。 */
+function shotStruck(rr, rec){
+  return resolveHits((rr.cue.hits||NOHITS).concat(rr.obj.hits||NOHITS), rr.others, rec);
 }
 
 /* --- 手玉と的玉が同時に走っている最中の当たり直し（キス）-----------------
@@ -2898,9 +2922,14 @@ function shotRun(cueSt, obSt, others, rec, o){
                    scratch:false, rails:0, hit:false, run:0, pot:0, scrM:Infinity});
   /* 走り終えた道すじに、時刻 t0 からの続きをつなぐ */
   const tail=(d,st,t0)=>{
-    const base=d.pts.length;
-    /* 続きの先頭は「つないだ時点」そのもの。同時刻なら重複するので落とす */
-    for(let i=(Math.abs(t0-d.T)<1e-9?1:0); i<st.pts.length; i++){
+    /* 続きの先頭は「つないだ時点」そのもの。同時刻なら重複するので落とす。
+       落としたぶん添字が 1 つずれるので、クッション接点の位置（railIdx）は
+       st.pts[j] → d.pts[base+j] になるよう base をそこから引いておく
+       （V1.3.1 以前は落としたときも base = d.pts.length のままで、
+         クッションの接点の丸が 1 点ぶん先＝台の内側に浮いて描かれていた）。 */
+    const skip = Math.abs(t0-d.T)<1e-9 ? 1 : 0;
+    const base = d.pts.length - skip;
+    for(let i=skip; i<st.pts.length; i++){
       const q=st.pts[i]; d.pts.push([q[0], q[1], t0+q[2]]);
     }
     for(const ri of st.railIdx) d.railIdx.push(base+ri);
@@ -3143,9 +3172,11 @@ let BASE = null;           // いま台に並んでいる配置から作った�
 let LAY  = null;           // 探索・描画がいま見ている盤面データ（動いた球を反映）
 let Vb = [];
 let plan = null, selStep = 0, bestSpot = null, bestSpotVal = 0;
+let bestSpotOK = false;    // 推奨位置から最後まで繋がるか（繋がらない配置の案内に使う）
 let tipOverride = {};      // { ステップ番号: {a,b} } — 手動で指定した撞点
 let powOverride = {};      // { ステップ番号: 'soft'|'mid'|'hard'|'max' } — 手動の力加減
-let noEnglish = false;     // 捻り一切なし
+let noEnglish = false;     // 捻り一切なし（全ての手）
+let spinOff = {};          // { ステップ番号: true } — その一手だけ捻り一切なし
 let gameMode = 'run';      // 'run' = 取り切り / 'safe' = セーフティー
 let safePref = 'mine';     // セーフティーの方針: 'mine'=自分の成功率重視 / 'opp'=相手の失敗率重視
 let safety = null, safeSpot = null;
@@ -3630,15 +3661,21 @@ function fillPots(pset, p0min, powKey){
   return np;
 }
 
-const A_NONE = [0];        // ノーイングリッシュ用の左右撞点（芯だけ）
+/* ノーイングリッシュ用の撞点候補。左右も上下も芯（＝球の中心）1 点だけ。 */
+const A_NONE = [0];        // 左右撞点（捻り無し）
+const B_NONE = [0];        // 上下撞点（押し引きも無し）
+/* この一手で撞点を中心（芯）に固定するか。
+   noEnglish = 全ての手をまとめて ／ spinOff[k] = その一手だけ。
+   どちらも同じ扱いなので、判定は必ずここを通す。 */
+function noEng(k){ return noEnglish || !!spinOff[k]; }
 function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
   const list = LAY.pdata[k], others = LAY.others[k], nextV = Vb[k+1];
   const nvMax = nextV.max;                    // 「近いサイド」の出し先の判定に使う
   const isLast = (k === balls.length-1);      // 取り切りの最後の一発か
   const endgame = (balls.length - k) <= 2;    // 終盤＝最終球から逆算を強く効かせる
   /* ノーイングリッシュはここで一括して封じる。
-     呼び出し側（手動の撞点指定を含む）が何を渡しても左右は必ず芯になる。 */
-  if(noEnglish) aset = A_NONE;
+     呼び出し側（手動の撞点指定を含む）が何を渡しても、撞点は中心（芯）1 点になる。 */
+  if(noEng(k)){ aset = A_NONE; bset = B_NONE; }
 
   const {cbRail, bMaxUp, bMaxDn, aMax} = bridgeCaps(cx,cy);
   /* 「近いサイドを使う」は仕上げのルート探索でだけ効かせる。
@@ -3883,7 +3920,7 @@ const COMBO_RUN_MIN = 0.02;
 function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
   const list = LAY.combo[k], others = LAY.others[k];
   if(!list || !list.length) return;
-  if(noEnglish) aset = A_NONE;
+  if(noEng(k)){ aset = A_NONE; bset = B_NONE; }
   const {cbRail, bMaxUp, bMaxDn, aMax} = bridgeCaps(cx,cy);
 
   for(let ci=0; ci<list.length; ci++){
@@ -3976,8 +4013,10 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
      （捻りは成功率を確実に下げるので、出しで得るものが大きい時だけ勝ち残る）
    ・その手に撞点指定があれば、その撞点のみで探索する
    ・力加減の指定があれば「必要最小の何倍」で 1 本だけ試す
-   捻りを封じるのは forEachShot 側（＝どの経路から来ても必ず効く）。
-   ここで noEnglish を見ているのは、同じ結果になる 2 周目を省くため。 */
+   「捻り一切なし」を指定した手は撞点が中心（芯）1 点になるので、
+   撞点を振る 2 周目そのものが無駄になる。封じるのは forEachShot 側
+   （＝どの経路から来ても必ず効く）で、ここで noEng() を見ているのは
+   同じ結果になる 2 周目を省くため。 */
 /* コンビは価値マップ（DP）には入れない。
    ・DP は「そのマスに手玉があると残りをどれだけ取り切れるか」を測る地図で、
      そこにコンビの一発（決まれば上がり）を混ぜると、地図そのものが
@@ -4036,7 +4075,7 @@ function enumRaw(k, cx, cy, fine, cb, useOv){
     let anyRail = false;
     forEachShot(k, cx, cy, bset, pset, [0],
                 v=>{ n++; if(SI.needRail) anyRail=true; cb(v); }, false, pk, fine);
-    if(anyRail && !noEnglish)
+    if(anyRail && !noEng(k))
       forEachShot(k, cx, cy, bset, pset, fine?A_RAIL_FS:A_RAIL_DP,
                   v=>{ n++; cb(v); }, false, pk, fine);
     if(fine) forEachCombo(k, cx, cy, bset, pset, [0], v=>{ n++; cb(v); }, pk);
@@ -4159,16 +4198,12 @@ function computeDP(){
 /* SI（使い回し）から 1 手ぶんの結果を取り出して固定する */
 function snapStep(k,cx,cy){
   const cd = SI.combo, lay = LAY;
-  /* 弾いた球は lay.others[k] の添字で返ってくる。あとでカードや警告から
-     引けるように、番号と落ちたかどうかだけここで固めておく。 */
-  const mv = SI.hitRes ? SI.hitRes.map(h=>{
-    const b = lay.others[k][h.i];
-    return {n: b?b.n:0, potted: !!h.potted};
-  }) : null;
+  /* 弾いた球（hitRes）と手玉の落ち着き先（ex/ey）はここでは探索の見積り。
+     ルートに残った手は settleStep が実際に走らせた結果で置き換える。 */
   return {
     pi:SI.pd.pi, k, cx, cy, gx:SI.pd.gx, gy:SI.pd.gy,
     /* この一手を撞く時点の盤面（描画・再生で使う）と、球ごとの厄介さ */
-    lay, mv, hard:lay.hard[k]||0, moved:(SI.pd.B !== balls[k]),
+    lay, mv:null, hard:lay.hard[k]||0, moved:(SI.pd.B !== balls[k]),
     bx:SI.pd.B.x, by:SI.pd.B.y, n:SI.pd.B.n, d1:SI.d1, d2:SI.pd.d2,
     b:SI.b, a:SI.a, P0:SI.P0, f:SI.f, spd:SI.spd, pw:SI.pw, close:SI.close,
     dist:SI.dist, run:SI.run, ex:SI.ex, ey:SI.ey, rails:SI.rails, gap:SI.gap,
@@ -4182,6 +4217,50 @@ function snapStep(k,cx,cy){
     combo: cd ? {g2x:cd.g2x, g2y:cd.g2y, Lx:cd.L.x, Ly:cd.L.y, Ln:cd.L.n,
                  ux:cd.ux, uy:cd.uy, dL:cd.dL, dk:cd.dk, cos2:cd.cos2} : null
   };
+}
+/* --- 一手を実際に走らせて、結果をその一手に書き戻す（V1.3.1）------------
+   ショット列挙（forEachShot）は速さのために手玉だけを simulate している。
+   そこには
+     ・的玉が走ってきて止まった手玉を弾く／両方走っている最中のキス
+     ・的玉が他の球に当たる
+   が入っていないので、探索が持っている「弾いた球」と「手玉の落ち着き先」は、
+   描画・再生が通す shotRun の答えとずれることがあった。
+   実測（6 球・実戦・399 配置 2,379 手）: 弾いた球の食い違い 1 手、
+   手玉の落ち着き先が 1″ 以上ずれる手 6 手（最大 11.8″）。
+   前者は「次の一手で球が台から消える／落ちたはずの球が残る」、
+   後者は「再生が終わった位置と次の一手の手玉位置が違う」として画面に出る。
+
+   そこで、ビームに生き残った手だけを shotRun で解き直し、
+   盤面・手順カード・描画・再生をすべてこの結果に揃える。
+   解いた結果は st.rr に残して描画・再生でも使い回すので、
+   同じ一手を 3 か所で別々に解き直すことはもう無い。 */
+function settleStep(st){
+  if(st.rr) return st.rr;
+  const cb = st.combo, others = st.lay.others[st.k];
+  const im = stepImpact(st);
+  const obSt = copySt(im.ob);
+  const objPot = Math.max(vPot(Math.hypot(obSt.vx, obSt.vy)), 0.01);  // 再生の的玉のペース
+  const rr = shotRun(copySt(im.st), obSt, others, true,
+                     {cueMoves: st.dist>0.5, resolveCue:!cb, resolveObj:!cb});
+  rr.struck = shotStruck(rr, true);
+  rr.objPot = objPot;
+  st.rr = rr;
+  st.hitRes = rr.struck.length ? rr.struck : null;
+  st.mv = st.hitRes ? st.hitRes.map(h=>{ const b=rr.others[h.i];
+                                         return {n:b?b.n:0, potted:!!h.potted}; }) : null;
+  if(cb) return rr;                        // コンビはそこで上がり（手玉の行き先は見ない）
+  st.ex=rr.cue.x; st.ey=rr.cue.y; st.scr=rr.cue.scratch;
+  st.scrM = rr.cue.scratch ? 0 : rr.cue.scrM;
+  st.rails=rr.cue.rails; st.run=rr.cue.run;
+  st.hitb = rr.cue.hit;                    // 手玉が他球に当たったか（的玉の接触は mv 側）
+  return rr;
+}
+/* 返す前にルートの全ての手を確定させる。コンビで上がるルートの最後の一手は
+   ビームの絞り込みを通らないので、ここで解いておかないと
+   手順カードと再生で違う結果を見ることになる。 */
+function settleRoute(r){
+  if(r) for(const st of r.steps) settleStep(st);
+  return r;
 }
 /* コンビ（1 手）と全球取り切り（N 手）を見比べるときの尺度。
    出しのばらつきもここでは含める（含めないと手数の少ないコンビが必ず勝つ）。 */
@@ -4221,10 +4300,11 @@ function findPlan(sx,sy){
     if(!cand.length){
       if(done.length){
         done.sort((a,b)=>routeCmp(b)-routeCmp(a));
-        return {steps:done[0].steps, prob:done[0].prob, prob0:done[0].prob0, complete:true};
+        return settleRoute({steps:done[0].steps, prob:done[0].prob, prob0:done[0].prob0, complete:true});
       }
       return beam[0].steps.length
-        ? {steps:beam[0].steps, prob:beam[0].prob, prob0:beam[0].prob0, complete:false} : null;
+        ? settleRoute({steps:beam[0].steps, prob:beam[0].prob, prob0:beam[0].prob0, complete:false})
+        : null;
     }
     cand.sort((a,b)=>b.score-a.score);
     const seen=new Map(), nb=[];
@@ -4257,11 +4337,16 @@ function findPlan(sx,sy){
         nb.push(c); nBrk++;
       }
     }
-    /* 生き残った枝だけ、弾かれた球を動かした盤面に差し替える。
-       盤面の作り直しは候補ごとにやると重いので、ここまで絞ってから行う。 */
+    /* 生き残った枝だけ、実際に走らせた結果（settleStep）に置き換えてから
+       次の手へ進む。手玉の落ち着き先も弾かれた球もここで確定するので、
+       この先の枝は「再生したときに本当にそうなる盤面」の上で伸びていく。
+       解き直しは候補ごとにやると重いので、ここまで絞ってから行う。 */
     for(const c of nb){
       const s = c.steps[c.steps.length-1];
-      if(s && s.k===k && s.hitRes) c.lay = nextLayout(s.lay, k, s.hitRes);
+      if(!s || s.k!==k || s.combo) continue;
+      settleStep(s);
+      c.x = s.ex; c.y = s.ey;
+      if(s.hitRes) c.lay = nextLayout(s.lay, k, s.hitRes);
     }
     beam = nb;
   }
@@ -4278,15 +4363,16 @@ function findPlan(sx,sy){
   const run = beam[0];
   const best = (done.length && routeCmp(run) < COMBO_RUN_MIN
                 && routeCmp(done[0]) > routeCmp(run)) ? done[0] : run;
-  return {steps:best.steps, prob:best.prob, prob0:best.prob0, complete:true};
+  return settleRoute({steps:best.steps, prob:best.prob, prob0:best.prob0, complete:true});
 }
 
+/* フリーボールの推奨位置を「実際に組み立てて」確かめる本数（→ findBestSpot） */
+const SPOT_TRY = 5;
 function findBestSpot(){
   const raw = Vb[0].raw, cands=[];
   for(let i=0;i<GN;i++) if(raw[i]>0) cands.push([raw[i],i]);
   cands.sort((a,b)=>b[0]-a[0]);
-  let best=null, bv=-1;
-  const rem = BASE.rem[0];
+  const rem = BASE.rem[0], spots=[];
   for(const [,idx] of cands.slice(0,12)){
     const bx = gx0 + (idx%GW)*GS, by = gy0 + Math.floor(idx/GW)*GS;
     for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++){
@@ -4295,15 +4381,39 @@ function findBestSpot(){
       for(const b of rem){ const dx=b.x-cx, dy=b.y-cy; if(dx*dx+dy*dy < BD*BD+0.3){ bad=true; break; } }
       if(bad) continue;
       const v = cellValue(0,cx,cy,true);
-      if(v>bv){ bv=v; best={x:cx,y:cy}; }
+      if(v>0) spots.push({x:cx, y:cy, v});
     }
   }
+  spots.sort((a,b)=>b.v-a.v);
+  /* --- 置いたあと手詰まりになる場所は出さない（V1.3.1）-------------------
+     価値マップは「1 球目の良さ × その先の見込み」で、先はぼかした地図でしか
+     見ていない。いちばん値の高いマスでも、実際に組み立てると途中で撞ける球が
+     無くなる配置がある（実測: 720 配置中 2 件。3 球・実戦・終盤難所で出た）。
+     フリーボールは「最後まで繋がる場所に置く」のが前提なので、値の高い順に
+     実際にルートを組み立てて、繋がった場所だけを推奨位置として出す。
+     ふつうは 1 本目で繋がるので、余計な計算はそこで終わる。
+     どれも繋がらないときは、いちばん先まで進める場所を出す
+     （そのときは手順パネルにも「繋がりませんでした」と出る）。
+     近すぎる候補は同じ手になるだけなので、球 1 個ぶん離して選ぶ。 */
+  let best=null, bestVal=0, fallLen=-1, ok=false;
+  const tried=[];
+  for(const s of spots){
+    if(tried.length >= SPOT_TRY) break;
+    let near=false;
+    for(const t of tried) if(Math.hypot(s.x-t.x, s.y-t.y) < BD){ near=true; break; }
+    if(near) continue;
+    tried.push(s);
+    const pl = findPlan(s.x, s.y);
+    /* 画面に出す「約 ○%」は、そこに置いたときの取り切り成功率そのもの
+       （価値マップの値は好みの減点を全球ぶん掛けているので低く出る）。 */
+    const v = pl ? clamp(pl.prob0, 0, 1) : 0;
+    if(pl && pl.complete){ best={x:s.x, y:s.y}; bestVal=v; ok=true; break; }
+    const len = pl ? pl.steps.length : 0;
+    if(len > fallLen){ fallLen=len; best={x:s.x, y:s.y}; bestVal=v; }
+  }
   bestSpot = best;
-  /* 位置選びは価値マップ（ルートの好みを含む探索用の値）で行うが、
-     画面に出す「約 ○%」はそこに置いたときの取り切り成功率そのものを使う。
-     価値マップの値は好みの減点を全球ぶん掛け合わせているので、そのままでは低く出る。 */
-  const pl = best ? findPlan(best.x, best.y) : null;
-  bestSpotVal = pl ? clamp(pl.prob0, 0, 1) : 0;
+  bestSpotVal = best ? bestVal : 0;
+  bestSpotOK = ok;
 }
 
 /* =========================================================================
@@ -4664,7 +4774,7 @@ function returnSafety(cEnd, oEnd, n, others){
   const tgt = {x:oEnd.x, y:oEnd.y, n};
   let best = 0;
   for(const th of TH_C) for(const b of SB_C) for(const pa of SP_C){
-    if(!trySafety(cEnd.x, cEnd.y, tgt, others, th, b, 0, Math.max(pa,12))) continue;
+    if(!trySafety(cEnd.x, cEnd.y, tgt, others, th, b, 0, Math.max(pa,12), true)) continue;
     if(SF.good && SF.score>best) best = SF.score;
   }
   return clamp(best/1.5, 0, 1);
@@ -4693,8 +4803,13 @@ function safetyCueVec(b,a,P0,t,gx,gy,dx,dy,lx,ly){
    SF は使い回しなので、値が必要なら snapSafety() で複製すること。
    ここは探索専用なので軌跡は記録しない（描画・再生は safetyPaths / drawSafety）。 */
 const SF={};
-function trySafety(cx,cy,target,others,th,b,a,P0){
-  if(noEnglish) a = 0;                              // 捻り無しはここでも必ず封じる
+/* oppShot = 相手が返してくる手を測るための試し撞ち。
+   「捻り一切なし」は自分の練習の縛りなので、相手の手には掛けない
+   （掛けると相手が押し引きも使えないことになり、返されやすさを甘く見積もる）。 */
+function trySafety(cx,cy,target,others,th,b,a,P0,oppShot){
+  /* 捻り無しはここでも必ず封じる（守りの一手は k=0 扱い）。
+     封じるのは左右だけでなく上下も＝球の中心（芯）1 点。 */
+  if(noEng(0) && !oppShot){ a = 0; b = 0; }
   let d0x=target.x-cx, d0y=target.y-cy;
   const D0=Math.hypot(d0x,d0y);
   if(D0 < BD+0.35) return false;
@@ -5109,7 +5224,7 @@ function findSafety(cx,cy){
   const target=balls[0], others=balls.slice(1);
   const cands=[];
   for(const th of TH_F) for(const b of SB_F) for(const a of SA_F){
-    if(noEnglish && a!==0) continue;
+    if(noEng(0) && (a!==0 || b!==0)) continue;   // 捻り無しは芯の 1 本だけ
     for(const pa of SP_F){
       const P0=Math.max(pa, 12);
       if(!trySafety(cx,cy,target,others,th,b,a,P0)) continue;
@@ -5212,6 +5327,7 @@ function findSafeSpot(){
     if(bad) continue;
     let bs=0;
     for(const th of TH_C) for(const b of SB_C) for(const a of SA_C) for(const pa of SP_C){
+      if(noEng(0) && (a!==0 || b!==0)) continue;   // 捻り無しは芯の 1 本だけ
       if(!trySafety(x,y,target,others,th,b,a,Math.max(pa,12))) continue;
       /* 入れ筋（直球・バンク）を残す手しか作れない位置は大きく割り引く。
          6 割以上で入るバンクを与えてしまう位置は、置き所として論外なので更に落とす。 */
@@ -5284,7 +5400,8 @@ self.onmessage = function(ev){
   var d = ev.data;
   applyCondition(d.condKey);
   balls = d.balls; cue = null;
-  gameMode = d.gameMode; safePref = d.safePref; noEnglish = d.noEnglish;
+  gameMode = d.gameMode; safePref = d.safePref;
+  noEnglish = d.noEnglish; spinOff = d.spinOff;
   tipOverride = d.tipOverride; powOverride = d.powOverride;
   /* Worker 側の balls は毎回そのつど届く複製なので、盤面データは必ず作り直す
      （BASE を使い回すと、中の球と balls の球が別物になってしまう）。 */
@@ -5299,6 +5416,7 @@ self.onmessage = function(ev){
     }
     out.bestSpot = bestSpot ? {x:bestSpot.x,y:bestSpot.y} : null;
     out.bestSpotVal = bestSpotVal;
+    out.bestSpotOK = bestSpotOK;
   }
   if(d.safe) out.safeSpot = safeSpot ? {x:safeSpot.x,y:safeSpot.y} : null;
   self.postMessage(out);
@@ -5342,7 +5460,7 @@ function hvApply(d){
   if(d.prep) prepare();                         /* BASE / LAY は軽いので手元で作る */
   if(d.dp){
     Vb = d.lv.map((lv,k)=>{ lv.raw = d.raw[k] || undefined; lv.max = d.mx[k]; return lv; });
-    bestSpot = d.bestSpot; bestSpotVal = d.bestSpotVal;
+    bestSpot = d.bestSpot; bestSpotVal = d.bestSpotVal; bestSpotOK = d.bestSpotOK;
   }
   if(d.safe) safeSpot = d.safeSpot;
   hvFinish(hvRun);
@@ -5353,7 +5471,7 @@ function hvStart(req){
   if(hvWorker){
     req.id = ++hvSeq;
     hvWorker.postMessage({id:req.id, prep:req.prep, dp:req.dp, safe:req.safe,
-      condKey, balls, gameMode, safePref, noEnglish, tipOverride, powOverride});
+      condKey, balls, gameMode, safePref, noEnglish, spinOff, tipOverride, powOverride});
   }else{
     setTimeout(()=>{ heavyRun(req); hvFinish(req); }, 20);   /* スピナーを描いてから */
   }
@@ -5382,7 +5500,7 @@ function computing(){ return !!hvRun; }
 function rebuildRack(){
   balls = makeRack();
   cue = null; plan = null; safety = null; selStep = 0;
-  bestSpot = null; safeSpot = null; tipOverride = {}; powOverride = {};
+  bestSpot = null; safeSpot = null; tipOverride = {}; powOverride = {}; spinOff = {};
   Vb = [];                       // 前の配置の価値マップは捨てる（ヒートマップの残像よけ）
   heavy({prep:true, dp:true, safe:true});
 }
@@ -5917,28 +6035,23 @@ function drawStep(st, active){
      他球に当たったら 2 球衝突を解いて走り続けるので、
      当てられた球の道すじもここで一緒に描く。 */
   if(show.cuePath && st.dist>0.5){
-    const others = st.lay.others[st.k];
-    /* 再生（buildShots）とまったく同じ shotRun を通す。そうしないと
-       「描いた線」と「再生で走る線」が食い違う。 */
-    const im = stepImpact(st);
-    const rr = shotRun(copySt(im.st), copySt(im.ob), others, true,
-                       {cueMoves:true, resolveCue:!cb, resolveObj:!cb});
+    /* 探索が確定させた一手（settleStep）をそのまま描く。
+       再生（buildShots）もまったく同じものを見るので、
+       「描いた線」と「再生で走る線」が食い違うことはない。 */
+    const rr = settleStep(st);
     const cuePts = rr.cue.pts;
     const pts = cuePts.map(p=>P(p[0],p[1]));
     const railIdx = rr.cue.railIdx;
-    const hits = (rr.cue.hits||[]).concat(rr.obj.hits||[]);
     const col = st.scr?'#ff8585':(st.hitb?'#ffa14a':'#5fdcee');
-    /* 当てられた球（resolveHits が SIM を上書きするので複製してから呼ぶ） */
-    if(hits.length){
-      for(const h of resolveHits(hits, rr.others, true)){
-        const bn = rr.others[h.i];
-        drawPath(h.pts.map(p=>P(p[0],p[1])), null,
-                 BALLCOL[bn?bn.n:9]||'#ffa14a', a*0.75, Math.max(1.3,0.14*S), [4,4], false);
-        if(active){
-          const hp=P(h.x,h.y);
-          addObst(hp[0],hp[1],R*S*1.1);
-          label(hp[0],hp[1],`${bn?bn.n:'?'}番が動く`,'#ffd0a0',a*0.9,1);
-        }
+    /* 手玉・的玉に弾かれた球 */
+    for(const h of rr.struck){
+      const bn = rr.others[h.i];
+      drawPath(h.pts.map(p=>P(p[0],p[1])), null,
+               BALLCOL[bn?bn.n:9]||'#ffa14a', a*0.75, Math.max(1.3,0.14*S), [4,4], false);
+      if(active){
+        const hp=P(h.x,h.y);
+        addObst(hp[0],hp[1],R*S*1.1);
+        label(hp[0],hp[1],`${bn?bn.n:'?'}番が動く`,'#ffd0a0',a*0.9,1);
       }
     }
     drawPath(pts, railIdx, col, a, Math.max(1.9,0.21*S));
@@ -6006,23 +6119,19 @@ function safetyPaths(sf){
   return shotRun(v.cue, v.ob, balls.slice(1), true,
                  {cueMoves: sf.cuePot>0.5 && v.m>0.02, resolveCue:true, resolveObj:true});
 }
-/* 手玉・的玉に弾かれた球（クラスター）の道すじ。
-     others = 衝突判定に渡した並び（h.i がこの添字）
-     stage  = 再生中の静止球リスト（bi はこの添字で返す）
-   ※ resolveHits は SIM を上書きするので、手玉・的玉の道すじを
-     複製し終えてから呼ぶこと。 */
-function struckPaths(hits, others, stage){
+/* 手玉・的玉に弾かれた球（クラスター）の再生用データ。
+     res    = shotStruck が解いた結果（h.i は shotRun に渡した並びの添字）
+     others = その並び
+     stage  = 再生中の静止球リスト（bi はこの添字で返す） */
+function struckPaths(res, others, stage){
   const out=[];
-  if(!hits || !hits.length) return out;
-  for(const h of resolveHits(hits, others, true)){
+  for(const h of res){
     const bn=others[h.i];
     if(!bn) continue;
     out.push({n:bn.n, bi:stage.indexOf(bn), pts:h.pts, potted:h.potted, t0:h.t0});
   }
   return out;
 }
-/* セーフティー版。others は shotRun が使った並び（＝ balls.slice(1) ＋ 止まった手玉） */
-function safetyStruck(hits, others){ return struckPaths(hits, others, balls); }
 
 function drawSafety(sf){
   const C=P(sf.cx,sf.cy), G=P(sf.gx,sf.gy);
@@ -6043,7 +6152,7 @@ function drawSafety(sf){
     drawPath(rr.cue.pts.map(p=>P(p[0],p[1])), rr.cue.railIdx, '#5fdcee', 1, Math.max(1.9,0.21*S));
 
   /* 手玉・的玉に弾かれた球。取り切り側と同じ見せ方にする */
-  for(const s of safetyStruck(rr.obj.hits, rr.others).concat(safetyStruck(rr.cue.hits, rr.others)))
+  for(const s of struckPaths(shotStruck(rr, true), rr.others, balls))
     drawPath(s.pts.map(p=>P(p[0],p[1])), null, BALLCOL[s.n]||'#ffa14a',
              0.9, Math.max(1.5,0.17*S), [6,4]);
 
@@ -6138,7 +6247,7 @@ function aimPath(cx,cy,gx,gy,a,b,P0){
   const ux=L>1e-9?dx/L:1, uy=L>1e-9?dy/L:0, px=uy, py=-ux;   // px,py = 進行方向の左
   /* 捻っていなくても細かく刻む。撞点で滑走の減速が変わるので、
      点ごとの時刻がそのまま「走り出しは速く、届くころは緩む」動きになる。 */
-  const swerve = !(L<0.5 || Math.abs(a)<0.02 || noEnglish);
+  const swerve = !(L<0.5 || Math.abs(a)<0.02);      // a=0 なら捻り無しなので曲がらない
   const n = L<0.5 ? 1 : (swerve ? 16 : 10);
   const bulge = swerve ? SQUIRT_K*a*L*0.25 : 0;   // トビ → スワーブの最大ふくらみ
   const out=[];
@@ -6185,7 +6294,7 @@ function buildShots(fromStep, single){
     const rr=safetyPaths(sf);
     /* 弾かれた球も一緒に動かす。resolveHits は SIM を上書きするので、
        手玉・的玉の道すじを複製し終えてから呼ぶ（shotRun が複製済み）。 */
-    const sec=safetyStruck(rr.obj.hits, rr.others).concat(safetyStruck(rr.cue.hits, rr.others));
+    const sec=struckPaths(shotStruck(rr, true), rr.others, balls);
     /* 的玉は balls の何番目か（＝再生中に静止球として描かない球） */
     let oi=balls.findIndex(b=>b.n===sf.n); if(oi<0) oi=0;
     return [{
@@ -6204,22 +6313,13 @@ function buildShots(fromStep, single){
     const st=plan.steps[i], cb=st.combo;
     /* 前の手で動いた球を反映した盤面。ここを balls の元配置に戻すと、
        弾いた球が次の一手でまた元の場所に現れてしまう。 */
-    const others=st.lay.others[st.k], remain=st.lay.rem[st.k];
-    /* 探索と同じ衝突解から、手玉・的玉の衝突直後の状態を作り直す。
-       CUE は使い回しなので、次の solveImpact を呼ぶ前に両方複製しておく。 */
-    const im=stepImpact(st);
-    const cueSt=copySt(im.st), obSt=copySt(im.ob);
-    const objPot=Math.max(vPot(Math.hypot(obSt.vx,obSt.vy)), 0.01);
-    /* セーフティーと同じ shotRun を通す。的玉は狙ったポケットへ落ちるのがふつうだが、
-       外して戻ってきたときに手玉を素通りしないよう、止まった手玉も障害物に入れる。
-       コンビのときだけ 1 球目は 9 番に当たった時点で止める（resolveObj = false）。 */
-    const rr=shotRun(cueSt, obSt, others, true,
-                     {cueMoves: st.dist>0.5, resolveCue: !cb, resolveObj: !cb});
-    const objPts=rr.obj.pts, objDur=rr.obj.T, objRest=rr.obj.pot;
-    const sec=[];
+    const remain=st.lay.rem[st.k];
+    /* ルート探索が確定させた一手（settleStep）。手玉・的玉・弾かれた球の
+       道すじも、次の一手へ渡る盤面も、すべてここで解いたものと同じになる。 */
+    const rr=settleStep(st);
+    const objPot=rr.objPot, objPts=rr.obj.pts, objDur=rr.obj.T, objRest=rr.obj.pot;
     /* 手玉・的玉に弾かれた球（クラスター処理） */
-    for(const s of struckPaths(rr.cue.hits, rr.others, remain)) sec.push(s);
-    for(const s of struckPaths(rr.obj.hits, rr.others, remain)) sec.push(s);
+    const sec=struckPaths(rr.struck, rr.others, remain);
     if(cb){
       /* コンビ: 1 球目は 9 番の手前まで、そこから 9 番がポケットへ */
       const L9=remain.find(b=>b.n===cb.Ln);
@@ -6540,6 +6640,11 @@ function vertLabel(b){
   if(b>0) return [a>0.42?'強い押し':(a>0.24?'押し':'軽い押し'),'f'];
   return [a>0.42?'強い引き':(a>0.24?'引き':'軽い引き'),'d'];
 }
+/* 捻り無しの手で見せる撞点。探索は noEng(k) で撞点を中心（芯）に固定しているので
+   ここは常に 0 になるはずだが、図・数値・タグ・警告の全てをこの 1 か所に通して、
+   チェックの状態と画面が食い違わないようにする。 */
+function shownA(k, a){ return noEng(k) ? 0 : a; }
+function shownB(k, b){ return noEng(k) ? 0 : b; }
 function sideLabel(a){
   const v=Math.abs(a);
   if(v<0.07) return null;
@@ -6627,15 +6732,15 @@ function clampTip(a,b,snap){
   if(r > lim){ a *= lim/r; b *= lim/r; }
   return {a:Math.round(a*1000)/1000, b:Math.round(b*1000)/1000};
 }
-/* 撞点を数値で動かす（ドラッグより確実に微調整できる） */
+/* 撞点を数値で動かす（ドラッグより確実に微調整できる）。
+   捻り無しの手は中心（芯）に固定なので、上下・左右とも受け付けない。 */
 function nudgeTip(da,db,setA,setB){
-  const an=tipAnchor(); if(!an || an.safe) return;
+  const an=tipAnchor(); if(!an || an.safe || noEng(an.k)) return;
   const cur = tipOverride[an.k] || {a:an.a||0, b:an.b||0};
   const q = v => Math.round(v*100)/100;      // 0.01 単位に丸めて誤差をためない
   let a = setA!==undefined ? setA : q(cur.a + (da||0));
   let b = setB!==undefined ? setB : q(cur.b + (db||0));
   tipOverride[an.k] = clampTip(a,b);
-  if(noEnglish) tipOverride[an.k].a = 0;
   renderTipPanel();
   clearTimeout(tipTimer); tipTimer=setTimeout(replan,120);
 }
@@ -6683,14 +6788,17 @@ function drawTipCtl(){
   for(const v of [0.25,0.5]){ g.beginPath(); g.arc(cx,cy,v*RR,0,7); g.stroke(); }
   g.strokeStyle='#4a5462'; g.lineWidth=1.4;
   g.beginPath(); g.arc(cx,cy,RR,0,7); g.stroke();
-  /* ノーイングリッシュ中は「左右は芯（垂直線上）だけ」を図でも示す */
-  if(noEnglish && !(st&&st.safe)){
+  /* ノーイングリッシュ中は「撞点は球の中心だけ」を図でも示す（十字＋中心の輪） */
+  if(st && noEng(st.k)){
     g.save(); g.strokeStyle='rgba(90,220,180,.8)'; g.lineWidth=1.8;
-    g.beginPath(); g.moveTo(cx,cy-RR); g.lineTo(cx,cy+RR); g.stroke(); g.restore();
+    g.beginPath(); g.moveTo(cx,cy-RR); g.lineTo(cx,cy+RR);
+    g.moveTo(cx-RR,cy); g.lineTo(cx+RR,cy); g.stroke();
+    g.lineWidth=1.4; g.beginPath(); g.arc(cx,cy,RR*0.26,0,7); g.stroke(); g.restore();
   }
 
   if(st){
-    const dx=cx+st.a*RR, dy=cy-st.b*RR;
+    const sa=shownA(st.k, st.a), sb=shownB(st.k, st.b);
+    const dx=cx+sa*RR, dy=cy-sb*RR;
     const man=!!tipOverride[st.k] && !st.safe;
     /* 手動のときは水平・垂直の合わせ線を出す（芯が出せているか見えるように） */
     if(man){
@@ -6701,7 +6809,7 @@ function drawTipCtl(){
     }
     g.strokeStyle='rgba(40,50,62,.5)'; g.lineWidth=1;
     g.beginPath(); g.moveTo(cx,cy); g.lineTo(dx,dy); g.stroke();
-    g.fillStyle=tipColor(st.a,st.b,man);
+    g.fillStyle=tipColor(sa,sb,man);
     g.beginPath(); g.arc(dx,dy,RR*0.155,0,7); g.fill();
     g.strokeStyle='#fff'; g.lineWidth=2; g.stroke();
   }
@@ -6734,9 +6842,23 @@ function renderTipPanel(){
   next.disabled = !(nSteps>1 && selStep<nSteps-1);
   const pw = an ? (powOverride[an.k]||'auto') : 'auto';
   document.querySelectorAll('#pows .seg').forEach(x=>x.classList.toggle('on', x.dataset.p===pw));
-  /* ノーイングリッシュ中は左右（ひねり）を触れないようにして、状態を見た目でも一致させる */
-  document.querySelectorAll('#tipsec .fine [data-da], #tipsec .fine [data-seta]')
-          .forEach(x=>{ x.disabled = noEnglish; });
+  /* 捻り無しの手は撞点が球の中心に固定なので、上下・左右とも触れないようにして
+     状態を見た目でも一致させる */
+  const one = !!(an && spinOff[an.k]);          // この手だけの指定
+  const noE = noEng(an ? an.k : 0);             // この手の撞点が芯に固定されているか
+  document.querySelectorAll('#tipsec .fine button')
+          .forEach(x=>{ x.disabled = noE; });
+  /* 2 つのチェックは排他。どちらか一方だけ、または両方なし。
+     （両方入っていると「全ての手」を外したときに何が残るのか読めない） */
+  $('cNoEngAll').checked  = noEnglish;
+  $('cNoEngOne').checked  = one;
+  $('cNoEngOne').disabled = !an;
+  /* 「この手」がどの一手なのかをラベルに出す。
+     撞点パネルは ◀▶ で撞く球を選べるので、これが無いと
+     見ている手とチェックが効く手が食い違っていても気づけない。 */
+  $('noEngOneLbl').textContent = !an ? 'この手だけ捻り無し'
+    : an.safe ? 'この守りの一手だけ捻り無し'
+              : `この手（${an.k+1}球目・${an.n}番）だけ捻り無し`;
   if(!an){
     lbl.textContent='—'; md.textContent='—'; md.className='tipmode auto';
     for(const id of ['tipB','tipA','tipP','tipF']) $(id).textContent='—';
@@ -6750,20 +6872,25 @@ function renderTipPanel(){
                             : `${an.k+1}球目（${an.n}番）${nSteps>1?` — 全${nSteps}球`:''}`;
   md.textContent = an.safe ? '自動（セーフティー）' : ((man||manP)?'手動':'自動');
   md.className = 'tipmode '+((man||manP)&&!an.safe?'man':'auto');
-  const [vl]=vertLabel(an.b), sl=sideLabel(an.a);
-  $('tipB').textContent=`${an.b>=0?'+':''}${an.b.toFixed(2)}　${vl}`;
-  $('tipA').textContent=`${an.a>=0?'+':''}${an.a.toFixed(2)}　${sl||'捻り無し'}`;
+  const av=shownA(an.k, an.a), bv=shownB(an.k, an.b);
+  const [vl]=vertLabel(bv), sl=sideLabel(av);
+  $('tipB').textContent=`${bv>=0?'+':''}${bv.toFixed(2)}　${vl}`;
+  $('tipA').textContent=`${av>=0?'+':''}${av.toFixed(2)}　${sl||'捻り無し'}`;
   $('tipP').textContent = an.pw
     ? `${powerName(an.pw)}・最大の ${Math.round(an.pw*100)}%（約 ${(VMAX*an.pw/IN_M).toFixed(1)} m/s）`
     : '—';
   $('tipF').textContent=spinLabel(an.f);
-  fB.textContent=`${an.b>=0?'+':''}${an.b.toFixed(2)}`;
-  fA.textContent=`${an.a>=0?'+':''}${an.a.toFixed(2)}`;
+  fB.textContent=`${bv>=0?'+':''}${bv.toFixed(2)}`;
+  fA.textContent=`${av>=0?'+':''}${av.toFixed(2)}`;
   let t='', warn=false;
-  if(an.safe) t='セーフティーの撞点・力加減は自動で選ばれます（ここでは変更できません）。';
+  if(an.safe) t='セーフティーの撞点・力加減は自動で選ばれます（ここでは変更できません）。'
+              +(noE?'「捻り一切なし」はこの守りの一手にも効いています（中心撞き）。':'');
   else if(!an.live){ t='この撞点ではこの球を入れられません。撞点を戻すか「自動に」を押してください。'; warn=true; }
-  else if(noEnglish)
-    t='ノーイングリッシュ中：左右は芯に固定です。全ステップの撞点を中心に揃えました。上下も自動で選ばせたいときは「全て自動に」。';
+  else if(noE)
+    /* どちらのチェックで芯に固定されているのかを必ず書く。 */
+    t=(noEnglish ? 'ノーイングリッシュ（全ての手）' : 'ノーイングリッシュ（この手だけ）')
+     +'：撞点は球の中心（芯）に固定です。左右（捻り）も上下（押し／引き）も 0 で、'
+     +'手玉の走りも中心撞きのラインになります。指定を戻すにはチェックを外してください。';
   else if(an.b<-0.08 && an.f!==null && an.f>0.15){
     t=`この距離（手玉${Math.round(an.d1)}″）では引き回転が途中で抜けます。力加減を「強」「最大」にすると残ります。`;
     warn=true;
@@ -6791,12 +6918,12 @@ function renderTipPanel(){
 }
 let tipDrag=false, tipTimer=null;
 function applyTip(e){
-  const an=tipAnchor(); if(!an || an.safe) return;
+  const an=tipAnchor(); if(!an || an.safe || noEng(an.k)) return;   // 捻り無しは芯に固定
   const G0=tipGeom();
   const r=G0.cvs.getBoundingClientRect();
   const {a,b}=clampTip((e.clientX-r.left-r.width/2)/G0.rr,
                       -(e.clientY-r.top -r.height/2)/G0.rr, true);
-  tipOverride[an.k] = { a: noEnglish ? 0 : a, b };
+  tipOverride[an.k] = { a, b };
   renderTipPanel();
   clearTimeout(tipTimer); tipTimer=setTimeout(replan,140);
 }
@@ -6925,7 +7052,7 @@ function renderSafetyPanel(){
     ws.push('ℹ 手玉と的玉が近いセーフティーです。相手は撞きやすいので、離せる配置なら離すほうが有利です。');
   setWarns(ws);
 
-  const [vl]=vertLabel(sf.b), sl=sideLabel(sf.a);
+  const [vl]=vertLabel(shownB(0, sf.b)), sl=sideLabel(shownA(0, sf.a));
   const bars=powerBars(sf.pw), strp=badgeStyle(sf.n);
   const okTag = sf.snookered
     ? `<span class="tag s">球の陰に隠す（スヌーク・きつさ ${Math.round((sf.snook||0)*100)}%）</span>`
@@ -6973,7 +7100,7 @@ function renderSafetyPanel(){
       <span class="pr" style="color:${rc}">${Math.round(r*100)}%</span>
     </div>
     <div class="sb">
-      <canvas class="tip" data-a="${sf.a}" data-b="${sf.b}"></canvas>
+      <canvas class="tip" data-a="${shownA(0, sf.a)}" data-b="${shownB(0, sf.b)}"></canvas>
       <div class="meta">
         <div>力加減 <span class="pw">${bars}</span> ・ 手玉 <b>${Math.round(sf.cRun||0)}″</b>転がる${sf.cRails?`(${sf.cRails}ク)`:''}
              ・ ${sf.n}番 <b>${Math.round(sf.oRun||0)}″</b>転がる${sf.oRails?`(${sf.oRails}ク)`:''}
@@ -7005,6 +7132,7 @@ function renderSafetyPanel(){
           ${bankTag}
           <span class="tag ${vl.includes('引')?'d':(vl.includes('押')?'f':'s')}">${vl}</span>
           ${sl?`<span class="tag e">${sl}</span>`:''}
+          ${noEng(0)?'<span class="tag e">捻り無し</span>':''}
           ${sf.oHit?'<span class="tag w">的玉が他球を弾く</span>':''}
           ${sf.cHit?'<span class="tag w">手玉が他球を弾く</span>':''}
         </div>
@@ -7035,9 +7163,17 @@ function renderPanel(){
   $('sumLbl').innerHTML='取り切り成功率<br>(狙い通り)';
   $('sMissLbl').textContent='ミス込み';
   if(!cue) return panelEmpty(
-    `<div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。<br><br>
-      白い点滅マーカーが<b style="color:#4dd0e1">推奨のフリーボール位置</b>です。<br>
-      （成功率 約 ${Math.round(bestSpotVal*100)}%）</div>`, '--', '#e6edf3');
+    !bestSpot
+      ? `<div class="empty" style="color:#f87171">この配置は<b>どこに手玉を置いても最後まで繋がりません</b>。<br>
+         クラスターやフタで撞ける球が無くなる配置です。<br><br>
+         「新しい配置」で作り直すか、球を長押しして動かしてください。</div>`
+    : !bestSpotOK
+      ? `<div class="empty" style="color:#ffd166">テーブルをタップして<br>手玉（フリーボール）を置いてください。<br><br>
+         点滅マーカーは<b>いちばん先まで進める位置</b>ですが、<br>
+         この配置では<b>途中で撞ける球が無くなります</b>。</div>`
+      : `<div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。<br><br>
+         白い点滅マーカーが<b style="color:#4dd0e1">推奨のフリーボール位置</b>です。<br>
+         （成功率 約 ${Math.round(bestSpotVal*100)}%）</div>`, '--', '#e6edf3');
   if(!plan||!plan.steps.length) return panelEmpty(
     tipOverride[0]||powOverride[0]
       ? `<div class="empty" style="color:#f87171">指定した撞点／力加減では 1 球目が狙えません。<br>
@@ -7117,8 +7253,8 @@ function renderPanel(){
        残っているということは他に繋がる筋が無かったということ。 */
     if(s.q0 < SHOTQ_TAG)
       ws.push(`⚠ ${s.n}番のシュート率は ${Math.round(s.q0*100)}% しかありません。${Math.round(SHOTQ_OK*100)}% を下回るカットは避ける組み立てですが、この配置ではこれ以外に最後まで繋がる筋がありませんでした（割った先や、狙える口が 1 つしかない球で起きます）。ここは出しより<b>入れそのもの</b>を優先してください。`);
-    if(s.hitb){
-      const mv=s.mv||[];
+    const mv=s.mv||[];
+    if(s.hitb || mv.length){
       const moved=mv.filter(m=>!m.potted).map(m=>`${m.n}番`).join('・');
       const potx =mv.filter(m=> m.potted).map(m=>`${m.n}番`).join('・');
       if(!mv.length) ws.push(`⚠ ${s.n}番の後、手玉が他の球に接触します。`);
@@ -7128,7 +7264,8 @@ function renderPanel(){
              割ったあとの盤面がはっきり良くなっている（撞けなかった球が
              開いた／厄介な球のポケットが増えた）と読める。 */
           const good = (s.brk||1) >= 1.20;
-          ws.push(`ℹ ${s.n}番の後、手玉が${moved}に当たって動かします（クラスターを割る手）。`
+          /* 弾いたのが手玉とは限らない（クッションから戻った的玉が当たることもある） */
+          ws.push(`ℹ ${s.n}番の後、${s.hitb?'手玉':'的玉'}が${moved}に当たって動かします（クラスターを割る手）。`
             + (good
                ? `この配置は<b>割りに行ってよい形</b>で、割ったあとの${moved}から次のシュート筋が立ちます。`
                : `割らずに残す手より良いと判断していますが、見返りは大きくありません。`)
@@ -7156,14 +7293,15 @@ function renderPanel(){
     /* 通り道のすき間。球 1/4 個分を切る筋は狙って通せない */
     if(s.gap < GAP_TAG)
       ws.push(`⚠ ${s.n}番の通り道は他の球とのすき間が ${s.gap.toFixed(1)}″（球 1 個分は ${BD}″）。キス覚悟の筋なので、シュート率も落としています。`);
-    if(s.b < -0.05 && s.f > -0.05)      drawGone.push(`${s.n}番`);
-    else if(s.b > 0.05 && s.f >= ROLL_F) rollOnly.push(`${s.n}番`);
+    const sb = shownB(s.k, s.b);
+    if(sb < -0.05 && s.f > -0.05)      drawGone.push(`${s.n}番`);
+    else if(sb > 0.05 && s.f >= ROLL_F) rollOnly.push(`${s.n}番`);
     if(!s.combo && s.pos<0.86)
       ws.push(`⚠ ${s.n}番の出しが ${Math.round(cueRun(s))}″${s.rails?`／${s.rails}クッション`:''}と長く、ポジションミスの確率が上がります（出し成功率 ${Math.round(s.pos*100)}%）。`);
     /* 逃げ道の確保 — 土手に張り付く出しは次の入り筋が 1 本になりやすい */
     if(!s.combo && s.k < balls.length-1 && railNear(s.ex,s.ey) > 0.5)
       ws.push(`⚠ ${s.n}番の後、手玉が土手ぎわに止まります。撞点が制限され、次の入り筋も細くなります。`);
-    if(Math.abs(s.a)>0.07)
+    if(Math.abs(shownA(s.k, s.a))>0.07)
       ws.push(`ℹ ${s.n}番は${s.a>0?'右':'左'}ひねり。スカートで手玉が${s.a>0?'左':'右'}へ飛ぶ分、狙いを補正。`);
   }
   if(drawGone.length)
@@ -7182,7 +7320,8 @@ function renderPanel(){
 
   const circ='①②③④⑤⑥⑦⑧⑨', el=$('steps');
   el.innerHTML=plan.steps.map((s,i)=>{
-    const [vl,vc]=vertLabel(s.b), sl=sideLabel(s.a);
+    const sa=shownA(s.k, s.a), sb=shownB(s.k, s.b);
+    const [vl,vc]=vertLabel(sb), sl=sideLabel(sa);
     const cb=s.combo;
     const cut=Math.round(angDeg(s.cosT));
     const sep=Math.round(angDeg(s.ux*s.lx+s.uy*s.ly));
@@ -7200,7 +7339,7 @@ function renderPanel(){
         <span class="pr" style="color:${qc}">${Math.round(s.q0*100)}%</span>
       </div>
       <div class="sb">
-        <canvas class="tip" data-a="${s.a}" data-b="${s.b}"></canvas>
+        <canvas class="tip" data-a="${sa}" data-b="${sb}"></canvas>
         <div class="meta">
           <div>カット <b>${cut}°</b>（<b>${thickLabel(s.cosT)}</b>）${cb?'':` → 分離 <b>${s.dist>0.5?sep+'°':'—'}</b>`} ・ 手玉${Math.round(s.d1)}″(${(s.d1/12.5).toFixed(1)}P)/${cb?`球間${Math.round(cb.dk)}″`:`的玉${Math.round(s.d2)}″`}</div>
           <div>力加減 <span class="pw">${bars}</span> ${powerText(s.pw)}${
@@ -7215,11 +7354,12 @@ function renderPanel(){
           <div class="tags">
             ${cb?`<span class="tag e">穴前コンビ（${s.n}-${cb.Ln}・${cb.Ln}番は穴前 ${Math.round(cb.dL)}″）</span>`:''}
             <span class="tag ${vc}">${vl}</span>
-            ${s.b>0.05&&s.f>=ROLL_F?'<span class="tag d">ころがし（上撞き不要）</span>':''}
-            ${s.b<-0.05&&s.f>-0.05?'<span class="tag w">引きが抜ける</span>':''}
+            ${sb>0.05&&s.f>=ROLL_F?'<span class="tag d">ころがし（上撞き不要）</span>':''}
+            ${sb<-0.05&&s.f>-0.05?'<span class="tag w">引きが抜ける</span>':''}
             ${s.gap<GAP_TAG?'<span class="tag w">通り道ギリギリ</span>':''}
             ${sl?`<span class="tag e">${sl}</span>`:''}
             ${tipOverride[s.k]?'<span class="tag e">撞点 手動</span>':''}
+            ${noEng(s.k)?'<span class="tag e">捻り無し</span>':''}
             ${powOverride[s.k]?`<span class="tag e">力加減 ${POWLBL[powOverride[s.k]]}</span>`:''}
             <span class="tag ${s.d1<=NEAR_PT?'s':'w'}">${s.d1<=NEAR_PT?'2ポイント以内':'2ポイント超'}</span>
             ${s.sidePick?`<span class="tag s">${s.sidePick===2?'穴前はサイドへ':'近いサイドを使う'}</span>`:''}
@@ -7233,7 +7373,10 @@ function renderPanel(){
             ${!last&&!cb&&s.pos<0.86?'<span class="tag w">出しが長い</span>':''}
             ${!last&&!cb&&railNear(s.ex,s.ey)>0.5?'<span class="tag w">土手に張り付き</span>':''}
             ${s.scr?'<span class="tag w">スクラッチ注意</span>':''}
-            ${s.hitb?`<span class="tag ${s.hitRes&&s.hitRes.length?'d':'w'}">${s.hitRes&&s.hitRes.length?'クラスターを割る':'他球に接触'}</span>`:''}
+            ${s.hitb||(s.mv&&s.mv.length)
+                ? `<span class="tag ${s.mv&&s.mv.length?'d':'w'}">${
+                     s.mv&&s.mv.length ? (s.hitb?'クラスターを割る':'的玉が他球を動かす') : '他球に接触'}</span>`
+                : ''}
           </div>
         </div>
       </div>
@@ -7254,7 +7397,11 @@ function updateHint(){
   if(!cue){
     h.innerHTML= gameMode==='safe'
       ? '<b>的玉はドラッグで移動</b>できます／空いた所をタップして手玉を配置 — 緑マーカーがセーフティー推奨位置'
-      : '<b>的玉はドラッグで移動</b>できます／空いた所をタップして手玉を配置 — 白マーカーが推奨位置';
+      : (!bestSpot
+          ? 'この配置は<b>どこに置いても最後まで繋がりません</b> — 「新しい配置」で作り直すか、球を動かしてください'
+          : !bestSpotOK
+            ? '<b>途中で撞ける球が無くなる配置</b>です — マーカーはいちばん先まで進める位置'
+            : '<b>的玉はドラッグで移動</b>できます／空いた所をタップして手玉を配置 — 白マーカーが推奨位置');
     return;
   }
   if(gameMode==='safe'){
@@ -7267,7 +7414,7 @@ function updateHint(){
   }
   if(!plan||!plan.steps.length){ h.innerHTML='この位置からは狙えません。別の場所をタップ'; return; }
   const s=plan.steps[Math.min(selStep,plan.steps.length-1)];
-  const [vl]=vertLabel(s.b), sl=sideLabel(s.a);
+  const [vl]=vertLabel(shownB(s.k, s.b)), sl=sideLabel(shownA(s.k, s.a));
   const sep=Math.round(angDeg(s.ux*s.lx+s.uy*s.ly));
   if(s.combo){
     h.innerHTML=`<b>${selStep+1}球目</b> ${s.n}番→${s.combo.Ln}番のコンビ → ${pocketName(s.pi)} ／ ${thickLabel(s.cosT)}で当てる ／ 決まれば上がり`;
@@ -7566,16 +7713,33 @@ $('tipAuto').onclick=()=>{
   delete tipOverride[k]; delete powOverride[k]; replan();
 };
 $('tipAutoAll').onclick=()=>{ tipOverride={}; powOverride={}; replan(); };
-$('cNoEng').addEventListener('change',e=>{
+/* 捻り一切なし ＝ その手の撞点を球の中心（芯）に固定する。
+   手で入れてあった撞点の指定はそのまま矛盾するので捨てる（＝自動＝芯に戻す）。
+   力加減の指定は撞点とは別の話なので残す。価値マップはこの縛りの上で作り直す。 */
+function resetTip(k){ delete tipOverride[k]; }
+/* 2 つのチェックは排他。どちらか一方だけ、または両方なし。
+   （両方入っていると、「全ての手」を外したときに何が残るのかが読めない） */
+$('cNoEngAll').addEventListener('change',e=>{
   noEnglish=e.target.checked;
-  /* チェックしたら、全ステップの撞点をまとめて「芯（中心）」に戻す。
-     左右だけ 0 にすると引き／押しの指定だけが残って挙動が読めないので、
-     上下も含めて中心に揃え、そこから撞き直せる状態にする（＝芯撞きドリル）。
-     上下は自動で選ばせたいときは「全て自動に」を押せば戻せる。
-     チェックを外したときは、その一律指定を消して自動に戻す。 */
-  tipOverride={};
-  if(noEnglish) for(let k=0;k<balls.length;k++) tipOverride[k]={a:0,b:0};
-  heavy({dp:true}, true);                             // 価値マップから作り直し
+  if(noEnglish){
+    spinOff={};                                      // 「この手だけ」は解除
+    for(const k in tipOverride) resetTip(k);
+  }
+  heavy({dp:true, safe:gameMode==='safe'}, true);     // 価値マップから作り直し
+});
+/* 「この手だけ」は撞点パネルでいま選んでいる一手（◀▶ で切り替わる）に効く。
+   どの手なのかはラベルに出しているので、ここは選択中の手にそのまま書くだけ。
+   手玉が無くて対象の手が決まらないときは、チェックを戻して何もしない
+   （入ったままにすると、効いていないのに設定できたように見える）。 */
+$('cNoEngOne').addEventListener('change',e=>{
+  const an=tipAnchor();
+  if(!an){ e.target.checked=false; return; }
+  if(e.target.checked){
+    noEnglish=false;                                 // 「全ての手」は解除（排他）
+    spinOff[an.k]=true; resetTip(an.k);
+  }
+  else delete spinOff[an.k];
+  heavy({dp:true, safe:gameMode==='safe'}, true);
 });
 
 const chk=(id,k)=>$(id).addEventListener('change',e=>{ show[k]=e.target.checked; draw(); });
