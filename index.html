@@ -663,7 +663,8 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
             手玉を置く前なら<b>的玉をドラッグで自由に動かせます</b>
             （黄色い点滅リングが出ている間が編集できる状態）</li>
         <li><b>手玉を置く</b>（操作）— テーブルの空いた所をタップ／クリック。
-            点滅マーカーが推奨位置で、<b>手玉を置く</b>ボタンでそこへ置けます</li>
+            点滅マーカーが推奨位置で、<b>手玉を置く</b>ボタンでそこへ置けます。
+            推奨位置は<b>的玉から 1 ポイント以上離し、1 球目を厚く入れられる場所</b>を選びます</li>
         <li><b>再生する</b>（再生）— <b>▶ 再生</b>で計算どおりの球の動きが流れます</li>
         <li><b>手順を見る</b> — パネルの下のほうに手順カードが出ます。
             カードをタップするとその一手だけを詳しく表示します</li>
@@ -1035,10 +1036,14 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
                 横切る向きから入ると、同じ誤差が「厚い ↔ 極薄」の致命的な変動になります。</td></tr>
         <tr><th>③ 低いカットは<br>撞かない</th>
             <td>シュート率が<b>75% を下回る手</b>は、他に繋がる筋があるかぎり選びません。
-                取り切り率は掛け算なので、1 本の低い球がルート全体を壊すからです。</td></tr>
+                取り切り率は掛け算なので、1 本の低い球がルート全体を壊すからです。
+                シュート率が足りていても、<b>フリ 35°を超えるカット</b>は
+                どうしても必要な場合を除いて選びません（45°で好みが半分、50°で 4 分の 1）。</td></tr>
         <tr><th>④ 他の球には<br>当てない</th>
-            <td>入れたあとに手玉を他の球へ当てにいく手は、当たり方が少し変わるだけで
+            <td>入れたあとに手玉を他の球へ当てにいく手（キャノン）や、的玉が他の球に当たる手は、
+                当たり方が少し変わるだけで
                 <b>弾かれた球も手玉も止まる場所が変わる</b>ので、原則として選びません。
+                <b>コンビネーション</b>も、つないで取り切れる見込みが実質無いときの最後の手段です。
                 例外は<b>クラスター（密着した球・完全に塞がれた球）を割らないと
                 最後まで繋がらない</b>ときだけです。
                 <b>土手ベタの球を土手から離すために当てにいくことはしません</b>
@@ -1048,7 +1053,9 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
                 その時点で相手の番になるので、繋がる手が 1 本でもあるかぎり選びません
                 （どう撞いても落ちる配置でだけ残り、その手には<b>スクラッチ注意</b>が付きます）。
                 <b>落ちなくても口の端すれすれを通るライン</b>も、狙いのわずかなずれで
-                落ちてしまうので同じように避けます。</td></tr>
+                落ちてしまうので同じように避けます。
+                <b>クッションの角（ポケットのジョーの先端まわり）に手玉を当てる出し</b>も、
+                返る向きが読めないので同じ扱いです。</td></tr>
         <tr><th>⑥ ロング<br>シュートは<br>撞かない</th>
             <td>狙いのずれは<b>的玉が走る距離ぶんそのまま拡大する</b>ので、
                 同じフリ角でも台の端から端へ入れる筋は実戦では入りません。
@@ -1061,8 +1068,12 @@ html[data-theme="light"] .tipmode.man{background:#efe4fb; color:#5c2f8c; border-
                 狙いのずれが拡大しないため）。とくに<b>的玉がサイドから
                 1.5 ポイント以内</b>にあるときは、フリが大きく開いていても
                 サイドが本命になります。カードには<b>近いサイドを使う</b>が付きます。</td></tr>
+        <tr><th>⑧ フリーボールは<br>離して厚く</th>
+            <td>手玉を好きな所に置ける初球は、<b>的玉から 1 ポイント（12.5″）以上</b>離し、
+                <b>フリ 20°以内の厚い角度</b>で入れられる場所を推奨位置にします。
+                離すと繋がらない配置に限って、近い位置を出します（パネルにその旨が出ます）。</td></tr>
       </table>
-      <p class="note">①〜⑦ は<b>ルートの好み</b>であって、画面に出るシュート率そのものは動かしません。
+      <p class="note">①〜⑧ は<b>ルートの好み</b>であって、画面に出るシュート率そのものは動かしません。
       同じくらいの確率の手が並んだときに、どれを選ぶかを決めています。</p>
 
       <h3>13c. 土手ベタ（クッションに付いた球）の狙い方</h3>
@@ -1333,7 +1344,7 @@ const BALLCOL = {1:'#f2c200',2:'#1560bd',3:'#dc3a2c',4:'#7b3fa0',5:'#ef7d10',
                  6:'#1a9e5c',7:'#8d3030',8:'#151515',9:'#f2c200'};
 const STRIPED = {9:true};
 
-const VERSION = '1.3.1';
+const VERSION = '1.3.2';
 
 /* =========================================================================
    物理定数 —— 「ビリヤード物理学ハンドブック」§00 に準拠
@@ -1639,10 +1650,11 @@ function spinLive(wz, v){
 
 /* --- 取り切りの最後の一発は「フリ 30°未満」に組み立てる -----------------
    薄い最終球はミスの代償が最大なので、ルート選択で強く避ける。 */
+/* V1.3.2 —— 減点を 0.026 → 0.034、下限を 0.18 → 0.12 に強めた（カットを避ける）。 */
 const LAST_CUT = 30;
 function lastShotPref(cosT){
   const deg = angDeg(cosT);
-  return deg <= LAST_CUT ? 1 : Math.max(0.18, 0.86 - (deg-LAST_CUT)*0.026);
+  return deg <= LAST_CUT ? 1 : Math.max(0.12, 0.86 - (deg-LAST_CUT)*0.034);
 }
 
 /* --- 出しは「的玉から 2 ポイント以内」を目指す ---------------------------
@@ -1763,12 +1775,30 @@ function hardPref(k, cosT, d1){
      ・手玉が長く走るので止まる位置が読めない
    ので実戦では避ける角度。真っすぐ側と釣り合うところまではっきり減点する
    （50°で 0.67、60°で下限 0.45）。P-13 の交差項と合わせて 20〜35°へ寄る。 */
+/* V1.3.2 —— 「カットはどうしても必要な場合を除いて選ばない」。上側の減点を
+   0.034 → 0.050、下限を 0.32 → 0.14 にした（45°で 0.50、50°で 0.25）。
+   下限を 0 にしないのは、薄く切るしか繋がらない配置でルートを途切れさせないため。 */
 const ANG_LO = 12, ANG_HI = 35;
+const ANG_CUT_K = 0.050, ANG_CUT_MIN = 0.14;
 function angleWindow(cosT, isLast){
   if(isLast) return 1;
   const deg = angDeg(cosT);
   if(deg < ANG_LO) return 0.72 + 0.28*(deg/ANG_LO);       // 真っすぐは 3 割弱の減点
-  if(deg > ANG_HI) return Math.max(0.32, 1 - (deg-ANG_HI)*0.034);
+  if(deg > ANG_HI) return Math.max(ANG_CUT_MIN, 1 - (deg-ANG_HI)*ANG_CUT_K);
+  return 1;
+}
+/* --- フリーボールの初球は厚く（V1.3.2）----------------------------------
+   手玉を好きな所に置ける初球で、わざわざ薄い角度を残す理由は無い。
+   1 球目（k = 0）だけはアングル窓の代わりにこれを掛け、FIRST_CUT までを無罰、
+   そこから急に減点する（30°で 0.64、40°で 0.28）。真っすぐは出しの手段が
+   押し引きだけになるので、アングル窓より軽く引く。
+   推奨位置を選ぶ価値マップ（Vb[0]）にもそのまま効くので、
+   厚く入る場所ほど推奨位置に選ばれやすくなる（→ findBestSpot）。 */
+const FIRST_CUT = 20, FIRST_CUT_K = 0.036, FIRST_CUT_MIN = 0.10;
+function firstCutPref(cosT){
+  const deg = angDeg(cosT);
+  if(deg < ANG_LO) return 0.90 + 0.10*(deg/ANG_LO);
+  if(deg > FIRST_CUT) return Math.max(FIRST_CUT_MIN, 1 - (deg-FIRST_CUT)*FIRST_CUT_K);
   return 1;
 }
 
@@ -2191,6 +2221,26 @@ function jawHit(x, y, dx, dy, tmax, pk){
   JAW.nx=bnx; JAW.ny=bny;
   return bt;
 }
+/* --- クッションの角（V1.3.2）--------------------------------------------
+   ジョーの先端まわりはクッション面が折れていて、実際の台では当たる位置が
+   わずかにずれるだけで返る向きが大きく変わる（読めない）。
+   手玉がそこへ当たる出しは狙わないので、クッションに当たった瞬間の球心が
+   どれかの先端から R + CORNER_NEAR 以内なら「角に当たった」とみなす
+   （＝面に沿って測ると先端から約 2.4″ 以内の当たり）。ジョー面・先端の角への
+   当たりは無条件で角。判定は enumShots の二段構え（→ strictLine）が使う。 */
+const CORNER_NEAR = 1.5;
+const CORNER_PREF = 0.35;   // それでも角に当てる手（二周目）への好みの減点
+const CORNER_R2 = (R+CORNER_NEAR)*(R+CORNER_NEAR);
+function nearJawTip(x, y){
+  for(let j=0;j<6;j++){
+    const pk=POCKETS[j];
+    for(let sg=-1; sg<=1; sg+=2){
+      const dx=x-(pk.mx + sg*pk.tgx*pk.mhalf), dy=y-(pk.my + sg*pk.tgy*pk.mhalf);
+      if(dx*dx+dy*dy < CORNER_R2) return true;
+    }
+  }
+  return false;
+}
 /* もう台には戻れない位置か（＝落ちた）。
      ・球心がマウス線より奥 ＝ 棚の上。そこに球が乗ったままになる場所は無い
      ・鼻先の面より外に出ているのに、どのポケットの口の中でもない
@@ -2473,6 +2523,7 @@ function railBounce(b, nx, ny){
 const SIM = {x:0,y:0,rails:0,scratch:false,hit:false,pts:null,railIdx:null,hits:null,run:0,T:0,
              dirx:0, diry:0,    // dirx,diry = 止まる（当たる）直前の進行方向（→ lineOfPosition）
              scrM:Infinity,     // scrM = ポケットの口を外した最小の余裕（→ scratchPref）
+             corner:false,      // corner = クッションの角（ジョーの先端まわり）に当たったか
              st:null};          // st = 走り終えた（stopT で打ち切った）時点の球の状態
 const SIM_ST = ballSt(0,0,0,0,0,0,0);   // SIM.st の実体（使い回し）
 SIM.st = SIM_ST;
@@ -2547,7 +2598,7 @@ function simulate(st, balls, rec, resolve, stopT){
      手玉が台をはみ出して走り去っていた（実測: 実戦の入れ筋の 2% が
      台外へゴースト、そのうち 9 割で手玉が最大 48″ 外まで走った）。 */
   b.x=clamp(b.x,R,W-R); b.y=clamp(b.y,R,HT-R);
-  let rails=0, scratch=false, hit=false, run=0, T=0, scrM=Infinity, cut=false;
+  let rails=0, scratch=false, hit=false, run=0, T=0, scrM=Infinity, cut=false, corner=false;
   const pts = rec ? [[b.x,b.y,0]] : null;
   const railIdx = rec ? [] : null;
   let hits=null, nCol=0, guard=0;
@@ -2615,7 +2666,7 @@ function simulate(st, balls, rec, resolve, stopT){
       /* この弦の上で最初に起きること（ポケット／クッション・ジョー／球）------
          ポケットを先に見る。実際の台ではポケットの口にクッションが無いので、
          落ちる向きで口に入った球は鼻先の面を素通りしてマウス線まで進む。 */
-      let t=L, kind=0, nx=0, ny=0, bi=-1;
+      let t=L, kind=0, nx=0, ny=0, bi=-1, jaw=false;
       /* 落ちる判定は弦の長さに依らない形（tmax なし）で取る —— 弦を刻んだ
          都合でマウス線が次の弦に回っただけの球まで、鼻先で弾き返して
          いたため（実測: サイドの口に置いた球を撞くと、口の中で
@@ -2649,7 +2700,7 @@ function simulate(st, balls, rec, resolve, stopT){
          とがっているので、そこへ触れても接触の法線はほぼ進行方向になり、
          球は台へ返らずそのまま吸い込まれるからである。 */
       if(mp && mp!==gate){ const tj=jawHit(b.x,b.y,dx,dy,t,mp);
-                           if(tj<t){ t=tj; kind=1; nx=JAW.nx; ny=JAW.ny; } }
+                           if(tj<t){ t=tj; kind=1; nx=JAW.nx; ny=JAW.ny; jaw=true; } }
       for(let j=0;j<balls.length;j++){
         if(hits && struckIdx(hits,j)) continue;        // 弾いた球はもうそこに居ない
         const o=balls[j], tt=hitCircle(b.x,b.y,dx,dy,t,o.x,o.y,BD);
@@ -2708,6 +2759,7 @@ function simulate(st, balls, rec, resolve, stopT){
       }
       if(kind===1){
         if(rails>=5) break outer;                      // 現実的な範囲は 5 クッション
+        if(!corner && (jaw || nearJawTip(b.x, b.y))) corner=true;
         railBounce(b, nx, ny);
         rails++;
         if(rec) railIdx.push(pts.length-1);
@@ -2728,6 +2780,7 @@ function simulate(st, balls, rec, resolve, stopT){
   SIM.pts=pts; SIM.railIdx=railIdx; SIM.hits=hits||NOHITS; SIM.run=run; SIM.T=T;
   SIM.dirx=ldx; SIM.diry=ldy;
   SIM.scrM = scratch ? 0 : scrM;
+  SIM.corner = corner;
   SIM_ST.x=SIM.x; SIM_ST.y=SIM.y; SIM_ST.vx=b.vx; SIM_ST.vy=b.vy;
   SIM_ST.wvx=b.wvx; SIM_ST.wvy=b.wvy; SIM_ST.wz=b.wz;
   SIM.pot=vPot(Math.hypot(b.vx,b.vy));   // 止まった／当たった時点で残っている勢い
@@ -2998,6 +3051,10 @@ function shotRun(cueSt, obSt, others, rec, o){
    （下の gain がほぼ 0 の手）がルートに混ざっていた。基本減点を上げて、
    「割らなければ撞けない」ときだけ選ばれるようにする。 */
 const HITB_PEN = 0.42;   // 他球に当てる手の基本減点（読みにくさ）
+/* V1.3.2 —— キャノン（手玉や的玉が他の球に当たる手）は、割らなければ繋がらない
+   ときを除いて選ばない。HITB_PEN は確率（imm）側の減点なので、それとは別に
+   ルートの好みでもはっきり引く。割る価値のある手（brkPref > 1.05）には掛けない。 */
+const CAROM_PREF = 0.30;
 const BREAK_K  = 0.80;   // ブレイクアウトが成功したときに戻る割合
 /* 順番外の球が落ちるのは、落ちた球を盤面から外して先を組み直すので
    「扱えない」わけではないが、狙って再現できる形ではないので減点は残す。 */
@@ -3173,6 +3230,7 @@ let LAY  = null;           // 探索・描画がいま見ている盤面デー�
 let Vb = [];
 let plan = null, selStep = 0, bestSpot = null, bestSpotVal = 0;
 let bestSpotOK = false;    // 推奨位置から最後まで繋がるか（繋がらない配置の案内に使う）
+let bestSpotTier = 0;      // 推奨位置の縛りをどこまで緩めたか（→ findBestSpot。2 = 的玉から 1 ポイント未満）
 let tipOverride = {};      // { ステップ番号: {a,b} } — 手動で指定した撞点
 let powOverride = {};      // { ステップ番号: 'soft'|'mid'|'hard'|'max' } — 手動の力加減
 let noEnglish = false;     // 捻り一切なし（全ての手）
@@ -3735,8 +3793,9 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
     const longP = longPref(pd.d2, isLast);
     /* 難所の球は「近く・厚く」入れているときだけ価値を認める */
     const hardP = isLast ? 1 : hardPref(k, cosT, d1);
-    /* アングルを作る ― 真っすぐすぎる球（＝力でしか出せない球）を減点する */
-    const angP  = angleWindow(cosT, isLast);
+    /* アングルを作る ― 真っすぐすぎる球（＝力でしか出せない球）を減点する。
+       フリーボールの初球だけは「厚く入れる」を優先する（→ firstCutPref） */
+    const angP  = k===0 ? firstCutPref(cosT) : angleWindow(cosT, isLast);
 
     for(let ip=0; ip<np; ip++){
       const P0 = POTBUF[ip];
@@ -3803,7 +3862,7 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
              cuePot はクッションでの減衰も滑走ぶんも含んでいないので、
              クッションを使う手・強い手ほど表示と再生が食い違っていた
              （実測: 最大＋押しの一発で 表示 199″ / 実際 115″）。 */
-          let run = 0, dirx = 0, diry = 0, scrM = Infinity;
+          let run = 0, dirx = 0, diry = 0, scrM = Infinity, corner = false;
           let brk = 1, brkPref = 1, hitRes = null;
           if(still){ ex=pd.gx; ey=pd.gy; }
           else{
@@ -3816,9 +3875,10 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
             run=SIM.run;                      // resolveHits が SIM を上書きする前に取る
             dirx=SIM.dirx; diry=SIM.diry;     // 到達の向き（→ ラインに乗せる・極意⑧）
             scrM=SIM.scrM;                    // スクラッチのぎりぎり度（→ scratchPref）
-            /* スクラッチする手は撞かない。1 本も残らなかったときだけ
-               enumShots が縛りを外して撞き直す（→ noScratch）。 */
-            if(scr && noScratch) continue;
+            corner=SIM.corner;                // クッションの角に当たったか（→ CORNER_PREF）
+            /* スクラッチする手・クッションの角に当たる手は撞かない。1 本も
+               残らなかったときだけ enumShots が縛りを外して撞き直す（→ strictLine）。 */
+            if((scr || corner) && strictLine) continue;
             if(hitb && fine && SIM.hits.length){
               const hs=SIM.hits.slice(), cT=SIM.T;   // SIM は使い回しなので先に複製
               /* 弾かれた球も、止まったあとの手玉を素通りしない（描画・再生と同じ扱い） */
@@ -3885,8 +3945,14 @@ function forEachShot(k, cx, cy, bset, pset, aset, cb, honorSpin, powKey, fine){
                      ? lineOfPosition(k, ex, ey, dirx, diry, run) : 1;
           /* スクラッチしそうなぎりぎりのラインは、落ちなくても選ばない */
           const scrP = scratchPref(scrM);
+          /* 割る価値の無い他球への接触（キャノン）は選ばない */
+          const carP = (hitb && !(brkPref > 1.05)) ? CAROM_PREF : 1;
+          /* 縛りを外した二周目で残ったクッションの角の手も、好みではっきり引く。
+             そうしないと「角に当てるしか無い位置」へ出す手・置く場所が
+             価値マップの上では普通の位置と同じ値になってしまう。 */
+          const crnP = corner ? CORNER_PREF : 1;
           const pref = imm*pos*lastPen*nearP*longP*hardP*angP*powPref*distPen*tipPref
-                     * sideFac*brkPref*qP*lopP*scrP*drawP;
+                     * sideFac*brkPref*qP*lopP*scrP*drawP*carP*crnP;
           const val = pref*nvw;
           if(val<=0) continue;
 
@@ -3981,7 +4047,7 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
           if(cuePot>0.5 && m>0.02){
             simulate(CUE.st,others,false,false);
             ex=SIM.x; ey=SIM.y; scr=SIM.scratch; run=SIM.run; scrM=SIM.scrM;
-            if(scr && noScratch) continue;
+            if((scr || SIM.corner) && strictLine) continue;
           }
           const imm=q0*powPen*bPen*aPen*(scr?0.03:1);
           /* コンビも「成功率の低い一発は撞かない」（極意⑦）。決まれば上がりだが、
@@ -4028,14 +4094,15 @@ function forEachCombo(k, cx, cy, bset, pset, aset, cb, powKey){
    「入れた勢いでそのまま落ちる」手がルートに混ざっていた。手玉を落とせば
    その時点で相手の番になるのだから、繋がる手が 1 本でもあるかぎり選ばない。
    まず全部スクラッチ抜きで列挙し、それで一手も成立しないときだけ
-   縛りを外して撞き直す（＝ルートが途切れることは無い）。 */
-let noScratch = true;
+   縛りを外して撞き直す（＝ルートが途切れることは無い）。
+   V1.3.2 から、手玉がクッションの角（→ nearJawTip）に当たる手も同じ扱いにした。 */
+let strictLine = true;
 function enumShots(k, cx, cy, fine, cb, useOv){
   let n = 0;
   enumRaw(k, cx, cy, fine, v=>{ n++; cb(v); }, useOv);
   if(n) return;
-  noScratch = false;
-  try{ enumRaw(k, cx, cy, fine, cb, useOv); } finally{ noScratch = true; }
+  strictLine = false;
+  try{ enumRaw(k, cx, cy, fine, cb, useOv); } finally{ strictLine = true; }
 }
 function enumRaw(k, cx, cy, fine, cb, useOv){
   const man = useOv!==false;
@@ -4157,12 +4224,7 @@ function computeDP(){
       const cy = gy0 + j*GS;
       for(let i=0;i<GW;i++){
         const cx = gx0 + i*GS;
-        let bad=false;
-        for(let m=0;m<rem.length;m++){
-          const dx=rem[m].x-cx, dy=rem[m].y-cy;
-          if(dx*dx+dy*dy < BD*BD+0.3){ bad=true; break; }
-        }
-        if(bad) continue;
+        if(!spotFree(rem,cx,cy)) continue;
         const c = j*GW+i, v = cellValue(k,cx,cy,false);
         g[c] = floorV ? Math.max(v, floorV*railFactor(cx,cy)*nxt[c]) : v;
       }
@@ -4344,7 +4406,11 @@ function findPlan(sx,sy){
     for(const c of nb){
       const s = c.steps[c.steps.length-1];
       if(!s || s.k!==k || s.combo) continue;
+      const hitEst = s.hitb;
       settleStep(s);
+      /* 列挙の見積りに無かった接触（的玉が他球に当たる・キス）が出た手は、
+         キャノンと同じ扱いで好みを引く。以降の枝の評価（pref）に効く。 */
+      if(!hitEst && s.hitRes && !((s.brk||1) > 1.05)) c.pref *= CAROM_PREF;
       c.x = s.ex; c.y = s.ey;
       if(s.hitRes) c.lay = nextLayout(s.lay, k, s.hitRes);
     }
@@ -4368,52 +4434,99 @@ function findPlan(sx,sy){
 
 /* フリーボールの推奨位置を「実際に組み立てて」確かめる本数（→ findBestSpot） */
 const SPOT_TRY = 5;
-function findBestSpot(){
-  const raw = Vb[0].raw, cands=[];
-  for(let i=0;i<GN;i++) if(raw[i]>0) cands.push([raw[i],i]);
-  cands.sort((a,b)=>b[0]-a[0]);
-  const rem = BASE.rem[0], spots=[];
-  for(const [,idx] of cands.slice(0,12)){
+/* 推奨位置の候補にする価値マップの上位マス数（1 マスにつき周囲 9 点） */
+const SPOT_CELLS = 12;
+/* 推奨位置は的玉から 1 ポイント以上離す（V1.3.2） */
+const SPOT_GAP = 12.5;
+/* (x,y) に手玉を置けるか（どの球とも重ならないか）。価値マップと推奨位置で共用 */
+function spotFree(rem, x, y){
+  for(let m=0;m<rem.length;m++){
+    const dx=rem[m].x-x, dy=rem[m].y-y;
+    if(dx*dx+dy*dy < BD*BD+0.3) return false;
+  }
+  return true;
+}
+/* 価値マップの上位マスから、条件 ok を満たす置き場所を集めて価値順に返す */
+function spotCands(cells, rem, ok){
+  const spots=[];
+  let used=0;
+  for(const [,idx] of cells){
+    if(used >= SPOT_CELLS) break;
     const bx = gx0 + (idx%GW)*GS, by = gy0 + Math.floor(idx/GW)*GS;
+    let any=false;
     for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++){
       const cx = clamp(bx+ox*1.1, R+0.2, W-R-0.2), cy = clamp(by+oy*1.1, R+0.2, HT-R-0.2);
-      let bad=false;
-      for(const b of rem){ const dx=b.x-cx, dy=b.y-cy; if(dx*dx+dy*dy < BD*BD+0.3){ bad=true; break; } }
-      if(bad) continue;
+      if(!spotFree(rem,cx,cy) || !ok(cx,cy)) continue;
       const v = cellValue(0,cx,cy,true);
-      if(v>0) spots.push({x:cx, y:cy, v});
+      if(v>0){ spots.push({x:cx, y:cy, v}); any=true; }
     }
+    if(any) used++;
   }
-  spots.sort((a,b)=>b.v-a.v);
-  /* --- 置いたあと手詰まりになる場所は出さない（V1.3.1）-------------------
-     価値マップは「1 球目の良さ × その先の見込み」で、先はぼかした地図でしか
-     見ていない。いちばん値の高いマスでも、実際に組み立てると途中で撞ける球が
-     無くなる配置がある（実測: 720 配置中 2 件。3 球・実戦・終盤難所で出た）。
-     フリーボールは「最後まで繋がる場所に置く」のが前提なので、値の高い順に
-     実際にルートを組み立てて、繋がった場所だけを推奨位置として出す。
-     ふつうは 1 本目で繋がるので、余計な計算はそこで終わる。
-     どれも繋がらないときは、いちばん先まで進める場所を出す
-     （そのときは手順パネルにも「繋がりませんでした」と出る）。
-     近すぎる候補は同じ手になるだけなので、球 1 個ぶん離して選ぶ。 */
-  let best=null, bestVal=0, fallLen=-1, ok=false;
-  const tried=[];
+  return spots.sort((a,b)=>b.v-a.v);
+}
+/* 候補を価値の高い順に実際に組み立てる。
+   ・最後まで繋がり、しかも初球が厚い（FIRST_CUT 以内）場所が出たらそこで決める
+   ・繋がるが初球が薄い場所しか無ければ、成功率 × 初球の厚みがいちばん良い場所
+   ・どれも繋がらなければ、いちばん先まで進める場所（ok = false）
+   近すぎる候補は同じ手になるだけなので、球 1 個ぶん離して選ぶ。
+   tried は段をまたいで共有し、上の段で組み立てた場所は組み立て直さない。 */
+function trySpots(spots, tried){
+  let done=null, doneScore=-1, fall=null, n=0;
   for(const s of spots){
-    if(tried.length >= SPOT_TRY) break;
-    let near=false;
-    for(const t of tried) if(Math.hypot(s.x-t.x, s.y-t.y) < BD){ near=true; break; }
-    if(near) continue;
-    tried.push(s);
+    if(n >= SPOT_TRY) break;
+    if(tried.some(t=>Math.hypot(s.x-t.x, s.y-t.y) < BD)) continue;
+    tried.push(s); n++;
     const pl = findPlan(s.x, s.y);
+    if(!pl) continue;
     /* 画面に出す「約 ○%」は、そこに置いたときの取り切り成功率そのもの
        （価値マップの値は好みの減点を全球ぶん掛けているので低く出る）。 */
-    const v = pl ? clamp(pl.prob0, 0, 1) : 0;
-    if(pl && pl.complete){ best={x:s.x, y:s.y}; bestVal=v; ok=true; break; }
-    const len = pl ? pl.steps.length : 0;
-    if(len > fallLen){ fallLen=len; best={x:s.x, y:s.y}; bestVal=v; }
+    const v = clamp(pl.prob0, 0, 1);
+    if(pl.complete){
+      const cosT = pl.steps[0].cosT;
+      if(angDeg(cosT) <= FIRST_CUT) return {x:s.x, y:s.y, v, ok:true, len:pl.steps.length};
+      const sc = v*firstCutPref(cosT);
+      if(sc > doneScore){ doneScore=sc; done={x:s.x, y:s.y, v, ok:true, len:pl.steps.length}; }
+    } else if(!fall || pl.steps.length > fall.len){
+      fall={x:s.x, y:s.y, v, ok:false, len:pl.steps.length};
+    }
   }
-  bestSpot = best;
-  bestSpotVal = best ? bestVal : 0;
-  bestSpotOK = ok;
+  return done || fall;
+}
+/* --- 推奨位置（V1.3.1 → V1.3.2）----------------------------------------
+   価値マップは「1 球目の良さ × その先の見込み」で、先はぼかした地図でしか
+   見ていない。いちばん値の高いマスでも、実際に組み立てると途中で撞ける球が
+   無くなる配置がある（V1.3.1 の実測: 720 配置中 2 件）。そこで値の高い順に
+   実際にルートを組み立てて、繋がった場所だけを推奨位置として出す（trySpots）。
+
+   V1.3.2 —— 価値マップは近い球ほど値が高いので、推奨位置の半分以上が
+   的玉から 1 ポイント未満（球 1 個ぶんの距離もあった）になっていた。
+   フリーボールでそこまで寄せる理由は無いので、置き場所の縛りを 3 段で緩める。
+     0) どの的玉からも 1 ポイント以上
+     1) 1 球目の的玉から 1 ポイント以上（他の球はそれより近くてもよい）
+     2) 重ならなければどこでも（＝そこにしか置けない配置）
+   上の段で最後まで繋がる場所があれば、下の段は見ない。 */
+function findBestSpot(){
+  const raw = Vb[0].raw, cells=[];
+  for(let i=0;i<GN;i++) if(raw[i]>0) cells.push([raw[i],i]);
+  cells.sort((a,b)=>b[0]-a[0]);
+  const rem = BASE.rem[0], tgt = BASE.balls[0];
+  const far = (b,x,y) => Math.hypot(b.x-x, b.y-y) >= SPOT_GAP;
+  const tiers = [
+    (x,y) => rem.every(b=>far(b,x,y)),
+    (x,y) => !tgt || far(tgt,x,y),
+    () => true
+  ];
+  let best=null, tier=0;
+  const tried=[];
+  for(let i=0;i<tiers.length;i++){
+    const r = trySpots(spotCands(cells, rem, tiers[i]), tried);
+    if(r && (!best || (!best.ok && (r.ok || r.len > best.len)))){ best=r; tier=i; }
+    if(best && best.ok) break;
+  }
+  bestSpot = best ? {x:best.x, y:best.y} : null;
+  bestSpotVal = best ? best.v : 0;
+  bestSpotOK = !!(best && best.ok);
+  bestSpotTier = best ? tier : 0;
 }
 
 /* =========================================================================
@@ -5417,6 +5530,7 @@ self.onmessage = function(ev){
     out.bestSpot = bestSpot ? {x:bestSpot.x,y:bestSpot.y} : null;
     out.bestSpotVal = bestSpotVal;
     out.bestSpotOK = bestSpotOK;
+    out.bestSpotTier = bestSpotTier;
   }
   if(d.safe) out.safeSpot = safeSpot ? {x:safeSpot.x,y:safeSpot.y} : null;
   self.postMessage(out);
@@ -5460,7 +5574,7 @@ function hvApply(d){
   if(d.prep) prepare();                         /* BASE / LAY は軽いので手元で作る */
   if(d.dp){
     Vb = d.lv.map((lv,k)=>{ lv.raw = d.raw[k] || undefined; lv.max = d.mx[k]; return lv; });
-    bestSpot = d.bestSpot; bestSpotVal = d.bestSpotVal; bestSpotOK = d.bestSpotOK;
+    bestSpot = d.bestSpot; bestSpotVal = d.bestSpotVal; bestSpotOK = d.bestSpotOK; bestSpotTier = d.bestSpotTier;
   }
   if(d.safe) safeSpot = d.safeSpot;
   hvFinish(hvRun);
@@ -7173,7 +7287,9 @@ function renderPanel(){
          この配置では<b>途中で撞ける球が無くなります</b>。</div>`
       : `<div class="empty">テーブルをタップして<br>手玉（フリーボール）を置いてください。<br><br>
          白い点滅マーカーが<b style="color:#4dd0e1">推奨のフリーボール位置</b>です。<br>
-         （成功率 約 ${Math.round(bestSpotVal*100)}%）</div>`, '--', '#e6edf3');
+         （成功率 約 ${Math.round(bestSpotVal*100)}%）${bestSpotTier===2
+           ? '<br><br><span style="color:#ffd166">的玉から 1 ポイント以上離れた所では繋がらないため、近い位置を出しています。</span>'
+           : ''}</div>`, '--', '#e6edf3');
   if(!plan||!plan.steps.length) return panelEmpty(
     tipOverride[0]||powOverride[0]
       ? `<div class="empty" style="color:#f87171">指定した撞点／力加減では 1 球目が狙えません。<br>
